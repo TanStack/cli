@@ -1,0 +1,5 @@
+[
+  "src/integrations/posthog/provider.tsx",
+  "src/routes/demo/posthog.tsx",
+  "_dot_env.local.append"
+]

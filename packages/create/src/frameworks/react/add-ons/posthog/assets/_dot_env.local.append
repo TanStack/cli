@@ -1,0 +1,4 @@
+# PostHog configuration, get your key from https://app.posthog.com/project/settings
+VITE_POSTHOG_KEY=phc_xxx
+# Optional: PostHog API host (for self-hosted or EU cloud)
+# VITE_POSTHOG_HOST=https://us.i.posthog.com

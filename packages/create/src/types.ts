@@ -50,6 +50,7 @@ export const AddOnBaseSchema = z.object({
       'monitoring',
       'cms',
       'api',
+      'analytics',
       'i18n',
       'tooling',
       'other',

@@ -1,0 +1,28 @@
+{
+  "name": "PostHog",
+  "description": "Product analytics, session replay, and feature flags",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "add-on",
+  "category": "analytics",
+  "color": "#1D4AFF",
+  "priority": 20,
+  "link": "https://posthog.com",
+  "tailwind": true,
+  "routes": [
+    {
+      "icon": "BarChart",
+      "url": "/demo/posthog",
+      "name": "PostHog",
+      "path": "src/routes/demo/posthog.tsx",
+      "jsName": "PostHogDemo"
+    }
+  ],
+  "integrations": [
+    {
+      "type": "provider",
+      "jsName": "PostHogProvider",
+      "path": "src/integrations/posthog/provider.tsx"
+    }
+  ]
+}
