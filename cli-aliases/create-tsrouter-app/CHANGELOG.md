@@ -1,5 +1,30 @@
 # create-tsrouter-app
 
+## 0.46.0
+
+### Minor Changes
+
+- feat(mcp): add getAddOnDetails tool and expand add-on metadata
+
+  Add new MCP tool to retrieve detailed add-on information including
+  routes, package additions, files, and documentation. Also expand
+  listTanStackAddOns to include type, category, link, warning, and
+  exclusive fields.
+
+### Patch Changes
+
+- ci: Version Packages (#311)
+
+  Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+
+- ci: Version Packages (#312)
+
+  Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+
+- Updated dependencies []:
+  - @tanstack/cli@0.51.0
+  - @tanstack/create@0.52.0
+
 ## 0.45.0
 
 ### Minor Changes
