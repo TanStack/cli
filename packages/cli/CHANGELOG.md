@@ -1,5 +1,23 @@
 # @tanstack/cli
 
+## 0.59.6
+
+### Patch Changes
+
+- Improve CLI compatibility and scaffold behavior for legacy router-first workflows. ([`2949819`](https://github.com/TanStack/cli/commit/2949819058b4d4b1760be683ef29bfd459ddb28b))
+
+  - Add safer target directory handling by warning before creating into non-empty folders.
+  - Support explicit git initialization control via `--git` and `--no-git`.
+  - Restore router-only compatibility mode with file-based routing templates (without Start-dependent add-ons/deployments/starters), while still allowing toolchains.
+  - Default `create-tsrouter-app` to router-only compatibility mode.
+  - Remove stale `count.txt` ignore entries from base templates.
+
+  Also expands starter documentation with clearer creation, maintenance, UI usage, and banner guidance.
+
+- Updated dependencies [[`164522e`](https://github.com/TanStack/cli/commit/164522e444188e83710fc599304132de8cb379e6), [`2949819`](https://github.com/TanStack/cli/commit/2949819058b4d4b1760be683ef29bfd459ddb28b)]:
+  - @tanstack/create@0.61.4
+  - @tanstack/create-ui@0.59.6
+
 ## 0.59.5
 
 ### Patch Changes

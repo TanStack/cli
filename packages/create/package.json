@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/create",
-  "version": "0.61.3",
+  "version": "0.61.4",
   "description": "TanStack Application Builder Engine",
   "type": "module",
   "main": "./dist/index.js",
