@@ -117,11 +117,15 @@ export function Select({
         <ShadcnSelect.SelectTrigger className="w-full">
           <ShadcnSelect.SelectValue placeholder={placeholder} />
         </ShadcnSelect.SelectTrigger>
-        <ShadcnSelect.SelectContent>
+        <ShadcnSelect.SelectContent className="bg-background text-foreground">
           <ShadcnSelect.SelectGroup>
             <ShadcnSelect.SelectLabel>{label}</ShadcnSelect.SelectLabel>
             {values.map((value) => (
-              <ShadcnSelect.SelectItem key={value.value} value={value.value}>
+              <ShadcnSelect.SelectItem
+                key={value.value}
+                value={value.value}
+                className="text-foreground"
+              >
                 {value.label}
               </ShadcnSelect.SelectItem>
             ))}
