@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useChat, useMessages } from '@/hooks/demo.useChat'
+import { useChat, useMessages } from '#/hooks/demo.useChat'
 
 import Messages from './demo.messages'
 

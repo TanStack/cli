@@ -5,8 +5,8 @@ import { Link } from '@tanstack/react-router'
 
 import { allSpeakers, allTalks } from 'content-collections'
 
-import RemyAssistant from '@/components/RemyAssistant'
-import TalkCard from '@/components/TalkCard'
+import RemyAssistant from '#/components/RemyAssistant'
+import TalkCard from '#/components/TalkCard'
 
 export const Route = createFileRoute('/speakers/$slug')({
   loader: async ({ params }) => {

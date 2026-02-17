@@ -7,7 +7,7 @@
 ### Usage
 
 ```ts
-import { env } from "@/env";
+import { env } from "#/env";
 
 console.log(env.VITE_APP_TITLE);
 ```

@@ -5,7 +5,7 @@ import { openaiText } from '@tanstack/ai-openai'
 import { geminiText } from '@tanstack/ai-gemini'
 import { ollamaText } from '@tanstack/ai-ollama'
 
-import { getGuitars, recommendGuitarToolDef } from '@/lib/demo-guitar-tools'
+import { getGuitars, recommendGuitarToolDef } from '#/lib/demo-guitar-tools'
 
 const SYSTEM_PROMPT = `You are a helpful assistant for a store that sells guitars.
 

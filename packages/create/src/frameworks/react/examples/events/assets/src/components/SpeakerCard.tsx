@@ -3,7 +3,7 @@ import { MapPin } from 'lucide-react'
 
 import { type Speaker } from 'content-collections'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '#/components/ui/card'
 
 interface SpeakerCardProps {
   speaker: Speaker

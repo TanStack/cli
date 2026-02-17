@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { showAIAssistant } from './demo-AIAssistant'
 
-import guitars from '@/data/demo-guitars'
+import guitars from '#/data/demo-guitars'
 
 export default function GuitarRecommendation({ id }: { id: string }) {
   const navigate = useNavigate()

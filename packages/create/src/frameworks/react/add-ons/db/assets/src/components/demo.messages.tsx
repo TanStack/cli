@@ -1,4 +1,4 @@
-import type { Message } from '@/db-collections'
+import type { Message } from '#/db-collections'
 
 export const getAvatarColor = (username: string) => {
   const colors = [

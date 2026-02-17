@@ -2,8 +2,8 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { allSpeakers } from 'content-collections'
 
-import SpeakerCard from '@/components/SpeakerCard'
-import RemyAssistant from '@/components/RemyAssistant'
+import SpeakerCard from '#/components/SpeakerCard'
+import RemyAssistant from '#/components/RemyAssistant'
 
 export const Route = createFileRoute('/speakers/')({
   component: SpeakersPage,

@@ -3,10 +3,10 @@ import { ArrowRight, Calendar, MapPin, Users } from 'lucide-react'
 
 import { allSpeakers, allTalks } from 'content-collections'
 
-import SpeakerCard from '@/components/SpeakerCard'
-import TalkCard from '@/components/TalkCard'
-import RemyAssistant from '@/components/RemyAssistant'
-import HeroCarousel from '@/components/HeroCarousel'
+import SpeakerCard from '#/components/SpeakerCard'
+import TalkCard from '#/components/TalkCard'
+import RemyAssistant from '#/components/RemyAssistant'
+import HeroCarousel from '#/components/HeroCarousel'
 
 export const Route = createFileRoute('/')({
   component: HomePage,

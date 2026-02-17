@@ -1,4 +1,4 @@
-import { articles } from '@/lib/strapiClient'
+import { articles } from '#/lib/strapiClient'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/demo/strapi')({

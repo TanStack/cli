@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 
-import { getClient } from '@/db'
+import { getClient } from '#/db'
 
 const getTodos = createServerFn({
   method: 'GET',

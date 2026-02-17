@@ -3,17 +3,17 @@ import { marked } from 'marked'
 
 import { createFileRoute } from '@tanstack/react-router'
 import { allJobs, allEducations } from 'content-collections'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Checkbox } from '#/components/ui/checkbox'
+import { Badge } from '#/components/ui/badge'
+import { Separator } from '#/components/ui/separator'
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from '@/components/ui/hover-card'
+} from '#/components/ui/hover-card'
 
-import ResumeAssistant from '@/components/ResumeAssistant'
+import ResumeAssistant from '#/components/ResumeAssistant'
 
 export const Route = createFileRoute('/')({
   component: App,

@@ -3,8 +3,8 @@ import { Send, X, Briefcase, UserCheck } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Store } from "@tanstack/store";
 
-import { useResumeChat } from "@/lib/resume-ai-hook";
-import type { ResumeChatMessages } from "@/lib/resume-ai-hook";
+import { useResumeChat } from "#/lib/resume-ai-hook";
+import type { ResumeChatMessages } from "#/lib/resume-ai-hook";
 
 function Messages({ messages }: { messages: ResumeChatMessages }) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);

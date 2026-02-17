@@ -5,8 +5,8 @@ import { Store } from '@tanstack/store'
 import { Send, X, ChevronRight, BotIcon } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 
-import { useGuitarRecommendationChat } from '@/lib/demo-ai-hook'
-import type { ChatMessages } from '@/lib/demo-ai-hook'
+import { useGuitarRecommendationChat } from '#/lib/demo-ai-hook'
+import type { ChatMessages } from '#/lib/demo-ai-hook'
 
 import GuitarRecommendation from './demo-GuitarRecommendation'
 

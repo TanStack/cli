@@ -10,7 +10,7 @@ import {
   getAllJobs,
   getAllEducation,
   searchExperience,
-} from '@/lib/resume-tools'
+} from '#/lib/resume-tools'
 
 export const Route = createFileRoute('/api/resume-chat')({
   server: {

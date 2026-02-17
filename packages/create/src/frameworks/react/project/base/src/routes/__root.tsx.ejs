@@ -8,7 +8,7 @@ import Header from '../components/Header'
 <% } %><% for(const integration of integrations.filter(i => i.type === 'layout' || i.type === 'provider' || i.type === 'devtools')) { %>
 import <%= integration.jsName %> from '<%= relativePath(integration.path, true) %>'
 <% } %><% if (addOnEnabled.paraglide) { %>
-import { getLocale } from '@/paraglide/runtime'
+import { getLocale } from '#/paraglide/runtime'
 <% } %>
 import appCss from '../styles.css?url'
 <% if (addOnEnabled["apollo-client"]) { %>
@@ -17,7 +17,7 @@ import type { ApolloClientIntegration } from "@apollo/client-integration-tanstac
 <% if (addOnEnabled["tanstack-query"]) { %>
 import type { QueryClient } from '@tanstack/react-query'
 <% if (addOnEnabled.tRPC) { %>
-import type { TRPCRouter } from '@/integrations/trpc/router'
+import type { TRPCRouter } from '#/integrations/trpc/router'
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query'
 <% } %>
 <% } %>

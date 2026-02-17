@@ -11,7 +11,7 @@ import {
   getAllSpeakers,
   getAllTalks,
   searchConference,
-} from '@/lib/conference-tools'
+} from '#/lib/conference-tools'
 
 export const Route = createFileRoute('/api/remy-chat')({
   server: {

@@ -1,4 +1,4 @@
-import '@/polyfill'
+import '#/polyfill'
 
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
@@ -7,8 +7,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { onError } from '@orpc/server'
 import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins'
 
-import { TodoSchema } from '@/orpc/schema'
-import router from '@/orpc/router'
+import { TodoSchema } from '#/orpc/schema'
+import router from '#/orpc/router'
 
 const handler = new OpenAPIHandler(router, {
   interceptors: [

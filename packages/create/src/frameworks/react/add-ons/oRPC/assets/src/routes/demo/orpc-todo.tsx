@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { orpc } from '@/orpc/client'
+import { orpc } from '#/orpc/client'
 
 export const Route = createFileRoute('/demo/orpc-todo')({
   component: ORPCTodos,

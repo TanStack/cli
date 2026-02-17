@@ -11,12 +11,12 @@ import {
 } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 
-import { useGuitarRecommendationChat } from '@/lib/demo-ai-hook'
-import type { ChatMessages } from '@/lib/demo-ai-hook'
-import { useAudioRecorder } from '@/hooks/demo-useAudioRecorder'
-import { useTTS } from '@/hooks/demo-useTTS'
+import { useGuitarRecommendationChat } from '#/lib/demo-ai-hook'
+import type { ChatMessages } from '#/lib/demo-ai-hook'
+import { useAudioRecorder } from '#/hooks/demo-useAudioRecorder'
+import { useTTS } from '#/hooks/demo-useTTS'
 
-import GuitarRecommendation from '@/components/demo-GuitarRecommendation'
+import GuitarRecommendation from '#/components/demo-GuitarRecommendation'
 
 import './ai-chat.css'
 

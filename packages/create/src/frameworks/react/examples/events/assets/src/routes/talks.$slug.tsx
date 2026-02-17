@@ -4,7 +4,7 @@ import { Clock, User, ArrowLeft, Tag } from 'lucide-react'
 
 import { allTalks, allSpeakers } from 'content-collections'
 
-import RemyAssistant from '@/components/RemyAssistant'
+import RemyAssistant from '#/components/RemyAssistant'
 
 export const Route = createFileRoute('/talks/$slug')({
   loader: async ({ params }) => {
