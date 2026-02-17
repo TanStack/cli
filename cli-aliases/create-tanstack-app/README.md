@@ -13,7 +13,7 @@ To maintain compatability with `create-react-app` you can build a new applicatio
 | `pnpm dlx create-tanstack-app@latest my-app`                                          | Create a new app                                  |
 | `pnpm dlx create-tanstack-app@latest my-app --template file-router`                   | Create a new file based app                       |
 | `pnpm dlx create-tanstack-app@latest my-app --template typescript`                    | Create a new TypeScript app using the Code Router |
-| `pnpm dlx create-tanstack-app@latest my-app --tailwind`                               | Add Tailwind CSS support                          |
+| `pnpm dlx create-tanstack-app@latest my-app --tailwind`                               | Deprecated compatibility flag (ignored)           |
 | `pnpm dlx create-tanstack-app@latest my-app --framework solid`                        | Create a Solid app                                |
 | `pnpm dlx create-tanstack-app@latest my-app --framework solid --template file-router` | Create a Solid app with file-router               |
 
@@ -38,13 +38,13 @@ This will start an interactive CLI that guides you through the setup process, al
 You can also use command line flags to specify your preferences directly:
 
 ```bash
-pnpm dlx create-tanstack-app@latest my-app --template file-router --tailwind --package-manager pnpm
+pnpm dlx create-tanstack-app@latest my-app --template file-router --package-manager pnpm
 ```
 
 Available options:
 
 - `--template <type>`: Choose between `file-router`, `typescript`, or `javascript`
-- `--tailwind`: Enable Tailwind CSS
+- `--tailwind` / `--no-tailwind`: Deprecated compatibility flags; accepted but ignored (Tailwind is always enabled)
 - `--package-manager`: Specify your preferred package manager (`npm`, `yarn`, `pnpm`, `bun`, or `deno`)
 - `--toolchain`: Specify your toolchain solution for formatting/linting (`biome`, `eslint`)
 - `--no-git`: Do not initialize a git repository
@@ -88,7 +88,7 @@ pnpm dlx create-tanstack-app@latest my-app --template typescript
 
 ### Tailwind CSS
 
-Enable Tailwind CSS either through the interactive CLI or by adding the `--tailwind` flag. This will automatically configure [Tailwind V4](https://tailwindcss.com/).
+Tailwind CSS is always configured by default. `--tailwind` / `--no-tailwind` are accepted for compatibility but ignored.
 
 ### Package Manager
 

@@ -37,6 +37,18 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
     )
   }
 
+  if (cliOptions.tailwind === true) {
+    warnings.push(
+      'The --tailwind flag is deprecated and ignored. Tailwind is always enabled in TanStack Start scaffolds.',
+    )
+  }
+
+  if (cliOptions.tailwind === false) {
+    warnings.push(
+      'The --no-tailwind flag is deprecated and ignored. Tailwind opt-out is intentionally unsupported to keep add-on permutations maintainable; remove Tailwind after scaffolding if needed.',
+    )
+  }
+
   if (!cliOptions.template) {
     return { warnings }
   }

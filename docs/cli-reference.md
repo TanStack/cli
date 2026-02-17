@@ -20,7 +20,7 @@ tanstack create [project-name] [options]
 | `--router-only` | Create Router-only SPA without TanStack Start (no SSR) |
 | `--toolchain <id>` | Toolchain add-on (use `--list-add-ons` to see options) |
 | `--deployment <id>` | Deployment add-on (use `--list-add-ons` to see options) |
-| `--tailwind` / `--no-tailwind` | Include/skip Tailwind CSS |
+| `--tailwind` / `--no-tailwind` | Deprecated compatibility flags; accepted but ignored (Tailwind is always enabled) |
 | `--no-git` | Skip git init |
 | `--no-install` | Skip dependency install |
 | `-y, --yes` | Use defaults, skip prompts |

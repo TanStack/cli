@@ -91,4 +91,33 @@ describe('createPackageJSON', () => {
       onlyBuiltDependencies: ['better-sqlite3'],
     })
   })
+
+  it('should provide execute command helper in package templates', () => {
+    const packageJSON = createPackageJSON({
+      chosenAddOns: [
+        {
+          packageTemplate:
+            '{"scripts":{"post-cta-init":"<%- getPackageManagerExecuteScript(\'create-db@latest\', [\'--user-agent\', \'tanstack/tsrouter\']) %>"}}',
+        },
+      ],
+      packageManager: 'npm',
+      addOnOptions: {},
+      mode: 'file-router',
+      typescript: true,
+      tailwind: true,
+      projectName: 'test',
+      framework: {
+        basePackageJSON: {},
+        optionalPackages: {
+          typescript: {},
+          tailwindcss: {},
+          'file-router': {},
+        },
+      } as unknown as Framework,
+    } as unknown as Options)
+
+    expect(packageJSON.scripts['post-cta-init']).toBe(
+      'npx -y create-db@latest --user-agent tanstack/tsrouter',
+    )
+  })
 })

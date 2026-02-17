@@ -408,6 +408,14 @@ export function cli({
         '--template <type>',
         'Deprecated: compatibility flag from create-tsrouter-app',
       )
+      .option(
+        '--tailwind',
+        'Deprecated: compatibility flag; Tailwind is always enabled',
+      )
+      .option(
+        '--no-tailwind',
+        'Deprecated: compatibility flag; Tailwind opt-out is ignored',
+      )
 
     if (deployments.size > 0) {
       cmd.option<string>(

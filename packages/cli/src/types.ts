@@ -22,4 +22,5 @@ export interface CliOptions {
   force?: boolean
   routerOnly?: boolean
   template?: string
+  tailwind?: boolean
 }

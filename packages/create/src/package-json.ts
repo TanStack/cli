@@ -1,6 +1,6 @@
 import { render } from 'ejs'
-import { sortObject } from './utils.js'
-
+import { formatCommand, sortObject } from './utils.js'
+import { getPackageManagerExecuteCommand } from './package-manager.js'
 import type { Options } from './types.js'
 
 export function mergePackageJSON(
@@ -26,6 +26,15 @@ export function mergePackageJSON(
 }
 
 export function createPackageJSON(options: Options) {
+  const packageManager = options.packageManager
+
+  function getPackageManagerExecuteScript(
+    pkg: string,
+    args: Array<string> = [],
+  ) {
+    return formatCommand(getPackageManagerExecuteCommand(packageManager, pkg, args))
+  }
+
   let packageJSON = {
     ...JSON.parse(JSON.stringify(options.framework.basePackageJSON)),
     name: options.projectName,
@@ -63,6 +72,7 @@ export function createPackageJSON(options: Options) {
         ),
         addOnOption: options.addOnOptions,
         addOns: options.chosenAddOns,
+        getPackageManagerExecuteScript,
       }
 
       try {

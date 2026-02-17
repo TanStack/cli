@@ -31,7 +31,7 @@ This will start an interactive CLI that guides you through the setup process, al
 You can also use command line flags to specify your preferences directly:
 
 ```bash
-pnpm create @tanstack/start@latest my-app --tailwind --package-manager pnpm
+pnpm create @tanstack/start@latest my-app --package-manager pnpm
 ```
 
 Available options:
@@ -40,6 +40,7 @@ Available options:
 - `--toolchain`: Specify your toolchain solution for formatting/linting (`biome`, `eslint`)
 - `--no-git`: Do not initialize a git repository
 - `--add-ons`: Enable add-on selection or specify add-ons to install
+- `--tailwind` / `--no-tailwind`: Deprecated compatibility flags; accepted but ignored (Tailwind is always enabled)
 
 When using flags, the CLI will display which options were provided and only prompt for the remaining choices.
 

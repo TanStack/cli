@@ -319,6 +319,19 @@ describe('validateLegacyCreateFlags', () => {
     expect(result.warnings[0]).toContain('--router-only')
   })
 
+  it('warns when --tailwind is used', () => {
+    const result = validateLegacyCreateFlags({ tailwind: true })
+    expect(result.error).toBeUndefined()
+    expect(result.warnings[0]).toContain('--tailwind')
+  })
+
+  it('warns heavily when --no-tailwind is used', () => {
+    const result = validateLegacyCreateFlags({ tailwind: false })
+    expect(result.error).toBeUndefined()
+    expect(result.warnings[0]).toContain('--no-tailwind')
+    expect(result.warnings[0]).toContain('intentionally unsupported')
+  })
+
   it('errors for JavaScript templates', () => {
     const result = validateLegacyCreateFlags({ template: 'javascript' })
     expect(result.error).toContain('JavaScript/JSX templates are not supported')
