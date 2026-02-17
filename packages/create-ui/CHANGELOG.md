@@ -1,5 +1,12 @@
 # @tanstack/create-ui
 
+## 0.59.4
+
+### Patch Changes
+
+- Updated dependencies [[`791bef6`](https://github.com/TanStack/cli/commit/791bef6b5472df5b5e2bffe5c1714c4052a97ac3)]:
+  - @tanstack/create@0.61.2
+
 ## 0.59.3
 
 ### Patch Changes
