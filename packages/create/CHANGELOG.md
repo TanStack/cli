@@ -1,5 +1,16 @@
 # @tanstack/create
 
+## 0.61.3
+
+### Patch Changes
+
+- Improve generated React scaffold reliability and default lint ergonomics. ([`cc5857c`](https://github.com/TanStack/cli/commit/cc5857c5c212132852f37878e039071c5a9b1ac5))
+
+  - Migrate React template imports to package `imports` aliases (`#/*`) while preserving `@/*` compatibility during transition.
+  - Harden eslint toolchain templates for fresh apps by avoiding known parser/project and resolver issues.
+  - Fix generated shadcn utility import style for stricter eslint configs.
+  - Improve TanStack Form demo select contrast in dark mode.
+
 ## 0.61.2
 
 ### Patch Changes

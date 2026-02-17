@@ -1,5 +1,13 @@
 # @tanstack/cli
 
+## 0.59.5
+
+### Patch Changes
+
+- Updated dependencies [[`cc5857c`](https://github.com/TanStack/cli/commit/cc5857c5c212132852f37878e039071c5a9b1ac5)]:
+  - @tanstack/create@0.61.3
+  - @tanstack/create-ui@0.59.5
+
 ## 0.59.4
 
 ### Patch Changes
