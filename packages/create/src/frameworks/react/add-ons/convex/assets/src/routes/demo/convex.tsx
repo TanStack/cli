@@ -4,7 +4,7 @@ import { useQuery, useMutation } from 'convex/react'
 import { Trash2, Plus, Check, Circle } from 'lucide-react'
 
 import { api } from '../../../convex/_generated/api'
-import { Id } from '../../../convex/_generated/dataModel'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/demo/convex')({
   ssr: false,
