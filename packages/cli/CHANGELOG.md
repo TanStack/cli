@@ -1,5 +1,26 @@
 # @tanstack/cli
 
+## 0.59.7
+
+### Patch Changes
+
+- Add a continuous development workflow for custom add-on authors. ([`b3cc585`](https://github.com/TanStack/cli/commit/b3cc5851d2b81613e3b024eb7981c440ee5183af))
+
+  - Add `tanstack add-on dev` to watch project files and continuously refresh `.add-on` outputs.
+  - Rebuild `.add-on` assets and `add-on.json` automatically when source files change.
+  - Document the new add-on development loop in the custom add-on guide.
+
+- Improve scaffold customization and custom add-on authoring flow. ([`5fbf262`](https://github.com/TanStack/cli/commit/5fbf262fe3a0d070e6a78fa2f2a920b176b84480))
+
+  - Add `--examples` / `--no-examples` support to include or omit demo/example pages during app creation.
+  - Prompt for add-on-declared environment variables during interactive create and seed entered values into generated `.env.local`.
+  - Ensure custom add-on/starter metadata consistently includes a `version`, with safe backfill for older metadata files.
+  - Align bundled starter/example metadata and docs with current Start/file-router behavior.
+
+- Updated dependencies [[`b3cc585`](https://github.com/TanStack/cli/commit/b3cc5851d2b81613e3b024eb7981c440ee5183af), [`5fbf262`](https://github.com/TanStack/cli/commit/5fbf262fe3a0d070e6a78fa2f2a920b176b84480)]:
+  - @tanstack/create@0.61.5
+  - @tanstack/create-ui@0.59.7
+
 ## 0.59.6
 
 ### Patch Changes
