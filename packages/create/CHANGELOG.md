@@ -1,5 +1,15 @@
 # @tanstack/create
 
+## 0.61.6
+
+### Patch Changes
+
+- Improve the Strapi add-on scaffolding for reliability. ([#323](https://github.com/TanStack/cli/pull/323))
+
+  - Remove brittle post-create shell automation that attempted to clone and bootstrap a sibling Strapi server.
+  - Fix Strapi article detail routing to use a consistent file-based route path.
+  - Update Strapi add-on guidance to document manual/hosted Strapi setup expectations.
+
 ## 0.61.5
 
 ### Patch Changes
