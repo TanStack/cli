@@ -1,6 +1,6 @@
 ## Strapi CMS Integration
 
-This add-on integrates Strapi CMS with your TanStack Start application using the official Strapi Client SDK. The Strapi server is created as a sibling directory during setup.
+This add-on integrates Strapi CMS with your TanStack Start application using the official Strapi Client SDK.
 
 ### Features
 
@@ -31,12 +31,12 @@ parent/
 │   │   │   └── strapi-utils.ts
 │   │   ├── routes/demo/
 │   │   │   ├── strapi.tsx              # Articles list
-│   │   │   └── strapi_.$articleId.tsx  # Article detail
+│   │   │   └── strapi.$articleId.tsx   # Article detail
 │   │   └── types/
 │   │       └── strapi.ts
 │   ├── .env.local
 │   └── package.json
-└── server/                 # Strapi CMS backend (auto-created)
+└── server/                 # Strapi CMS backend (create manually or use hosted Strapi)
     ├── src/api/            # Content types
     ├── config/             # Strapi configuration
     └── package.json
@@ -44,9 +44,15 @@ parent/
 
 ### Quick Start
 
-The Strapi server is automatically cloned from the official [Strapi Cloud Template Blog](https://github.com/strapi/strapi-cloud-template-blog).
+Create your Strapi project separately (or use an existing hosted Strapi instance), then point this app to it with `VITE_STRAPI_URL`.
 
-**1. Install Strapi dependencies:**
+**1. Set up Strapi:**
+
+Follow the Strapi quick-start guide to create a local project, or use your existing Strapi deployment:
+
+- https://docs.strapi.io/dev-docs/quick-start
+
+If you created a local Strapi project in a sibling `server` directory, continue with:
 
 ```bash
 cd ../server

@@ -8,14 +8,6 @@
   "color": "#4945FF",
   "priority": 110,
   "modes": ["file-router"],
-  "dependsOn": ["start"],
-  "command": {
-    "command": "sh",
-    "args": [
-      "-c",
-      "cd .. && git clone --depth 1 https://github.com/strapi/strapi-cloud-template-blog.git server && cd server && rm -rf .git .yarnrc.yml yarn.lock && cp .env.example .env"
-    ]
-  },
   "routes": [
     {
       "url": "/demo/strapi",

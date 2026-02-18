@@ -4,7 +4,7 @@ import { StrapiImage } from "@/components/strapi-image";
 import { BlockRenderer } from "@/components/blocks";
 import type { TArticle } from "@/types/strapi";
 
-export const Route = createFileRoute("/demo/strapi_/$articleId")({
+export const Route = createFileRoute("/demo/strapi/$articleId")({
   component: RouteComponent,
   errorComponent: ErrorComponent,
   loader: async ({ params }) => {
