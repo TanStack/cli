@@ -77,7 +77,7 @@ describe('createDefaultEnvironment', () => {
     await environment.copyFile('/test.txt', '/test2.txt')
     environment.finishRun()
 
-    expect(fs.readFileSync('/test.txt', 'utf8')).toEqual('testtest2')
+    expect(fs.readFileSync('/test.txt', 'utf8')).toEqual('test\n\ntest2')
   })
 
   it('should allow deletes', async () => {
