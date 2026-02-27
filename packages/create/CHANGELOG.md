@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.62.1
+
+### Patch Changes
+
+- Bump `@content-collections/mdx` in the React base template to `^0.2.2` so new projects install cleanly with React 19. ([`b54e202`](https://github.com/TanStack/cli/commit/b54e202ce56f2aa78a416634155bc22f0cb5cc46))
+
 ## 0.62.0
 
 ### Minor Changes
