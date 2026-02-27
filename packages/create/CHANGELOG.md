@@ -1,5 +1,18 @@
 # @tanstack/create
 
+## 0.62.0
+
+### Minor Changes
+
+- This release pulls together a large batch of improvements across the CLI and scaffolding engine since the last versioning pass. ([`154b25e`](https://github.com/TanStack/cli/commit/154b25eec9a13b9718c44cbed6cb3c8566f2fb11))
+
+  - Modernizes and refreshes the generated React/Solid template experience, including updated starter content and stronger defaults.
+  - Improves create flows with better option normalization, stronger guardrails around target directories, and clearer compatibility behavior in router-only mode.
+  - Expands scaffolding ergonomics with examples toggles, improved add-on/config handling, and reliability fixes across package-manager and cross-platform paths.
+  - Strengthens test and release confidence via e2e/release workflow hardening and broader smoke coverage.
+  - Streamlines product surface area by removing the local `create-ui` package and `--ui` command paths from the CLI; visual setup now lives at `https://tanstack.com/builder`.
+  - Cleans up docs and custom CLI examples to match the current terminal-first workflow and Builder guidance.
+
 ## 0.61.6
 
 ### Patch Changes
