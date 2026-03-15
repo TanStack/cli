@@ -1,6 +1,6 @@
 {
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
-    "@neondatabase/vite-plugin-postgres": "^0.2.0"
+    "vite-plugin-neon-new": "^0.8.0"
   }
 }
