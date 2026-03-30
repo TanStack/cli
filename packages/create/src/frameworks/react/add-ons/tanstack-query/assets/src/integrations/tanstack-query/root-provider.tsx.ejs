@@ -25,18 +25,7 @@ export const trpcClient = createTRPCClient<TRPCRouter>({
   ],
 });
 
-let context:
-  | {
-      queryClient: QueryClient
-      trpc: ReturnType<typeof createTRPCOptionsProxy<TRPCRouter>>
-    }
-  | undefined
-
 export function getContext() {
-  if (context) {
-    return context
-  }
-
   const queryClient = new QueryClient({
     defaultOptions: {
       dehydrate: { serializeData: superjson.serialize },
@@ -58,10 +47,12 @@ export function getContext() {
 
 export default function TanStackQueryProvider({
   children,
+  context,
 }: {
-  children: ReactNode
+  children: ReactNode,
+  context: ReturnType<typeof getContext>
 }) {
-  const { queryClient } = getContext()
+  const { queryClient } = context
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -75,32 +66,22 @@ export default function TanStackQueryProvider({
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-let context:
-  | {
-      queryClient: QueryClient
-    }
-  | undefined
-
 export function getContext() {
-  if (context) {
-    return context
-  }
-
   const queryClient = new QueryClient();
 
-  context = {
+  return {
     queryClient,
   }
-
-  return context
 }
 
 export default function TanStackQueryProvider({
   children,
+  context,
 }: {
   children: ReactNode
+  context: ReturnType<typeof getContext>
 }) {
-  const { queryClient } = getContext()
+  const { queryClient } = context
 
   return (
     <QueryClientProvider client={queryClient}>
