@@ -37,7 +37,7 @@ export function getContext() {
     client: trpcClient,
     queryClient: queryClient,
   });
-  context = {
+  const context = {
     queryClient,
     trpc: serverHelpers,
   }
@@ -45,7 +45,7 @@ export function getContext() {
   return context
 }
 
-export default function TanStackQueryProvider({
+export default function TanstackQueryProvider({
   children,
   context,
 }: {
@@ -55,11 +55,20 @@ export default function TanStackQueryProvider({
   const { queryClient } = context
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        {children}
-      </TRPCProvider>
-    </QueryClientProvider>
+    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+      {children}
+    </TRPCProvider>
   )
 }
+<% } else { %>
+import { QueryClient } from '@tanstack/react-query'
+
+export function getContext() {
+  const queryClient = new QueryClient();
+
+  return {
+    queryClient,
+  }
+}
+export default function TanstackQueryProvider() {}
 <% } %>
