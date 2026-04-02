@@ -21,6 +21,7 @@ function PowerSyncDemo() {
   )
   const todos = (data ?? []) as Array<TodoRow>
   const [description, setDescription] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   async function addTodo(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -30,12 +31,18 @@ function PowerSyncDemo() {
       return
     }
 
-    await powerSync.execute(
-      'INSERT INTO todos (id, created_at, description, completed) VALUES (?, ?, ?, ?)',
-      [crypto.randomUUID(), new Date().toISOString(), nextDescription, 0],
-    )
+    try {
+      setError(null)
+      await powerSync.execute(
+        'INSERT INTO todos (id, created_at, description, completed) VALUES (?, ?, ?, ?)',
+        [crypto.randomUUID(), new Date().toISOString(), nextDescription, 0],
+      )
 
-    setDescription('')
+      setDescription('')
+    } catch (error) {
+      console.error('Failed to insert PowerSync todo', error)
+      setError('Failed to insert row. Please try again.')
+    }
   }
 
   return (
@@ -65,8 +72,17 @@ function PowerSyncDemo() {
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--sea-ink-soft)]">
             Local Todos
           </h2>
+          {error ? (
+            <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </p>
+          ) : null}
           <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={addTodo}>
+            <label className="sr-only" htmlFor="powersync-todo-description">
+              Todo description
+            </label>
             <input
+              id="powersync-todo-description"
               className="min-w-0 flex-1 rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--sea-ink)] outline-none"
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Write to the local PowerSync database"
