@@ -12,14 +12,14 @@ import {
   runCreateApp,
 } from './shared.js'
 
-import type { PersistedOptions } from '../config-file'
+import type { PersistedOptions } from '../config-file.js'
 import type {
   Environment,
   Options,
   Starter,
   StarterCompiled,
   StarterInfo,
-} from '../types'
+} from '../types.js'
 
 const INFO_FILE = 'template-info.json'
 const LEGACY_INFO_FILE = 'starter-info.json'

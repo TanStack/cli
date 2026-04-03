@@ -26,7 +26,7 @@
     "@content-collections/vite": "^0.2.8",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "^0.3.11",
-    "typescript": "^5.7.2",
+    "typescript": "^6.0.2",
     "vite": "^7.1.7",
     "vite-plugin-solid": "^2.11.10",
     "zod": "^4.3.5"
