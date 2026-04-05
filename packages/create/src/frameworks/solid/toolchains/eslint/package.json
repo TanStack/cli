@@ -6,6 +6,7 @@
   },
   "devDependencies": {
     "@tanstack/eslint-config": "latest",
+    "eslint": "^9.20.0",
     "prettier": "^3.8.1"
   }
 }
