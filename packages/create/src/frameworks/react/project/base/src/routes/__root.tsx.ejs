@@ -27,6 +27,99 @@ function RootComponent() {
     </>
   )
 }
+<% } else if (!includeExamples) { %>
+<% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
+import {
+  HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { TanStackDevtools } from '@tanstack/react-devtools'
+<% for(const integration of integrations.filter(i => i.type === 'layout' || i.type === 'provider' || i.type === 'devtools')) { %>
+import <%= integration.jsName %> from '<%= relativePath(integration.path, true) %>'
+<% } %><% if (addOnEnabled.paraglide) { %>
+import { getLocale } from '#/paraglide/runtime'
+<% } %>
+import appCss from '../styles.css?url'
+<% if (addOnEnabled["apollo-client"]) { %>
+import type { ApolloClientIntegration } from "@apollo/client-integration-tanstack-start";
+<% } %>
+<% if (addOnEnabled["tanstack-query"]) { %>
+import type { QueryClient } from '@tanstack/react-query'
+<% if (addOnEnabled.tRPC) { %>
+import type { TRPCRouter } from '#/integrations/trpc/router'
+import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query'
+<% } %>
+<% } %>
+<% if (hasContext) { %>
+interface MyRouterContext <% if (addOnEnabled["apollo-client"]) {%> extends ApolloClientIntegration.RouterContext <%} %>{
+<% if (addOnEnabled["tanstack-query"]) { %>
+  queryClient: QueryClient
+  <% if (addOnEnabled.tRPC) { %>
+  trpc: TRPCOptionsProxy<TRPCRouter>
+  <% } %>
+<% } %>
+}<% } %>
+
+export const Route = <% if (hasContext) { %>createRootRouteWithContext<MyRouterContext>()<% } else { %>createRootRoute<% } %>({
+<% if (addOnEnabled.paraglide) { %>
+  beforeLoad: async () => {
+    // Other redirect strategies are possible; see
+    // https://github.com/TanStack/router/tree/main/examples/react/i18n-paraglide#offline-redirect
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('lang', getLocale())
+    }
+  },
+<% } %>
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1',
+      },
+      {
+        title: 'TanStack Start Starter',
+      },
+    ],
+    links: [
+      {
+        rel: 'stylesheet',
+        href: appCss,
+      },
+    ],
+  }),
+  shellComponent: RootDocument
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+      <% if (addOnEnabled.paraglide) { %><html lang={getLocale()}><% } else { %><html lang="en"><% } %>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <% for(const integration of integrations.filter(i => i.type === 'provider')) { %><<%= integration.jsName %>>
+        <% } %>{children}
+          <TanStackDevtools
+            config={{
+              position: 'bottom-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              <% for(const integration of integrations.filter(i => i.type === 'devtools')) { %><%= integration.jsName %>,<% } %>
+            ]}
+          />
+          <% for(const integration of integrations.filter(i => i.type === 'layout')) { %><<%= integration.jsName %> />
+          <% } %><% for(const integration of integrations.filter(i => i.type === 'provider').reverse()) { %></<%= integration.jsName %>>
+        <% } %><Scripts />
+      </body>
+    </html>
+  )
+}
 <% } else { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
