@@ -137,6 +137,7 @@ export function createTemplateFile(environment: Environment, options: Options) {
       fileRouter: options.mode === 'file-router',
       codeRouter: options.mode === 'code-router',
       routerOnly: options.routerOnly === true,
+      includeExamples: options.includeExamples !== false,
       addOnEnabled,
       addOnOption: options.addOnOptions,
       addOns: options.chosenAddOns,
