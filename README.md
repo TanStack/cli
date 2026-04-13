@@ -63,6 +63,22 @@ npx @tanstack/cli search-docs "loaders" --library router --framework react --jso
 - [TanStack Start](https://tanstack.com/start)
 - [TanStack Router](https://tanstack.com/router)
 
+## Telemetry
+
+TanStack CLI sends anonymous usage telemetry by default.
+
+- Sent: command usage, durations, selected framework/package manager/add-on ids, and coarse result metadata
+- Never sent: project names, file paths, target directories, raw search queries, raw template URLs/paths, add-on config values, env vars, or raw error messages
+- Disabled automatically in `CI`, or when `DO_NOT_TRACK=1` or `TANSTACK_CLI_TELEMETRY_DISABLED=1`
+
+Manage it with:
+
+```bash
+tanstack telemetry status
+tanstack telemetry disable
+tanstack telemetry enable
+```
+
 ## Get Involved
 
 - [GitHub Issues](https://github.com/TanStack/cli/issues)

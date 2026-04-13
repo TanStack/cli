@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import { resolve } from 'node:path'
-import { Command, InvalidArgumentError } from 'commander'
+import { Command, InvalidArgumentError, Option } from 'commander'
 import { cancel, confirm, intro, isCancel, log } from '@clack/prompts'
 import chalk from 'chalk'
 import semver from 'semver'
@@ -25,6 +25,11 @@ import {
   fetchPartners,
   searchTanStackDocs,
 } from './discovery.js'
+import {
+  getTelemetryStatus,
+  setTelemetryEnabled,
+} from './telemetry-config.js'
+import { TelemetryClient, createTelemetryClient } from './telemetry.js'
 
 import { promptForAddOns, promptForCreateOptions } from './options.js'
 import {
@@ -48,6 +53,184 @@ const packageJsonPath = new URL('../package.json', import.meta.url)
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
 const VERSION = packageJson.version
 
+function isLocalPath(value: string) {
+  return (
+    value.startsWith('./') ||
+    value.startsWith('../') ||
+    value.startsWith('/') ||
+    /^[a-zA-Z]:[\\/]/.test(value)
+  )
+}
+
+function isRemoteUrl(value: string) {
+  return /^https?:\/\//i.test(value) || /^file:\/\//i.test(value)
+}
+
+function sanitizeId(value: string) {
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return undefined
+  }
+
+  return normalized.replace(/[^a-z0-9._:/-]/g, '-')
+}
+
+function sanitizeIdList(values: Array<string>) {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => sanitizeId(value))
+        .filter((value): value is string => Boolean(value)),
+    ),
+  )
+}
+
+const AGENT_FLAG = '--agent'
+
+function addHiddenAgentFlag<T extends Command>(cmd: T) {
+  if (cmd.options.some((option) => option.long === AGENT_FLAG)) {
+    return cmd
+  }
+
+  cmd.addOption(
+    new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+  )
+
+  return cmd
+}
+
+function getInvocationTelemetryProperties() {
+  return {
+    invoked_by_agent: process.argv.includes(AGENT_FLAG),
+  }
+}
+
+function getStarterTelemetryProperties(value?: string) {
+  if (!value) {
+    return {}
+  }
+
+  if (isRemoteUrl(value)) {
+    return {
+      starter_kind: 'remote_url',
+    }
+  }
+
+  if (isLocalPath(value)) {
+    return {
+      starter_kind: 'local_path',
+    }
+  }
+
+  return {
+    starter_id: sanitizeId(value),
+    starter_kind: 'built_in',
+  }
+}
+
+function getLengthBucket(value: string) {
+  const length = value.trim().length
+  if (length === 0) {
+    return 'empty'
+  }
+
+  if (length <= 10) {
+    return '1_10'
+  }
+
+  if (length <= 25) {
+    return '11_25'
+  }
+
+  if (length <= 50) {
+    return '26_50'
+  }
+
+  return '51_plus'
+}
+
+function getCreateCommandVariant(options: CliOptions) {
+  if (options.listAddOns) {
+    return 'list_add_ons'
+  }
+
+  if (options.addonDetails) {
+    return 'addon_details'
+  }
+
+  if (options.devWatch) {
+    return 'dev_watch'
+  }
+
+  return 'scaffold'
+}
+
+function getCreateTelemetryProperties(projectName: string, options: CliOptions) {
+  const addOnIds = Array.isArray(options.addOns)
+    ? sanitizeIdList(options.addOns)
+    : undefined
+
+  return {
+    ...getStarterTelemetryProperties(options.starter || options.templateId || options.template),
+    add_on_count: addOnIds?.length,
+    add_on_ids: addOnIds,
+    addon_details_id: options.addonDetails
+      ? sanitizeId(options.addonDetails)
+      : undefined,
+    command_variant: getCreateCommandVariant(options),
+    deployment: options.deployment ? sanitizeId(options.deployment) : undefined,
+    examples: options.examples,
+    framework: options.framework ? sanitizeId(options.framework) : undefined,
+    git: options.git,
+    install: options.install !== false,
+    interactive: !!options.interactive,
+    json: !!options.json,
+    non_interactive: !!options.nonInteractive || !!options.yes,
+    package_manager: options.packageManager,
+    project_name_provided: Boolean(projectName),
+    router_only: !!options.routerOnly,
+    target_dir_flag: Boolean(options.targetDir),
+    toolchain:
+      typeof options.toolchain === 'string' ? sanitizeId(options.toolchain) : undefined,
+    yes: !!options.yes,
+  }
+}
+
+function getResolvedCreateTelemetryProperties(
+  finalOptions: Options,
+  cliOptions: CliOptions,
+) {
+  const includeExamples =
+    (<Options & { includeExamples?: boolean }>finalOptions).includeExamples !== false
+  const addOnIds = sanitizeIdList(finalOptions.chosenAddOns.map((addOn) => addOn.id))
+  const deployment = finalOptions.chosenAddOns.find(
+    (addOn) => addOn.type === 'deployment',
+  )
+  const toolchain = finalOptions.chosenAddOns.find(
+    (addOn) => addOn.type === 'toolchain',
+  )
+
+  return {
+    ...getStarterTelemetryProperties(
+      finalOptions.starter?.id || cliOptions.starter || cliOptions.templateId || cliOptions.template,
+    ),
+    add_on_count: addOnIds.length,
+    add_on_ids: addOnIds,
+    deployment: deployment ? sanitizeId(deployment.id) : undefined,
+    examples: includeExamples,
+    framework: sanitizeId(finalOptions.framework.id),
+    git: finalOptions.git,
+    install: finalOptions.install !== false,
+    package_manager: finalOptions.packageManager,
+    router_only: !!cliOptions.routerOnly,
+    toolchain: toolchain ? sanitizeId(toolchain.id) : undefined,
+  }
+}
+
+function formatErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'An unknown error occurred'
+}
+
 export function cli({
   name,
   appName,
@@ -69,7 +252,8 @@ export function cli({
   legacyAutoCreate?: boolean
   defaultRouterOnly?: boolean
 }) {
-  const environment = createUIEnvironment(appName, false)
+  let currentTelemetry: TelemetryClient | undefined
+  const environment = createUIEnvironment(appName, false, () => currentTelemetry)
 
   const program = new Command()
 
@@ -125,25 +309,21 @@ export function cli({
     // Validate dev watch options
     const validation = validateDevWatchOptions({ ...options, projectName })
     if (!validation.valid) {
-      console.error(validation.error)
-      process.exit(1)
+      throw new Error(validation.error)
     }
 
     // Enter dev watch mode
     if (!projectName && !options.targetDir) {
-      console.error('Project name/target directory is required for dev watch mode')
-      process.exit(1)
+      throw new Error('Project name/target directory is required for dev watch mode')
     }
 
     if (!options.framework) {
-      console.error('Failed to detect framework')
-      process.exit(1)
+      throw new Error('Failed to detect framework')
     }
 
     const framework = getFrameworkByName(options.framework)
     if (!framework) {
-      console.error('Failed to detect framework')
-      process.exit(1)
+      throw new Error('Failed to detect framework')
     }
 
     // First, create the app normally using the standard flow
@@ -160,6 +340,10 @@ export function cli({
       throw new Error('Failed to normalize options')
     }
 
+    currentTelemetry?.mergeProperties(
+      getResolvedCreateTelemetryProperties(normalizedOpts, options),
+    )
+
     normalizedOpts.targetDir =
       options.targetDir || resolve(process.cwd(), projectName)
 
@@ -171,7 +355,7 @@ export function cli({
         chalk.gray('├─') + ' ' + chalk.yellow('⟳') + ' installing packages...',
       )
     }
-    const silentEnvironment = createUIEnvironment(appName, true)
+    const silentEnvironment = createUIEnvironment(appName, true, () => currentTelemetry)
     await confirmTargetDirectorySafety(normalizedOpts.targetDir, options.force)
     await createApp(silentEnvironment, normalizedOpts)
     console.log(chalk.gray('└─') + ' ' + chalk.green('✓') + ` app created`)
@@ -241,247 +425,315 @@ export function cli({
     return parsed
   }
 
+  async function runWithTelemetry<T>(
+    command: string,
+    opts: {
+      json?: boolean
+      properties?: Record<string, unknown>
+    },
+    action: (telemetry: TelemetryClient) => Promise<T>,
+  ) {
+    const telemetry = await createTelemetryClient({ json: opts.json })
+    const startedAt = Date.now()
+    currentTelemetry = telemetry
+    telemetry.captureCommandStarted(command, {
+      ...getInvocationTelemetryProperties(),
+      ...opts.properties,
+      cli_version: VERSION,
+    })
+
+    try {
+      const result = await action(telemetry)
+      await telemetry.captureCommandCompleted(command, Date.now() - startedAt)
+      return result
+    } catch (error) {
+      await telemetry.captureCommandFailed(command, Date.now() - startedAt, error)
+      throw error
+    } finally {
+      currentTelemetry = undefined
+    }
+  }
+
   program
     .name(name)
     .description(`${appName} CLI`)
     .version(VERSION, '-v, --version', 'output the current version')
 
+  addHiddenAgentFlag(program)
+
   // Helper to create the create command action handler
   async function handleCreate(projectName: string, options: CliOptions) {
-    const legacyCreateFlags = validateLegacyCreateFlags(options)
-    if (legacyCreateFlags.error) {
-      log.error(legacyCreateFlags.error)
-      process.exit(1)
-    }
+    try {
+      await runWithTelemetry(
+        'create',
+        {
+          json: options.json,
+          properties: getCreateTelemetryProperties(projectName, options),
+        },
+        async (telemetry) => {
+          const legacyCreateFlags = validateLegacyCreateFlags(options)
+          if (legacyCreateFlags.error) {
+            throw new Error(legacyCreateFlags.error)
+          }
 
-    for (const warning of legacyCreateFlags.warnings) {
-      log.warn(warning)
-    }
+          for (const warning of legacyCreateFlags.warnings) {
+            log.warn(warning)
+          }
 
-    if (options.listAddOns) {
-      const addOns = await getAllAddOns(
-        getFrameworkByName(options.framework || defaultFramework || 'React')!,
-        defaultMode,
-      )
-      const visibleAddOns = addOns.filter((a) => !forcedAddOns.includes(a.id))
-      if (options.json) {
-        printJson(
-          visibleAddOns.map((addOn) => ({
-            id: addOn.id,
-            name: addOn.name,
-            description: addOn.description,
-            type: addOn.type,
-            category: addOn.category,
-            phase: addOn.phase,
-            modes: addOn.modes,
-            link: addOn.link,
-            warning: addOn.warning,
-            exclusive: addOn.exclusive,
-            dependsOn: addOn.dependsOn,
-            options: addOn.options,
-          })),
-        )
-        return
-      }
-
-      let hasConfigurableAddOns = false
-      for (const addOn of visibleAddOns) {
-        const hasOptions =
-          addOn.options && Object.keys(addOn.options).length > 0
-        const optionMarker = hasOptions ? '*' : ' '
-        if (hasOptions) hasConfigurableAddOns = true
-        console.log(
-          `${optionMarker} ${chalk.bold(addOn.id)}: ${addOn.description}`,
-        )
-      }
-      if (hasConfigurableAddOns) {
-        console.log('\n* = has configuration options')
-      }
-      return
-    }
-
-    if (options.addonDetails) {
-      const addOns = await getAllAddOns(
-        getFrameworkByName(options.framework || defaultFramework || 'React')!,
-        defaultMode,
-      )
-      const addOn =
-        addOns.find((a) => a.id === options.addonDetails) ??
-        addOns.find(
-          (a) =>
-            a.id.toLowerCase() === options.addonDetails!.toLowerCase(),
-        )
-      if (!addOn) {
-        console.error(`Add-on '${options.addonDetails}' not found`)
-        process.exit(1)
-      }
-
-      if (options.json) {
-        const files = await addOn.getFiles()
-        printJson({
-          id: addOn.id,
-          name: addOn.name,
-          description: addOn.description,
-          type: addOn.type,
-          category: addOn.category,
-          phase: addOn.phase,
-          modes: addOn.modes,
-          link: addOn.link,
-          warning: addOn.warning,
-          exclusive: addOn.exclusive,
-          dependsOn: addOn.dependsOn,
-          options: addOn.options,
-          routes: addOn.routes,
-          packageAdditions: addOn.packageAdditions,
-          shadcnComponents: addOn.shadcnComponents,
-          integrations: addOn.integrations,
-          readme: addOn.readme,
-          files,
-          author: addOn.author,
-          version: addOn.version,
-          license: addOn.license,
-        })
-        return
-      }
-
-      console.log(
-        `${chalk.bold.cyan('Add-on Details:')} ${chalk.bold(addOn.name)}`,
-      )
-      console.log(`${chalk.bold('ID:')} ${addOn.id}`)
-      console.log(`${chalk.bold('Description:')} ${addOn.description}`)
-      console.log(`${chalk.bold('Type:')} ${addOn.type}`)
-      console.log(`${chalk.bold('Phase:')} ${addOn.phase}`)
-      console.log(`${chalk.bold('Supported Modes:')} ${addOn.modes.join(', ')}`)
-
-      if (addOn.link) {
-        console.log(`${chalk.bold('Link:')} ${chalk.blue(addOn.link)}`)
-      }
-
-      if (addOn.dependsOn && addOn.dependsOn.length > 0) {
-        console.log(
-          `${chalk.bold('Dependencies:')} ${addOn.dependsOn.join(', ')}`,
-        )
-      }
-
-      if (addOn.options && Object.keys(addOn.options).length > 0) {
-        console.log(`\n${chalk.bold.yellow('Configuration Options:')}`)
-        for (const [optionName, option] of Object.entries(addOn.options)) {
-          if ('type' in option) {
-            const opt = option as any
-            console.log(`  ${chalk.bold(optionName)}:`)
-            console.log(`    Label: ${opt.label}`)
-            if (opt.description) {
-              console.log(`    Description: ${opt.description}`)
+          if (options.listAddOns) {
+            const addOns = await getAllAddOns(
+              getFrameworkByName(options.framework || defaultFramework || 'React')!,
+              defaultMode,
+            )
+            const visibleAddOns = addOns.filter((a) => !forcedAddOns.includes(a.id))
+            telemetry.mergeProperties({
+              result_count: visibleAddOns.length,
+            })
+            if (options.json) {
+              printJson(
+                visibleAddOns.map((addOn) => ({
+                  id: addOn.id,
+                  name: addOn.name,
+                  description: addOn.description,
+                  type: addOn.type,
+                  category: addOn.category,
+                  phase: addOn.phase,
+                  modes: addOn.modes,
+                  link: addOn.link,
+                  warning: addOn.warning,
+                  exclusive: addOn.exclusive,
+                  dependsOn: addOn.dependsOn,
+                  options: addOn.options,
+                })),
+              )
+              return
             }
-            console.log(`    Type: ${opt.type}`)
-            console.log(`    Default: ${opt.default}`)
-            if (opt.type === 'select' && opt.options) {
-              console.log(`    Available values:`)
-              for (const choice of opt.options) {
-                console.log(`      - ${choice.value}: ${choice.label}`)
+
+            let hasConfigurableAddOns = false
+            for (const addOn of visibleAddOns) {
+              const hasOptions =
+                addOn.options && Object.keys(addOn.options).length > 0
+              const optionMarker = hasOptions ? '*' : ' '
+              if (hasOptions) hasConfigurableAddOns = true
+              console.log(
+                `${optionMarker} ${chalk.bold(addOn.id)}: ${addOn.description}`,
+              )
+            }
+            if (hasConfigurableAddOns) {
+              console.log('\n* = has configuration options')
+            }
+            return
+          }
+
+          if (options.addonDetails) {
+            const addOns = await getAllAddOns(
+              getFrameworkByName(options.framework || defaultFramework || 'React')!,
+              defaultMode,
+            )
+            const addOn =
+              addOns.find((a) => a.id === options.addonDetails) ??
+              addOns.find(
+                (a) => a.id.toLowerCase() === options.addonDetails!.toLowerCase(),
+              )
+            if (!addOn) {
+              throw new Error(`Add-on '${options.addonDetails}' not found`)
+            }
+
+            telemetry.mergeProperties({
+              add_on_file_count: (await addOn.getFiles()).length,
+            })
+
+            if (options.json) {
+              const files = await addOn.getFiles()
+              printJson({
+                id: addOn.id,
+                name: addOn.name,
+                description: addOn.description,
+                type: addOn.type,
+                category: addOn.category,
+                phase: addOn.phase,
+                modes: addOn.modes,
+                link: addOn.link,
+                warning: addOn.warning,
+                exclusive: addOn.exclusive,
+                dependsOn: addOn.dependsOn,
+                options: addOn.options,
+                routes: addOn.routes,
+                packageAdditions: addOn.packageAdditions,
+                shadcnComponents: addOn.shadcnComponents,
+                integrations: addOn.integrations,
+                readme: addOn.readme,
+                files,
+                author: addOn.author,
+                version: addOn.version,
+                license: addOn.license,
+              })
+              return
+            }
+
+            console.log(
+              `${chalk.bold.cyan('Add-on Details:')} ${chalk.bold(addOn.name)}`,
+            )
+            console.log(`${chalk.bold('ID:')} ${addOn.id}`)
+            console.log(`${chalk.bold('Description:')} ${addOn.description}`)
+            console.log(`${chalk.bold('Type:')} ${addOn.type}`)
+            console.log(`${chalk.bold('Phase:')} ${addOn.phase}`)
+            console.log(`${chalk.bold('Supported Modes:')} ${addOn.modes.join(', ')}`)
+
+            if (addOn.link) {
+              console.log(`${chalk.bold('Link:')} ${chalk.blue(addOn.link)}`)
+            }
+
+            if (addOn.dependsOn && addOn.dependsOn.length > 0) {
+              console.log(
+                `${chalk.bold('Dependencies:')} ${addOn.dependsOn.join(', ')}`,
+              )
+            }
+
+            if (addOn.options && Object.keys(addOn.options).length > 0) {
+              console.log(`\n${chalk.bold.yellow('Configuration Options:')}`)
+              for (const [optionName, option] of Object.entries(addOn.options)) {
+                if ('type' in option) {
+                  const opt = option as any
+                  console.log(`  ${chalk.bold(optionName)}:`)
+                  console.log(`    Label: ${opt.label}`)
+                  if (opt.description) {
+                    console.log(`    Description: ${opt.description}`)
+                  }
+                  console.log(`    Type: ${opt.type}`)
+                  console.log(`    Default: ${opt.default}`)
+                  if (opt.type === 'select' && opt.options) {
+                    console.log(`    Available values:`)
+                    for (const choice of opt.options) {
+                      console.log(`      - ${choice.value}: ${choice.label}`)
+                    }
+                  }
+                }
+              }
+            } else {
+              console.log(`\n${chalk.gray('No configuration options available')}`)
+            }
+
+            if (addOn.routes && addOn.routes.length > 0) {
+              console.log(`\n${chalk.bold.green('Routes:')}`)
+              for (const route of addOn.routes) {
+                console.log(`  ${chalk.bold(route.url)} (${route.name})`)
+                console.log(`    File: ${route.path}`)
               }
             }
+            return
           }
-        }
-      } else {
-        console.log(`\n${chalk.gray('No configuration options available')}`)
-      }
 
-      if (addOn.routes && addOn.routes.length > 0) {
-        console.log(`\n${chalk.bold.green('Routes:')}`)
-        for (const route of addOn.routes) {
-          console.log(`  ${chalk.bold(route.url)} (${route.name})`)
-          console.log(`    File: ${route.path}`)
-        }
-      }
-      return
-    }
+          if (options.devWatch) {
+            await startDevWatchMode(projectName, options)
+            return
+          }
 
-    if (options.devWatch) {
-      await startDevWatchMode(projectName, options)
-      return
-    }
+          const cliOptions = {
+            projectName,
+            ...options,
+          } as CliOptions
 
-    try {
-      const cliOptions = {
-        projectName,
-        ...options,
-      } as CliOptions
+          if (defaultRouterOnly && cliOptions.routerOnly === undefined) {
+            cliOptions.routerOnly = true
+          }
 
-      if (defaultRouterOnly && cliOptions.routerOnly === undefined) {
-        cliOptions.routerOnly = true
-      }
+          if (
+            cliOptions.routerOnly !== true &&
+            cliOptions.template &&
+            ['file-router', 'typescript', 'tsx', 'javascript', 'js', 'jsx'].includes(
+              cliOptions.template.toLowerCase(),
+            ) &&
+            cliOptions.template.toLowerCase() !== 'file-router'
+          ) {
+            cliOptions.routerOnly = true
+          }
 
-      if (
-        cliOptions.routerOnly !== true &&
-        cliOptions.template &&
-        ['file-router', 'typescript', 'tsx', 'javascript', 'js', 'jsx'].includes(
-          cliOptions.template.toLowerCase(),
-        ) &&
-        cliOptions.template.toLowerCase() !== 'file-router'
-      ) {
-        cliOptions.routerOnly = true
-      }
+          cliOptions.framework = getFrameworkByName(
+            options.framework || defaultFramework || 'React',
+          )!.id
 
-      cliOptions.framework = getFrameworkByName(
-        options.framework || defaultFramework || 'React',
-      )!.id
+          const nonInteractive = !!cliOptions.nonInteractive || !!cliOptions.yes
+          if (cliOptions.interactive && nonInteractive) {
+            throw new Error(
+              'Cannot combine --interactive with --non-interactive/--yes.',
+            )
+          }
 
-      let finalOptions: Options | undefined
-      if (cliOptions.interactive || cliOptions.addOns === true) {
-        cliOptions.addOns = true
-      } else {
-        finalOptions = await normalizeOptions(
-          cliOptions,
-          forcedAddOns,
-          { forcedDeployment },
-        )
-      }
+          const addOnsFlagPassed = process.argv.includes('--add-ons')
+          const wantsInteractiveMode =
+            !nonInteractive &&
+            (cliOptions.interactive ||
+              (cliOptions.addOns === true && addOnsFlagPassed))
 
-      if (finalOptions) {
-        intro(`Creating a new ${appName} app in ${projectName}...`)
-      } else {
-        intro(`Let's configure your ${appName} application`)
-        finalOptions = await promptForCreateOptions(cliOptions, {
-          forcedAddOns,
-          showDeploymentOptions,
-        })
-      }
+          let finalOptions: Options | undefined
+          if (wantsInteractiveMode) {
+            cliOptions.addOns = true
+          } else {
+            finalOptions = await normalizeOptions(
+              cliOptions,
+              forcedAddOns,
+              { forcedDeployment },
+            )
+          }
 
-      if (!finalOptions) {
-        throw new Error('No options were provided')
-      }
+          if (nonInteractive) {
+            if (cliOptions.addOns === true) {
+              throw new Error(
+                'When using --non-interactive/--yes, pass explicit add-ons via --add-ons <ids>.',
+              )
+            }
+          }
 
-      ;(finalOptions as Options & { routerOnly?: boolean }).routerOnly =
-        !!cliOptions.routerOnly
+          if (finalOptions) {
+            intro(`Creating a new ${appName} app in ${projectName}...`)
+          } else {
+            if (nonInteractive) {
+              throw new Error(
+                'Project name is required in non-interactive mode. Pass [project-name] or --target-dir.',
+              )
+            }
+            intro(`Let's configure your ${appName} application`)
+            finalOptions = await promptForCreateOptions(cliOptions, {
+              forcedAddOns,
+              showDeploymentOptions,
+            })
+          }
 
-      // Determine target directory:
-      // 1. Use --target-dir if provided
-      // 2. Use targetDir from normalizeOptions if set (handles "." case)
-      // 3. If original projectName was ".", use current directory
-      // 4. Otherwise, use project name as subdirectory
-      if (options.targetDir) {
-        finalOptions.targetDir = options.targetDir
-      } else if (finalOptions.targetDir) {
-        // Keep the targetDir from normalizeOptions (handles "." case)
-      } else if (projectName === '.') {
-        finalOptions.targetDir = resolve(process.cwd())
-      } else {
-        finalOptions.targetDir = resolve(process.cwd(), finalOptions.projectName)
-      }
+          if (!finalOptions) {
+            throw new Error('No options were provided')
+          }
 
-      await confirmTargetDirectorySafety(finalOptions.targetDir, options.force)
-      await createApp(environment, finalOptions)
-    } catch (error) {
-      log.error(
-        error instanceof Error ? error.message : 'An unknown error occurred',
+          telemetry.mergeProperties(
+            getResolvedCreateTelemetryProperties(finalOptions, cliOptions),
+          )
+
+          ;(finalOptions as Options & { routerOnly?: boolean }).routerOnly =
+            !!cliOptions.routerOnly
+
+          if (options.targetDir) {
+            finalOptions.targetDir = options.targetDir
+          } else if (finalOptions.targetDir) {
+            // Keep the normalized target dir.
+          } else if (projectName === '.') {
+            finalOptions.targetDir = resolve(process.cwd())
+          } else {
+            finalOptions.targetDir = resolve(process.cwd(), finalOptions.projectName)
+          }
+
+          await confirmTargetDirectorySafety(finalOptions.targetDir, options.force)
+          await createApp(environment, finalOptions)
+        },
       )
+    } catch (error) {
+      log.error(formatErrorMessage(error))
       process.exit(1)
     }
   }
 
   // Helper to configure create command options
   function configureCreateCommand(cmd: Command) {
+    addHiddenAgentFlag(cmd)
     cmd.argument('[project-name]', 'name of the project')
 
     if (!defaultFramework) {
@@ -592,6 +844,8 @@ export function cli({
 
     cmd
       .option('--interactive', 'interactive mode', false)
+      .option('--non-interactive', 'skip prompts and use defaults', false)
+      .option('-y, --yes', 'accept defaults and skip prompts', false)
       .option<Array<string> | boolean>(
         '--add-ons [...add-ons]',
         'pick from a list of available add-ons (comma separated list)',
@@ -646,29 +900,50 @@ export function cli({
 
   configureCreateCommand(devCommand)
   devCommand.action(async (projectName: string, options: CliOptions) => {
-    const frameworkName = options.framework || defaultFramework || 'React'
-    const framework = getFrameworkByName(frameworkName)
-    if (!framework) {
-      console.error(`Unknown framework: ${frameworkName}`)
+    try {
+      await runWithTelemetry(
+        'dev',
+        {
+          properties: {
+            framework: options.framework
+              ? sanitizeId(options.framework)
+              : sanitizeId(defaultFramework || 'react'),
+            install: options.install !== false,
+            run_dev: true,
+          },
+        },
+        async () => {
+          const frameworkName = options.framework || defaultFramework || 'React'
+          const framework = getFrameworkByName(frameworkName)
+          if (!framework) {
+            throw new Error(`Unknown framework: ${frameworkName}`)
+          }
+
+          const watchPath = resolveBuiltInDevWatchPath(framework.id)
+          const devOptions: CliOptions = {
+            ...options,
+            framework: framework.name,
+            devWatch: watchPath,
+            runDev: true,
+            install: options.install ?? true,
+          }
+
+          await startDevWatchMode(projectName, devOptions)
+        },
+      )
+    } catch (error) {
+      log.error(formatErrorMessage(error))
       process.exit(1)
     }
-
-    const watchPath = resolveBuiltInDevWatchPath(framework.id)
-    const devOptions: CliOptions = {
-      ...options,
-      framework: framework.name,
-      devWatch: watchPath,
-      runDev: true,
-      install: options.install ?? true,
-    }
-
-    await startDevWatchMode(projectName, devOptions)
   })
 
   // === LIBRARIES SUBCOMMAND ===
   program
     .command('libraries')
     .description('List TanStack libraries')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .option(
       '--group <group>',
       `filter by group (${LIBRARY_GROUPS.join(', ')})`,
@@ -676,49 +951,65 @@ export function cli({
     .option('--json', 'output JSON for automation', false)
     .action(async (options: { group?: string; json: boolean }) => {
       try {
-        const data = await fetchLibraries()
-        let libraries = data.libraries
+        await runWithTelemetry(
+          'libraries',
+          {
+            json: options.json,
+            properties: {
+              group: options.group ? sanitizeId(options.group) : undefined,
+              json: options.json,
+            },
+          },
+          async (telemetry) => {
+            const data = await fetchLibraries()
+            let libraries = data.libraries
 
-        if (
-          options.group &&
-          Object.prototype.hasOwnProperty.call(data.groups, options.group)
-        ) {
-          const groupIds = data.groups[options.group]
-          libraries = libraries.filter((lib) => groupIds.includes(lib.id))
-        }
+            if (
+              options.group &&
+              Object.prototype.hasOwnProperty.call(data.groups, options.group)
+            ) {
+              const groupIds = data.groups[options.group]
+              libraries = libraries.filter((lib) => groupIds.includes(lib.id))
+            }
 
-        const groupName = options.group
-          ? data.groupNames[options.group] || options.group
-          : 'All Libraries'
+            const groupName = options.group
+              ? data.groupNames[options.group] || options.group
+              : 'All Libraries'
 
-        const payload = {
-          group: groupName,
-          count: libraries.length,
-          libraries: libraries.map((lib) => ({
-            id: lib.id,
-            name: lib.name,
-            tagline: lib.tagline,
-            description: lib.description,
-            frameworks: lib.frameworks,
-            latestVersion: lib.latestVersion,
-            docsUrl: lib.docsUrl,
-            githubUrl: lib.githubUrl,
-          })),
-        }
+            const payload = {
+              group: groupName,
+              count: libraries.length,
+              libraries: libraries.map((lib) => ({
+                id: lib.id,
+                name: lib.name,
+                tagline: lib.tagline,
+                description: lib.description,
+                frameworks: lib.frameworks,
+                latestVersion: lib.latestVersion,
+                docsUrl: lib.docsUrl,
+                githubUrl: lib.githubUrl,
+              })),
+            }
 
-        if (options.json) {
-          printJson(payload)
-          return
-        }
+            telemetry.mergeProperties({
+              result_count: payload.count,
+            })
 
-        console.log(chalk.bold(groupName))
-        for (const lib of payload.libraries) {
-          console.log(
-            `${chalk.bold(lib.id)} (${lib.latestVersion}) - ${lib.tagline}`,
-          )
-        }
+            if (options.json) {
+              printJson(payload)
+              return
+            }
+
+            console.log(chalk.bold(groupName))
+            for (const lib of payload.libraries) {
+              console.log(
+                `${chalk.bold(lib.id)} (${lib.latestVersion}) - ${lib.tagline}`,
+              )
+            }
+          },
+        )
       } catch (error) {
-        log.error(error instanceof Error ? error.message : String(error))
+        log.error(formatErrorMessage(error))
         process.exit(1)
       }
     })
@@ -727,6 +1018,9 @@ export function cli({
   program
     .command('doc')
     .description('Fetch a TanStack documentation page')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .argument('<library>', 'library ID (eg. query, router, table)')
     .argument('<path>', 'documentation path (eg. framework/react/overview)')
     .option('--docs-version <version>', 'docs version (default: latest)', 'latest')
@@ -738,77 +1032,93 @@ export function cli({
         options: { docsVersion: string; json: boolean },
       ) => {
         try {
-          const data = await fetchLibraries()
-          const library = data.libraries.find((l) => l.id === libraryId)
+          await runWithTelemetry(
+            'doc',
+            {
+              json: options.json,
+              properties: {
+                doc_path_depth: path.split('/').filter(Boolean).length,
+                docs_version: sanitizeId(options.docsVersion),
+                json: options.json,
+                library: sanitizeId(libraryId),
+              },
+            },
+            async (telemetry) => {
+              const data = await fetchLibraries()
+              const library = data.libraries.find((l) => l.id === libraryId)
 
-          if (!library) {
-            throw new Error(
-              `Library "${libraryId}" not found. Use \`tanstack libraries\` to see available libraries.`,
-            )
-          }
+              if (!library) {
+                throw new Error(
+                  `Library "${libraryId}" not found. Use \`tanstack libraries\` to see available libraries.`,
+                )
+              }
 
-          if (
-            options.docsVersion !== 'latest' &&
-            !library.availableVersions.includes(options.docsVersion)
-          ) {
-            throw new Error(
-              `Version "${options.docsVersion}" not found for ${library.name}. Available: ${library.availableVersions.join(', ')}`,
-            )
-          }
+              if (
+                options.docsVersion !== 'latest' &&
+                !library.availableVersions.includes(options.docsVersion)
+              ) {
+                throw new Error(
+                  `Version "${options.docsVersion}" not found for ${library.name}. Available: ${library.availableVersions.join(', ')}`,
+                )
+              }
 
-          const branch =
-            options.docsVersion === 'latest' ||
-            options.docsVersion === library.latestVersion
-              ? library.latestBranch || 'main'
-              : options.docsVersion
+              const branch =
+                options.docsVersion === 'latest' ||
+                options.docsVersion === library.latestVersion
+                  ? library.latestBranch || 'main'
+                  : options.docsVersion
 
-          const docsRoot = library.docsRoot || 'docs'
-          const filePath = `${docsRoot}/${path}.md`
-          const content = await fetchDocContent(library.repo, branch, filePath)
+              const docsRoot = library.docsRoot || 'docs'
+              const filePath = `${docsRoot}/${path}.md`
+              const content = await fetchDocContent(library.repo, branch, filePath)
 
-          if (!content) {
-            throw new Error(
-              `Document not found: ${library.name} / ${path} (version: ${options.docsVersion})`,
-            )
-          }
+              if (!content) {
+                throw new Error(
+                  `Document not found: ${library.name} / ${path} (version: ${options.docsVersion})`,
+                )
+              }
 
-          const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/)
-          let title = path.split('/').pop() || 'Untitled'
-          let docContent = content
+              const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/)
+              let title = path.split('/').pop() || 'Untitled'
+              let docContent = content
 
-          if (frontmatterMatch && frontmatterMatch[1]) {
-            const frontmatter = frontmatterMatch[1]
-            const titleMatch = frontmatter.match(
-              /title:\s*['"]?([^'"\n]+)['"]?/,
-            )
-            if (titleMatch && titleMatch[1]) {
-              title = titleMatch[1]
-            }
-            docContent = content.slice(frontmatterMatch[0].length).trim()
-          }
+              if (frontmatterMatch && frontmatterMatch[1]) {
+                const frontmatter = frontmatterMatch[1]
+                const titleMatch = frontmatter.match(/title:\s*['"]?([^'"\n]+)['"]?/) 
+                if (titleMatch && titleMatch[1]) {
+                  title = titleMatch[1]
+                }
+                docContent = content.slice(frontmatterMatch[0].length).trim()
+              }
 
-          const payload = {
-            title,
-            content: docContent,
-            url: `https://tanstack.com/${libraryId}/${options.docsVersion}/docs/${path}`,
-            library: library.name,
-            version:
-              options.docsVersion === 'latest'
-                ? library.latestVersion
-                : options.docsVersion,
-          }
+              const payload = {
+                title,
+                content: docContent,
+                url: `https://tanstack.com/${libraryId}/${options.docsVersion}/docs/${path}`,
+                library: library.name,
+                version:
+                  options.docsVersion === 'latest'
+                    ? library.latestVersion
+                    : options.docsVersion,
+              }
 
-          if (options.json) {
-            printJson(payload)
-            return
-          }
+              telemetry.mergeProperties({
+                content_length_bucket: getLengthBucket(docContent),
+              })
 
-          console.log(chalk.bold(payload.title))
-          console.log(chalk.blue(payload.url))
-          console.log('')
-          console.log(payload.content)
+              if (options.json) {
+                printJson(payload)
+                return
+              }
+
+              console.log(chalk.bold(payload.title))
+              console.log(chalk.blue(payload.url))
+              console.log('')
+              console.log(payload.content)
+            },
+          )
         } catch (error) {
-          log.error(error instanceof Error ? error.message : String(error))
+          log.error(formatErrorMessage(error))
           process.exit(1)
         }
       },
@@ -818,6 +1128,9 @@ export function cli({
   program
     .command('search-docs')
     .description('Search TanStack documentation')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .argument('<query>', 'search query')
     .option('--library <id>', 'filter to specific library')
     .option('--framework <name>', 'filter to specific framework')
@@ -834,25 +1147,47 @@ export function cli({
         },
       ) => {
         try {
-          const payload = await searchTanStackDocs({
-            query,
-            library: options.library,
-            framework: options.framework,
-            limit: options.limit,
-          })
+          await runWithTelemetry(
+            'search-docs',
+            {
+              json: options.json,
+              properties: {
+                framework: options.framework
+                  ? sanitizeId(options.framework)
+                  : undefined,
+                has_query: query.trim().length > 0,
+                json: options.json,
+                library: options.library ? sanitizeId(options.library) : undefined,
+                limit: options.limit,
+                query_length_bucket: getLengthBucket(query),
+              },
+            },
+            async (telemetry) => {
+              const payload = await searchTanStackDocs({
+                query,
+                library: options.library,
+                framework: options.framework,
+                limit: options.limit,
+              })
 
-          if (options.json) {
-            printJson(payload)
-            return
-          }
+              telemetry.mergeProperties({
+                result_count: payload.totalHits,
+              })
 
-          for (const result of payload.results) {
-            console.log(
-              `${chalk.bold(result.title)} [${result.library}]\n${chalk.blue(result.url)}\n${result.snippet}\n`,
-            )
-          }
+              if (options.json) {
+                printJson(payload)
+                return
+              }
+
+              for (const result of payload.results) {
+                console.log(
+                  `${chalk.bold(result.title)} [${result.library}]\n${chalk.blue(result.url)}\n${result.snippet}\n`,
+                )
+              }
+            },
+          )
         } catch (error) {
-          log.error(error instanceof Error ? error.message : String(error))
+          log.error(formatErrorMessage(error))
           process.exit(1)
         }
       },
@@ -862,64 +1197,87 @@ export function cli({
   program
     .command('ecosystem')
     .description('List TanStack ecosystem partners')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .option('--category <category>', 'filter by category')
     .option('--library <id>', 'filter by TanStack library')
     .option('--json', 'output JSON for automation', false)
     .action(
       async (options: { category?: string; library?: string; json: boolean }) => {
         try {
-          const data = await fetchPartners()
-
-          let resolvedCategory: string | undefined
-          if (options.category) {
-            const normalized = options.category.toLowerCase().trim()
-            resolvedCategory = categoryAliases[normalized] || normalized
-            if (!data.categories.includes(resolvedCategory)) {
-              resolvedCategory = undefined
-            }
-          }
-
-          const library = options.library?.toLowerCase().trim()
-          const partners = data.partners
-            .filter((partner) =>
-              resolvedCategory ? partner.category === resolvedCategory : true,
-            )
-            .filter((partner) =>
-              library ? partner.libraries.some((l) => l === library) : true,
-            )
-            .map((partner) => ({
-              id: partner.id,
-              name: partner.name,
-              tagline: partner.tagline,
-              description: partner.description,
-              category: partner.category,
-              categoryLabel: partner.categoryLabel,
-              url: partner.url,
-              libraries: partner.libraries,
-            }))
-
-          const payload = {
-            query: {
-              category: options.category,
-              categoryResolved: resolvedCategory,
-              library: options.library,
+          await runWithTelemetry(
+            'ecosystem',
+            {
+              json: options.json,
+              properties: {
+                category: options.category ? sanitizeId(options.category) : undefined,
+                json: options.json,
+                library: options.library ? sanitizeId(options.library) : undefined,
+              },
             },
-            count: partners.length,
-            partners,
-          }
+            async (telemetry) => {
+              const data = await fetchPartners()
 
-          if (options.json) {
-            printJson(payload)
-            return
-          }
+              let resolvedCategory: string | undefined
+              if (options.category) {
+                const normalized = options.category.toLowerCase().trim()
+                resolvedCategory = categoryAliases[normalized] || normalized
+                if (!data.categories.includes(resolvedCategory)) {
+                  resolvedCategory = undefined
+                }
+              }
 
-          for (const partner of partners) {
-            console.log(
-              `${chalk.bold(partner.name)} [${partner.category}] - ${partner.description}\n${chalk.blue(partner.url)}`,
-            )
-          }
+              const library = options.library?.toLowerCase().trim()
+              const partners = data.partners
+                .filter((partner) =>
+                  resolvedCategory ? partner.category === resolvedCategory : true,
+                )
+                .filter((partner) =>
+                  library ? partner.libraries.some((l) => l === library) : true,
+                )
+                .map((partner) => ({
+                  id: partner.id,
+                  name: partner.name,
+                  tagline: partner.tagline,
+                  description: partner.description,
+                  category: partner.category,
+                  categoryLabel: partner.categoryLabel,
+                  url: partner.url,
+                  libraries: partner.libraries,
+                }))
+
+              const payload = {
+                query: {
+                  category: options.category,
+                  categoryResolved: resolvedCategory,
+                  library: options.library,
+                },
+                count: partners.length,
+                partners,
+              }
+
+              telemetry.mergeProperties({
+                category_resolved: resolvedCategory
+                  ? sanitizeId(resolvedCategory)
+                  : undefined,
+                result_count: payload.count,
+              })
+
+              if (options.json) {
+                printJson(payload)
+                return
+              }
+
+              for (const partner of partners) {
+                console.log(
+                  `${chalk.bold(partner.name)} [${partner.category}] - ${partner.description}\n${chalk.blue(partner.url)}`,
+                )
+              }
+            },
+          )
         } catch (error) {
-          log.error(error instanceof Error ? error.message : String(error))
+          log.error(formatErrorMessage(error))
           process.exit(1)
         }
       },
@@ -929,106 +1287,199 @@ export function cli({
   program
     .command('pin-versions')
     .description('Pin versions of the TanStack libraries')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      if (!fs.existsSync('package.json')) {
-        console.error('package.json not found')
-        return
-      }
-      const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
-
-      const packages: Record<string, string> = {
-        '@tanstack/react-router': '',
-        '@tanstack/router-generator': '',
-        '@tanstack/react-router-devtools': '',
-        '@tanstack/react-start': '',
-        '@tanstack/react-start-config': '',
-        '@tanstack/router-plugin': '',
-        '@tanstack/react-start-client': '',
-        '@tanstack/react-start-plugin': '1.115.0',
-        '@tanstack/react-start-server': '',
-        '@tanstack/start-server-core': '1.115.0',
-      }
-
-      function sortObject(obj: Record<string, string>): Record<string, string> {
-        return Object.keys(obj)
-          .sort()
-          .reduce<Record<string, string>>((acc, key) => {
-            acc[key] = obj[key]
-            return acc
-          }, {})
-      }
-
-      if (!packageJson.dependencies['@tanstack/react-start']) {
-        console.error('@tanstack/react-start not found in dependencies')
-        return
-      }
-      let changed = 0
-      const startVersion = packageJson.dependencies[
-        '@tanstack/react-start'
-      ].replace(/^\^/, '')
-      for (const pkg of Object.keys(packages)) {
-        if (!packageJson.dependencies[pkg]) {
-          packageJson.dependencies[pkg] = packages[pkg].length
-            ? semver.maxSatisfying(
-                [startVersion, packages[pkg]],
-                `^${packages[pkg]}`,
-              )!
-            : startVersion
-          changed++
-        } else {
-          if (packageJson.dependencies[pkg].startsWith('^')) {
-            packageJson.dependencies[pkg] = packageJson.dependencies[
-              pkg
-            ].replace(/^\^/, '')
-            changed++
+      try {
+        await runWithTelemetry('pin-versions', {}, async (telemetry) => {
+          if (!fs.existsSync('package.json')) {
+            throw new Error('package.json not found')
           }
-        }
-      }
-      packageJson.dependencies = sortObject(packageJson.dependencies)
-      if (changed > 0) {
-        fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2))
-        console.log(
-          `${changed} packages updated.
+          const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+
+          const packages: Record<string, string> = {
+            '@tanstack/react-router': '',
+            '@tanstack/router-generator': '',
+            '@tanstack/react-router-devtools': '',
+            '@tanstack/react-start': '',
+            '@tanstack/react-start-config': '',
+            '@tanstack/router-plugin': '',
+            '@tanstack/react-start-client': '',
+            '@tanstack/react-start-plugin': '1.115.0',
+            '@tanstack/react-start-server': '',
+            '@tanstack/start-server-core': '1.115.0',
+          }
+
+          function sortObject(obj: Record<string, string>): Record<string, string> {
+            return Object.keys(obj)
+              .sort()
+              .reduce<Record<string, string>>((acc, key) => {
+                acc[key] = obj[key]
+                return acc
+              }, {})
+          }
+
+          if (!packageJson.dependencies['@tanstack/react-start']) {
+            throw new Error('@tanstack/react-start not found in dependencies')
+          }
+          let changed = 0
+          const startVersion = packageJson.dependencies[
+            '@tanstack/react-start'
+          ].replace(/^\^/, '')
+          for (const pkg of Object.keys(packages)) {
+            if (!packageJson.dependencies[pkg]) {
+              packageJson.dependencies[pkg] = packages[pkg].length
+                ? semver.maxSatisfying(
+                    [startVersion, packages[pkg]],
+                    `^${packages[pkg]}`,
+                  )!
+                : startVersion
+              changed++
+            } else {
+              if (packageJson.dependencies[pkg].startsWith('^')) {
+                packageJson.dependencies[pkg] = packageJson.dependencies[
+                  pkg
+                ].replace(/^\^/, '')
+                changed++
+              }
+            }
+          }
+          telemetry.mergeProperties({
+            changed_count: changed,
+          })
+          packageJson.dependencies = sortObject(packageJson.dependencies)
+          if (changed > 0) {
+            fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2))
+            console.log(
+              `${changed} packages updated.
 
 Remove your node_modules directory and package lock file and re-install.`,
-        )
-      } else {
-        console.log(
-          'No changes needed. The relevant TanStack packages are already pinned.',
-        )
+            )
+          } else {
+            console.log(
+              'No changes needed. The relevant TanStack packages are already pinned.',
+            )
+          }
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
       }
+    })
+
+  const telemetryCommand = program.command('telemetry')
+  telemetryCommand
+    .command('status')
+    .description('Show anonymous telemetry status')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .option('--json', 'output JSON for automation', false)
+    .action(async (options: { json: boolean }) => {
+      const status = await getTelemetryStatus({ createIfMissing: true })
+      const payload = {
+        configPath: status.configPath,
+        disabledBy: status.disabledBy,
+        distinctId: status.distinctId,
+        enabled: status.enabled,
+        noticeVersion: status.noticeVersion,
+      }
+
+      if (options.json) {
+        printJson(payload)
+        return
+      }
+
+      console.log(`Telemetry ${status.enabled ? 'enabled' : 'disabled'}`)
+      console.log(`Config: ${status.configPath}`)
+      if (status.disabledBy) {
+        console.log(`Disabled by: ${status.disabledBy}`)
+      }
+    })
+
+  telemetryCommand
+    .command('enable')
+    .description('Enable anonymous telemetry')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .action(async () => {
+      await setTelemetryEnabled(true)
+      console.log('Anonymous telemetry enabled')
+    })
+
+  telemetryCommand
+    .command('disable')
+    .description('Disable anonymous telemetry')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .action(async () => {
+      await setTelemetryEnabled(false)
+      console.log('Anonymous telemetry disabled')
     })
 
   // === ADD SUBCOMMAND ===
   program
     .command('add')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .argument(
       '[add-on...]',
       'Name of the add-ons (or add-ons separated by spaces or commas)',
     )
     .option('--forced', 'Force the add-on to be added', false)
     .action(async (addOns: Array<string>, options: { forced: boolean }) => {
-      const parsedAddOns: Array<string> = []
-      for (const addOn of addOns) {
-        if (addOn.includes(',') || addOn.includes(' ')) {
-          parsedAddOns.push(
-            ...addOn.split(/[\s,]+/).map((addon) => addon.trim()),
-          )
-        } else {
-          parsedAddOns.push(addOn.trim())
-        }
-      }
-      if (parsedAddOns.length < 1) {
-        const selectedAddOns = await promptForAddOns()
-        if (selectedAddOns.length) {
-          await addToApp(environment, selectedAddOns, resolve(process.cwd()), {
-            forced: options.forced,
-          })
-        }
-      } else {
-        await addToApp(environment, parsedAddOns, resolve(process.cwd()), {
-          forced: options.forced,
-        })
+      try {
+        await runWithTelemetry(
+          'add',
+          {
+            properties: {
+              forced: options.forced,
+            },
+          },
+          async (telemetry) => {
+            const parsedAddOns: Array<string> = []
+            for (const addOn of addOns) {
+              if (addOn.includes(',') || addOn.includes(' ')) {
+                parsedAddOns.push(
+                  ...addOn.split(/[\s,]+/).map((addon) => addon.trim()),
+                )
+              } else {
+                parsedAddOns.push(addOn.trim())
+              }
+            }
+
+            if (parsedAddOns.length < 1) {
+              const selectedAddOns = await promptForAddOns()
+              telemetry.mergeProperties({
+                add_on_count: selectedAddOns.length,
+                add_on_ids: sanitizeIdList(selectedAddOns),
+                prompted: true,
+              })
+              if (selectedAddOns.length) {
+                await addToApp(environment, selectedAddOns, resolve(process.cwd()), {
+                  forced: options.forced,
+                })
+              }
+              return
+            }
+
+            telemetry.mergeProperties({
+              add_on_count: parsedAddOns.length,
+              add_on_ids: sanitizeIdList(parsedAddOns),
+              prompted: false,
+            })
+            await addToApp(environment, parsedAddOns, resolve(process.cwd()), {
+              forced: options.forced,
+            })
+          },
+        )
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
       }
     })
 
@@ -1037,22 +1488,52 @@ Remove your node_modules directory and package lock file and re-install.`,
   addOnCommand
     .command('init')
     .description('Initialize an add-on from the current project')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await initAddOn(environment)
+      try {
+        await runWithTelemetry('add-on:init', {}, async () => {
+          await initAddOn(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
   addOnCommand
     .command('compile')
     .description('Update add-on from the current project')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await compileAddOn(environment)
+      try {
+        await runWithTelemetry('add-on:compile', {}, async () => {
+          await compileAddOn(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
   addOnCommand
     .command('dev')
     .description(
       'Watch project files and continuously refresh .add-on and add-on.json',
     )
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await devAddOn(environment)
+      try {
+        await runWithTelemetry('add-on:dev', {}, async () => {
+          await devAddOn(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
 
   // === TEMPLATE SUBCOMMAND ===
@@ -1060,14 +1541,34 @@ Remove your node_modules directory and package lock file and re-install.`,
   templateCommand
     .command('init')
     .description('Initialize a project template from the current project')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await initStarter(environment)
+      try {
+        await runWithTelemetry('template:init', {}, async () => {
+          await initStarter(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
   templateCommand
     .command('compile')
     .description('Compile the template JSON file for the current project')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await compileStarter(environment)
+      try {
+        await runWithTelemetry('template:compile', {}, async () => {
+          await compileStarter(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
 
   // Legacy alias for template command
@@ -1075,14 +1576,34 @@ Remove your node_modules directory and package lock file and re-install.`,
   starterCommand
     .command('init')
     .description('Deprecated alias: initialize a project template')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await initStarter(environment)
+      try {
+        await runWithTelemetry('starter:init', {}, async () => {
+          await initStarter(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
   starterCommand
     .command('compile')
     .description('Deprecated alias: compile the template JSON file')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
     .action(async () => {
-      await compileStarter(environment)
+      try {
+        await runWithTelemetry('starter:compile', {}, async () => {
+          await compileStarter(environment)
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
     })
 
   // === LEGACY AUTO-CREATE MODE ===
