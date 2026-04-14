@@ -17,14 +17,22 @@ import { runSpecialSteps } from './special-steps/index.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
-function isDemoRoutePath(path?: string) {
+function isDemoFilePath(path?: string) {
   if (!path) return false
   const normalized = path.replace(/\\/g, '/')
   return (
     normalized.includes('/routes/demo/') ||
     normalized.includes('/routes/demo.') ||
     normalized.includes('/routes/example/') ||
-    normalized.includes('/routes/example.')
+    normalized.includes('/routes/example.') ||
+    normalized.includes('/lib/demo-') ||
+    normalized.includes('/lib/demo.') ||
+    normalized.includes('/hooks/demo-') ||
+    normalized.includes('/hooks/demo.') ||
+    normalized.includes('/data/demo.') ||
+    normalized.includes('/data/demo-') ||
+    normalized.includes('/components/demo-') ||
+    normalized.includes('/components/demo.')
   )
 }
 
@@ -38,7 +46,7 @@ function stripExamplesFromOptions(options: Options): Options {
     .map((addOn) => {
       const filteredRoutes = (addOn.routes || []).filter(
         (route) =>
-          !isDemoRoutePath(route.path) &&
+          !isDemoFilePath(route.path) &&
           !(route.url && route.url.startsWith('/demo')),
       )
 
@@ -47,11 +55,11 @@ function stripExamplesFromOptions(options: Options): Options {
         routes: filteredRoutes,
         getFiles: async () => {
           const files = await addOn.getFiles()
-          return files.filter((file) => !isDemoRoutePath(file))
+          return files.filter((file) => !isDemoFilePath(file))
         },
         getDeletedFiles: async () => {
           const deletedFiles = await addOn.getDeletedFiles()
-          return deletedFiles.filter((file) => !isDemoRoutePath(file))
+          return deletedFiles.filter((file) => !isDemoFilePath(file))
         },
       }
     })
