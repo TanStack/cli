@@ -29,8 +29,8 @@ function isDemoFilePath(path?: string) {
     normalized.includes('/lib/demo.') ||
     normalized.includes('/hooks/demo-') ||
     normalized.includes('/hooks/demo.') ||
-    normalized.includes('/data/demo.') ||
     normalized.includes('/data/demo-') ||
+    normalized.includes('/data/demo.') ||
     normalized.includes('/components/demo-') ||
     normalized.includes('/components/demo.')
   )
@@ -49,10 +49,15 @@ function stripExamplesFromOptions(options: Options): Options {
           !isDemoFilePath(route.path) &&
           !(route.url && route.url.startsWith('/demo')),
       )
+      
+      const filteredIntegrations = (addOn.integrations || []).filter(
+        (integration) => !isDemoFilePath(integration.path)
+      )
 
       return {
         ...addOn,
         routes: filteredRoutes,
+        integrations: filteredIntegrations,
         getFiles: async () => {
           const files = await addOn.getFiles()
           return files.filter((file) => !isDemoFilePath(file))
