@@ -1,5 +1,7 @@
 import { authClient } from "#/lib/auth-client";
+<%_ if (routes.some(r => r.url === '/demo/better-auth')) { _%>
 import { Link } from "@tanstack/react-router";
+<%_ } _%>
 
 export default function BetterAuthHeader() {
   const { data: session, isPending } = authClient.useSession();
@@ -34,6 +36,7 @@ export default function BetterAuthHeader() {
     );
   }
 
+<%_ if (routes.some(r => r.url === '/demo/better-auth')) { _%>
   return (
     <Link
       to="/demo/better-auth"
@@ -42,4 +45,7 @@ export default function BetterAuthHeader() {
       Sign in
     </Link>
   );
+<%_ } else { _%>
+  return null;
+<%_ } _%>
 }
