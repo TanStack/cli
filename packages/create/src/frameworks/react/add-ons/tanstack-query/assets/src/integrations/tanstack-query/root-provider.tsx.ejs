@@ -25,18 +25,7 @@ export const trpcClient = createTRPCClient<TRPCRouter>({
   ],
 });
 
-let context:
-  | {
-      queryClient: QueryClient
-      trpc: ReturnType<typeof createTRPCOptionsProxy<TRPCRouter>>
-    }
-  | undefined
-
 export function getContext() {
-  if (context) {
-    return context
-  }
-
   const queryClient = new QueryClient({
     defaultOptions: {
       dehydrate: { serializeData: superjson.serialize },
@@ -48,7 +37,7 @@ export function getContext() {
     client: trpcClient,
     queryClient: queryClient,
   });
-  context = {
+  const context = {
     queryClient,
     trpc: serverHelpers,
   }
@@ -56,56 +45,30 @@ export function getContext() {
   return context
 }
 
-export default function TanStackQueryProvider({
+export default function TanstackQueryProvider({
   children,
+  context,
 }: {
-  children: ReactNode
+  children: ReactNode,
+  context: ReturnType<typeof getContext>
 }) {
-  const { queryClient } = getContext()
+  const { queryClient } = context
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        {children}
-      </TRPCProvider>
-    </QueryClientProvider>
+    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+      {children}
+    </TRPCProvider>
   )
 }
 <% } else { %>
-import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
-let context:
-  | {
-      queryClient: QueryClient
-    }
-  | undefined
+import { QueryClient } from '@tanstack/react-query'
 
 export function getContext() {
-  if (context) {
-    return context
-  }
-
   const queryClient = new QueryClient();
 
-  context = {
+  return {
     queryClient,
   }
-
-  return context
 }
-
-export default function TanStackQueryProvider({
-  children,
-}: {
-  children: ReactNode
-}) {
-  const { queryClient } = getContext()
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  )
-}
+export default function TanstackQueryProvider() {}
 <% } %>

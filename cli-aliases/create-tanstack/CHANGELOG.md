@@ -1,5 +1,52 @@
 # create-tanstack
 
+## 0.54.22
+
+### Patch Changes
+
+- Updated dependencies [[`e3de582`](https://github.com/TanStack/cli/commit/e3de582f050bff32009d3ebefffbb9ec94a15c92), [`05456f2`](https://github.com/TanStack/cli/commit/05456f208572ac785b95f1fbb12631af23f6e881)]:
+  - @tanstack/create@0.63.5
+  - @tanstack/cli@0.64.1
+
+## 0.54.21
+
+### Patch Changes
+
+- Updated dependencies [[`bfcd6f5`](https://github.com/TanStack/cli/commit/bfcd6f566f4376891faa977ad61046c3a1880c7a)]:
+  - @tanstack/cli@0.64.0
+  - @tanstack/create@0.63.4
+
+## 0.54.20
+
+### Patch Changes
+
+- Updated dependencies [[`c6bd449`](https://github.com/TanStack/cli/commit/c6bd449c253b28f42af2a8056c0b748ad04f2d2a)]:
+  - @tanstack/create@0.63.3
+  - @tanstack/cli@0.63.1
+
+## 0.54.19
+
+### Patch Changes
+
+- Updated dependencies [[`4176bf3`](https://github.com/TanStack/cli/commit/4176bf371babd896bd5e2c1561aa069e04d5a39e)]:
+  - @tanstack/cli@0.63.0
+
+## 0.54.18
+
+### Patch Changes
+
+- Updated dependencies [[`a0b407c`](https://github.com/TanStack/cli/commit/a0b407c5bc209d3fe81b19e24e6384a72d8a1b64)]:
+  - @tanstack/create@0.63.2
+  - @tanstack/cli@0.62.5
+
+## 0.54.17
+
+### Patch Changes
+
+- Updated dependencies [[`ddfaaaa`](https://github.com/TanStack/cli/commit/ddfaaaac81cdc60965052b82da1f1482155c560c)]:
+  - @tanstack/create@0.63.1
+  - @tanstack/cli@0.62.4
+
 ## 0.54.16
 
 ### Patch Changes

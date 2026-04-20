@@ -20,6 +20,47 @@ import type { AddOn, PackageManager } from '@tanstack/create'
 
 import type { Framework } from '@tanstack/create/dist/types/types.js'
 
+export async function selectFramework(
+  frameworks: Array<Framework>,
+  defaultFrameworkId?: string,
+): Promise<Framework> {
+  const initialValue =
+    (defaultFrameworkId &&
+      frameworks.find(
+        (f) => f.id.toLowerCase() === defaultFrameworkId.toLowerCase(),
+      )?.id) ||
+    frameworks[0]!.id
+
+  const selected = await select({
+    message: 'Select framework:',
+    options: frameworks.map((f) => ({ value: f.id, label: f.name })),
+    initialValue,
+  })
+
+  if (isCancel(selected)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+
+  const framework = frameworks.find((f) => f.id === selected)
+  if (!framework) {
+    throw new Error(`Unknown framework: ${selected}`)
+  }
+  return framework
+}
+
+export async function selectInstall(): Promise<boolean> {
+  const install = await confirm({
+    message: 'Would you like to install dependencies now?',
+    initialValue: true,
+  })
+  if (isCancel(install)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+  return install
+}
+
 export async function getProjectName(): Promise<string> {
   const value = await text({
     message: 'What would you like to name your project?',
@@ -350,6 +391,7 @@ export async function promptForEnvVars(
 export async function selectDeployment(
   framework: Framework,
   deployment?: string,
+  forcedDeployment?: string,
 ): Promise<string | undefined> {
   const deployments = new Set<AddOn>()
   let initialValue: string | undefined = undefined
@@ -361,21 +403,28 @@ export async function selectDeployment(
       if (deployment && addOn.id === deployment) {
         return deployment
       }
-      if (addOn.default) {
+      if (forcedDeployment && addOn.id === forcedDeployment) {
+        initialValue = addOn.id
+      } else if (!initialValue && addOn.default) {
         initialValue = addOn.id
       }
     }
   }
 
+  if (deployments.size === 0) {
+    return undefined
+  }
+
   const dp = await select({
-    message: 'Select deployment adapter',
+    message: 'Select deployment adapter:',
     options: [
+      { value: undefined, label: 'None' },
       ...Array.from(deployments).map((d) => ({
         value: d.id,
         label: d.name,
       })),
     ],
-    initialValue: initialValue,
+    initialValue,
   })
 
   if (isCancel(dp)) {

@@ -10,12 +10,15 @@ import {
 import chalk from 'chalk'
 
 import { createDefaultEnvironment } from '@tanstack/create'
+import type { StatusEvent } from '@tanstack/create'
 
 import type { Environment } from '@tanstack/create'
+import type { TelemetryClient } from './telemetry.js'
 
 export function createUIEnvironment(
   appName: string,
   silent: boolean,
+  getTelemetry?: () => TelemetryClient | undefined,
 ): Environment {
   const defaultEnvironment = createDefaultEnvironment()
 
@@ -66,6 +69,22 @@ export function createUIEnvironment(
             s.stop(message)
           },
         }
+      },
+      startStep: (info: StatusEvent) => {
+        getTelemetry?.()?.startStep(info)
+      },
+      finishStep: (id: string, _finalMessage: string) => {
+        getTelemetry?.()?.finishStep(id)
+      },
+    }
+  } else {
+    newEnvironment = {
+      ...newEnvironment,
+      startStep: (info: StatusEvent) => {
+        getTelemetry?.()?.startStep(info)
+      },
+      finishStep: (id: string, _finalMessage: string) => {
+        getTelemetry?.()?.finishStep(id)
       },
     }
   }

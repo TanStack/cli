@@ -312,3 +312,66 @@ export const db = testAddon(/* connection */)`
     expect(output.files['/test/src/db/__postgres__index.ts']).toBeUndefined()
   })
 })
+
+describe('Template Context - includeExamples', () => {
+  it('should default includeExamples to true when undefined', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const templateFile = createTemplateFile(environment, simpleOptions)
+    environment.startRun()
+    await templateFile(
+      'test.txt.ejs',
+      '<%= includeExamples ? "with-examples" : "no-examples" %>',
+    )
+    environment.finishRun()
+
+    expect(output.files['/test/test.txt']).toEqual('with-examples')
+  })
+
+  it('should set includeExamples to false when options.includeExamples is false', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const templateFile = createTemplateFile(environment, {
+      ...simpleOptions,
+      includeExamples: false,
+    })
+    environment.startRun()
+    await templateFile(
+      'test.txt.ejs',
+      '<%= includeExamples ? "with-examples" : "no-examples" %>',
+    )
+    environment.finishRun()
+
+    expect(output.files['/test/test.txt']).toEqual('no-examples')
+  })
+
+  it('should ignore files when includeExamples is false', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const templateFile = createTemplateFile(environment, {
+      ...simpleOptions,
+      includeExamples: false,
+    })
+    environment.startRun()
+    await templateFile(
+      'about.ts.ejs',
+      '<% if (!includeExamples) { ignoreFile(); return; } %>\nexport const about = true',
+    )
+    environment.finishRun()
+
+    expect(output.files['/test/about.ts']).toBeUndefined()
+  })
+
+  it('should include files when includeExamples is true', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const templateFile = createTemplateFile(environment, {
+      ...simpleOptions,
+      includeExamples: true,
+    })
+    environment.startRun()
+    await templateFile(
+      'about.ts.ejs',
+      '<% if (!includeExamples) { ignoreFile(); return; } %>\nexport const about = true',
+    )
+    environment.finishRun()
+
+    expect(output.files['/test/about.ts']).toBeDefined()
+  })
+})

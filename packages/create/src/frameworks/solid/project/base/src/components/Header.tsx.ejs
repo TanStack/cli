@@ -1,3 +1,4 @@
+<% if (!includeExamples) { ignoreFile(); return; } %>
 import { Link } from '@tanstack/solid-router'
 <% for(const integration of integrations.filter(i => i.type === 'header-user')) { %>
 import <%= integration.jsName %> from '<%= relativePath(integration.path) %>'

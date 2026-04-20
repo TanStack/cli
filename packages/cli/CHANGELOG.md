@@ -1,5 +1,61 @@
 # @tanstack/cli
 
+## 0.64.1
+
+### Patch Changes
+
+- Fix interactive mode not prompting for all options. ([#435](https://github.com/TanStack/cli/pull/435))
+
+  - Default to interactive mode. Previously, `tanstack create my-app` silently applied defaults for framework, deployment, and install. Opt out with `--yes` / `--non-interactive`.
+  - Add framework selection prompt when the CLI supports multiple frameworks and no `--framework` flag is passed.
+  - Add "install dependencies now?" prompt when `--no-install` is not passed.
+  - Show deployment adapter prompt by default (previously required `showDeploymentOptions: true`).
+  - Honor `forcedDeployment` as the default selection in the deployment prompt, so deprecated aliases keep a sensible default.
+  - Preserve explicit `--add-ons` arrays instead of overwriting them with the interactive sentinel.
+
+- Updated dependencies [[`e3de582`](https://github.com/TanStack/cli/commit/e3de582f050bff32009d3ebefffbb9ec94a15c92)]:
+  - @tanstack/create@0.63.5
+
+## 0.64.0
+
+### Minor Changes
+
+- Add anonymous CLI telemetry with command and step tracking, a hidden `--agent` flag for agent-originated invocations, first-run disclosure, and opt-out controls via config, env vars, and `tanstack telemetry` commands. ([`bfcd6f5`](https://github.com/TanStack/cli/commit/bfcd6f566f4376891faa977ad61046c3a1880c7a))
+
+  Deprioritize the Neon add-on in create flows without removing support for the add-on itself.
+
+### Patch Changes
+
+- Updated dependencies [[`bfcd6f5`](https://github.com/TanStack/cli/commit/bfcd6f566f4376891faa977ad61046c3a1880c7a)]:
+  - @tanstack/create@0.63.4
+
+## 0.63.1
+
+### Patch Changes
+
+- Updated dependencies [[`c6bd449`](https://github.com/TanStack/cli/commit/c6bd449c253b28f42af2a8056c0b748ad04f2d2a)]:
+  - @tanstack/create@0.63.3
+
+## 0.63.0
+
+### Minor Changes
+
+- Add anonymous CLI telemetry with PostHog-backed command and step tracking, plus first-run disclosure and opt-out controls via config, env vars, and `tanstack telemetry` commands. ([`4176bf3`](https://github.com/TanStack/cli/commit/4176bf371babd896bd5e2c1561aa069e04d5a39e))
+
+## 0.62.5
+
+### Patch Changes
+
+- Updated dependencies [[`a0b407c`](https://github.com/TanStack/cli/commit/a0b407c5bc209d3fe81b19e24e6384a72d8a1b64)]:
+  - @tanstack/create@0.63.2
+
+## 0.62.4
+
+### Patch Changes
+
+- Updated dependencies [[`ddfaaaa`](https://github.com/TanStack/cli/commit/ddfaaaac81cdc60965052b82da1f1482155c560c)]:
+  - @tanstack/create@0.63.1
+
 ## 0.62.3
 
 ### Patch Changes

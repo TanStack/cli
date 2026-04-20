@@ -1,5 +1,44 @@
 # @tanstack/create
 
+## 0.63.5
+
+### Patch Changes
+
+- Fix demo/example files leaking into projects when users opt out of demo pages. ([#434](https://github.com/TanStack/cli/pull/434))
+
+  - Strip add-on demo support files in `src/lib/`, `src/hooks/`, `src/data/`, `src/components/`, `src/store/`, and any `demo.*` / `demo-*` / `example.*` / `example-*` files.
+  - Strip example image assets under `public/`.
+  - Generate a minimal base starter (no Header, Footer, ThemeToggle, about page, or styled index page) when declining demo/example pages.
+  - Render Better Auth header-user component as `null` when its demo route is excluded, instead of linking to a non-existent route.
+
+  Closes #422, #409.
+
+## 0.63.4
+
+### Patch Changes
+
+- Add anonymous CLI telemetry with command and step tracking, a hidden `--agent` flag for agent-originated invocations, first-run disclosure, and opt-out controls via config, env vars, and `tanstack telemetry` commands. ([`bfcd6f5`](https://github.com/TanStack/cli/commit/bfcd6f566f4376891faa977ad61046c3a1880c7a))
+
+  Deprioritize the Neon add-on in create flows without removing support for the add-on itself.
+
+## 0.63.3
+
+### Patch Changes
+
+- Upgrade to Vite 8 and replace `vite-tsconfig-paths` plugin with native `resolve.tsconfigPaths` option. Fix `useStore` call in AI assistant add-on to pass required selector function. ([#428](https://github.com/TanStack/cli/pull/428))
+
+## 0.63.2
+
+### Patch Changes
+
+- Fix Tanstack Query Integration ([#418](https://github.com/TanStack/cli/pull/418))
+
+## 0.63.1
+
+### Patch Changes
+
+- Fix the Neon add-on Vite plugin template to use the `postgres` export from `vite-plugin-neon-new` so newly scaffolded apps start without import errors and avoid deprecated plugin package warnings. ([`ddfaaaa`](https://github.com/TanStack/cli/commit/ddfaaaac81cdc60965052b82da1f1482155c560c))
+
 ## 0.63.0
 
 ### Minor Changes
