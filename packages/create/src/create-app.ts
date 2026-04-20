@@ -20,19 +20,20 @@ import type { Environment, FileBundleHandler, Options } from './types.js'
 function isDemoFilePath(path?: string) {
   if (!path) return false
   const normalized = path.replace(/\\/g, '/')
-  return (
+
+  if (
     normalized.includes('/routes/demo/') ||
-    normalized.includes('/routes/demo.') ||
-    normalized.includes('/routes/example/') ||
-    normalized.includes('/routes/example.') ||
-    normalized.includes('/lib/demo-') ||
-    normalized.includes('/lib/demo.') ||
-    normalized.includes('/hooks/demo-') ||
-    normalized.includes('/hooks/demo.') ||
-    normalized.includes('/data/demo-') ||
-    normalized.includes('/data/demo.') ||
-    normalized.includes('/components/demo-') ||
-    normalized.includes('/components/demo.')
+    normalized.includes('/routes/example/')
+  ) {
+    return true
+  }
+
+  const filename = normalized.split('/').pop() || ''
+  return (
+    filename.startsWith('demo.') ||
+    filename.startsWith('demo-') ||
+    filename.startsWith('example.') ||
+    filename.startsWith('example-')
   )
 }
 

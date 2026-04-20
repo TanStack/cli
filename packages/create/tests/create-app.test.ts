@@ -117,4 +117,81 @@ describe('createApp', () => {
     expect(output.files['/src/test2.txt']).toEqual('base64::aGVsbG8=')
     expect(output.commands.some(({ command }) => command === 'echo')).toBe(true)
   })
+
+  it('should strip demo files from add-ons when includeExamples is false', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    const demoFiles = [
+      'src/routes/demo/form.simple.tsx',
+      'src/routes/demo.form.tsx',
+      'src/routes/example.chat.tsx',
+      'src/components/demo-AIAssistant.tsx',
+      'src/components/demo.FormComponents.tsx',
+      'src/hooks/demo-useAudioRecorder.ts',
+      'src/hooks/demo.form.ts',
+      'src/lib/demo-store.ts',
+      'src/lib/demo.ai-hook.ts',
+      'src/data/demo-guitars.ts',
+      'src/store/demo.hooks.ts',
+      'src/store/demo.store.ts',
+      'src/demo.index.css',
+      'public/demo-neon.svg',
+      'public/example-guitar-flowers.jpg',
+    ]
+    const keepFiles = [
+      'src/routes/index.tsx',
+      'src/components/Header.tsx',
+      'src/lib/utils.ts',
+    ]
+    const allFiles = [...demoFiles, ...keepFiles]
+
+    await createApp(environment, {
+      ...simpleOptions,
+      includeExamples: false,
+      chosenAddOns: [
+        {
+          id: 'test-addon',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          getFiles: () => allFiles,
+          getFileContents: () => 'content',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    for (const file of demoFiles) {
+      expect(output.files[`/${file}`]).toBeUndefined()
+    }
+    for (const file of keepFiles) {
+      expect(output.files[`/${file}`]).toBeDefined()
+    }
+  })
+
+  it('should keep demo files from add-ons when includeExamples is true', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      includeExamples: true,
+      chosenAddOns: [
+        {
+          id: 'test-addon',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          getFiles: () => ['src/components/demo-AIAssistant.tsx'],
+          getFileContents: () => 'content',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    expect(output.files['/src/components/demo-AIAssistant.tsx']).toBeDefined()
+  })
 })
