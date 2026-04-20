@@ -3,6 +3,7 @@ import { intro } from '@clack/prompts'
 import {
   finalizeAddOns,
   getFrameworkById,
+  getFrameworks,
   getPackageManager,
   loadStarter,
   populateAddOnOptionsDefaults,
@@ -16,7 +17,9 @@ import {
   selectAddOns,
   selectDeployment,
   selectExamples,
+  selectFramework,
   selectGit,
+  selectInstall,
   selectPackageManager,
   selectTemplate,
   selectToolchain,
@@ -39,15 +42,31 @@ export async function promptForCreateOptions(
   cliOptions: CliOptions,
   {
     forcedAddOns = [],
-    showDeploymentOptions = false,
+    forcedDeployment,
+    showDeploymentOptions = true,
+    defaultFrameworkId,
   }: {
     forcedAddOns?: Array<string>
+    forcedDeployment?: string
     showDeploymentOptions?: boolean
+    defaultFrameworkId?: string
   },
 ): Promise<Required<Options> | undefined> {
   const options = {} as Required<Options>
 
-  options.framework = getFrameworkById(cliOptions.framework || 'react')!
+  if (cliOptions.framework) {
+    options.framework = getFrameworkById(cliOptions.framework)!
+  } else {
+    const availableFrameworks = getFrameworks()
+    if (defaultFrameworkId || availableFrameworks.length <= 1) {
+      options.framework = getFrameworkById(defaultFrameworkId || 'react')!
+    } else {
+      options.framework = await selectFramework(
+        availableFrameworks,
+        defaultFrameworkId,
+      )
+    }
+  }
 
   // Validate project name
   if (cliOptions.projectName) {
@@ -130,11 +149,20 @@ export async function promptForCreateOptions(
   )
 
   // Deployment selection
-  const deployment = showDeploymentOptions
-    ? routerOnly
-      ? undefined
-      : await selectDeployment(options.framework, cliOptions.deployment)
-    : undefined
+  let deployment: string | undefined
+  if (routerOnly) {
+    deployment = undefined
+  } else if (cliOptions.deployment) {
+    deployment = cliOptions.deployment
+  } else if (showDeploymentOptions) {
+    deployment = await selectDeployment(
+      options.framework,
+      cliOptions.deployment,
+      forcedDeployment,
+    )
+  } else {
+    deployment = forcedDeployment
+  }
 
   // Add-ons selection
   const addOns: Set<string> = new Set()
@@ -226,9 +254,7 @@ export async function promptForCreateOptions(
     envVarValues
 
   options.git = cliOptions.git ?? (await selectGit())
-  if (cliOptions.install === false) {
-    options.install = false
-  }
+  options.install = cliOptions.install ?? (await selectInstall())
 
   if (starter) {
     options.starter = starter

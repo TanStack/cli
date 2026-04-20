@@ -238,7 +238,7 @@ export function cli({
   forcedDeployment,
   defaultFramework,
   frameworkDefinitionInitializers,
-  showDeploymentOptions = false,
+  showDeploymentOptions = true,
   legacyAutoCreate = false,
   defaultRouterOnly = false,
 }: {
@@ -649,9 +649,11 @@ export function cli({
             cliOptions.routerOnly = true
           }
 
-          cliOptions.framework = getFrameworkByName(
-            options.framework || defaultFramework || 'React',
-          )!.id
+          if (options.framework) {
+            cliOptions.framework = getFrameworkByName(options.framework)!.id
+          } else if (defaultFramework) {
+            cliOptions.framework = getFrameworkByName(defaultFramework)!.id
+          }
 
           const nonInteractive = !!cliOptions.nonInteractive || !!cliOptions.yes
           if (cliOptions.interactive && nonInteractive) {
@@ -660,16 +662,23 @@ export function cli({
             )
           }
 
-          const addOnsFlagPassed = process.argv.includes('--add-ons')
+          const hasInteractiveTerminal =
+            !!process.stdin.isTTY && !!process.stdout.isTTY && !process.env.CI
           const wantsInteractiveMode =
             !nonInteractive &&
-            (cliOptions.interactive ||
-              (cliOptions.addOns === true && addOnsFlagPassed))
+            (cliOptions.interactive || hasInteractiveTerminal)
 
           let finalOptions: Options | undefined
           if (wantsInteractiveMode) {
-            cliOptions.addOns = true
+            if (cliOptions.addOns === undefined) {
+              cliOptions.addOns = true
+            }
           } else {
+            if (!cliOptions.framework) {
+              cliOptions.framework = getFrameworkByName(
+                defaultFramework || 'React',
+              )!.id
+            }
             finalOptions = await normalizeOptions(
               cliOptions,
               forcedAddOns,
@@ -677,18 +686,16 @@ export function cli({
             )
           }
 
-          if (nonInteractive) {
-            if (cliOptions.addOns === true) {
-              throw new Error(
-                'When using --non-interactive/--yes, pass explicit add-ons via --add-ons <ids>.',
-              )
-            }
+          if (!wantsInteractiveMode && cliOptions.addOns === true) {
+            throw new Error(
+              'When running non-interactively, pass explicit add-ons via --add-ons <ids>.',
+            )
           }
 
           if (finalOptions) {
             intro(`Creating a new ${appName} app in ${projectName}...`)
           } else {
-            if (nonInteractive) {
+            if (!wantsInteractiveMode) {
               throw new Error(
                 'Project name is required in non-interactive mode. Pass [project-name] or --target-dir.',
               )
@@ -696,7 +703,11 @@ export function cli({
             intro(`Let's configure your ${appName} application`)
             finalOptions = await promptForCreateOptions(cliOptions, {
               forcedAddOns,
+              forcedDeployment,
               showDeploymentOptions,
+              defaultFrameworkId: defaultFramework
+                ? getFrameworkByName(defaultFramework)?.id
+                : undefined,
             })
           }
 
@@ -756,7 +767,6 @@ export function cli({
           }
           return value
         },
-        defaultFramework || 'React',
       )
     }
 
