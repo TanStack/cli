@@ -1,5 +1,7 @@
 import { Show } from "solid-js";
+<%_ if (routes.some(r => r.url === '/demo/better-auth')) { _%>
 import { Link } from "@tanstack/solid-router";
+<%_ } _%>
 import { authClient } from "../../lib/auth-client";
 
 export default function BetterAuthHeader() {
@@ -14,6 +16,7 @@ export default function BetterAuthHeader() {
     >
       <Show
         when={session().data?.user}
+<%_ if (routes.some(r => r.url === '/demo/better-auth')) { _%>
         fallback={
           <Link
             to="/demo/better-auth"
@@ -22,6 +25,7 @@ export default function BetterAuthHeader() {
             Sign in
           </Link>
         }
+<%_ } _%>
       >
         {(user) => (
           <div class="flex items-center gap-2">
