@@ -2,9 +2,9 @@
   "name": "my-qwik-empty-starter",
   "description": "Blank project with routing included",
   "engines": {
-    "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
-  "engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime",
+  "engines-annotation": "Required by Vite 8 (Node 20.19+ or 22.12+) and sharp's Node-API v9 runtime",
   "private": true,
   "type": "module",
   "scripts": {
