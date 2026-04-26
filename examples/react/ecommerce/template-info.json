@@ -29,7 +29,6 @@
       "lucide-react": "^0.562.0",
       "streamdown": "^1.6.5",
       "tailwindcss": "^4.0.6",
-      "vite-tsconfig-paths": "^6.0.3",
       "zod": "^3.25.0"
     },
     "devDependencies": {

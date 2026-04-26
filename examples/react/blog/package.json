@@ -41,7 +41,6 @@
     "remark-gfm": "^4.0.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.10",
-    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5",
     "zod": "^4.3.5"
   },
