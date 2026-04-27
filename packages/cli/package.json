@@ -47,6 +47,9 @@
   "author": "Jack Herrington <jherr@pobox.com>",
   "license": "MIT",
   "packageManager": "pnpm@9.15.5",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "@tanstack/create": "workspace:*",
