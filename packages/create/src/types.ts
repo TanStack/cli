@@ -56,6 +56,7 @@ export const AddOnBaseSchema = z.object({
       'analytics',
       'i18n',
       'tooling',
+      'workflows',
       'other',
     ])
     .optional(),
