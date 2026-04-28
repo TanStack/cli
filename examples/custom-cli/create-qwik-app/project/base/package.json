@@ -2,9 +2,9 @@
   "name": "my-qwik-empty-starter",
   "description": "Blank project with routing included",
   "engines": {
-    "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
-  "engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime",
+  "engines-annotation": "Required by Vite 8 (Node 20.19+ or 22.12+)",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,21 +20,25 @@
     "lint": "eslint \"src/**/*.ts*\"",
     "preview": "qwik build preview && vite preview --open",
     "start": "vite --open --mode ssr",
-    "qwik": "qwik"
+    "qwik": "qwik",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@builder.io/qwik": "^1.13.0",
     "@builder.io/qwik-city": "^1.13.0",
+    "@noma.to/qwik-testing-library": "^1.6.0",
+    "@testing-library/dom": "^10.4.1",
     "@types/eslint": "8.56.10",
     "@types/node": "20.14.11",
     "@typescript-eslint/eslint-plugin": "7.16.1",
     "@typescript-eslint/parser": "7.16.1",
     "eslint": "8.57.0",
     "eslint-plugin-qwik": "^1.13.0",
+    "jsdom": "^28.1.0",
     "prettier": "3.3.3",
-    "typescript": "5.4.5",
+    "typescript": "^6.0.2",
     "undici": "*",
-    "vite": "^7.1.7",
-    "vite-tsconfig-paths": "^4.2.1"
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
   }
 }

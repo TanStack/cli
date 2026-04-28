@@ -1,5 +1,41 @@
 # create-tsrouter-app
 
+## 0.54.26
+
+### Patch Changes
+
+- Updated dependencies [[`e38729f`](https://github.com/TanStack/cli/commit/e38729fe0b6a16e8d34417d2334baf2b2db94942)]:
+  - @tanstack/create@0.63.9
+  - @tanstack/cli@0.64.5
+
+## 0.54.25
+
+### Patch Changes
+
+- Updated dependencies [[`0a8be74`](https://github.com/TanStack/cli/commit/0a8be74ff1300ed55c91a50da07312ee1feb478e)]:
+  - @tanstack/cli@0.64.4
+  - @tanstack/create@0.63.8
+
+## 0.54.24
+
+### Patch Changes
+
+- Updated dependencies [[`1b2091b`](https://github.com/TanStack/cli/commit/1b2091b8bdaf0e2e90f42cf268e91cbd18d6be3f)]:
+  - @tanstack/create@0.63.7
+  - @tanstack/cli@0.64.3
+
+## 0.54.23
+
+### Patch Changes
+
+- Auto-generated changeset from semantic commits on main.
+
+  - chore: update to TS6.0, fix deprecated tsconfig options (#421) (847b396)
+
+- Updated dependencies []:
+  - @tanstack/cli@0.64.2
+  - @tanstack/create@0.63.6
+
 ## 0.54.22
 
 ### Patch Changes

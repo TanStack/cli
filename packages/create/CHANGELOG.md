@@ -1,5 +1,51 @@
 # @tanstack/create
 
+## 0.63.9
+
+### Patch Changes
+
+- fix(create): correct netlify.toml key, eslint scripts, and missing eslint dep ([`e38729f`](https://github.com/TanStack/cli/commit/e38729fe0b6a16e8d34417d2334baf2b2db94942))
+
+  - The generated `netlify.toml` for both React and Solid used `dir` under
+    `[build]`, which is not a valid Netlify configuration key. Per Netlify's
+    TanStack Start guide it must be `publish`. Closes #423.
+  - The eslint toolchain had `format` and `check` scripts swapped: `format`
+    ran prettier in read-only mode while `check` mutated files. Swap them so
+    `format` writes (`prettier --write . && eslint --fix`) and `check` is
+    read-only (`prettier --check .`). Closes #403.
+  - `@tanstack/eslint-config` lists `eslint` as a peer dependency, so eslint
+    was not installed by package managers that don't auto-install peers. Add
+    `eslint` to `devDependencies` in the eslint toolchain. Closes #417.
+
+## 0.63.8
+
+### Patch Changes
+
+- fix(cli): require Node.js >=20 and surface a clear error on older runtimes ([#438](https://github.com/TanStack/cli/pull/438))
+
+  Older Node versions (e.g. Node 16) lack `events.addAbortListener`, which is
+  used transitively by the CLI. Running on those versions produced a cryptic
+  `SyntaxError: ... does not provide an export named 'addAbortListener'` during
+  module instantiation. Both packages now declare `engines.node: ">=20"` so
+  package managers warn at install time, and the CLI bin performs an early
+  runtime check that prints an actionable message before any modules load.
+
+  Closes #433
+
+## 0.63.7
+
+### Patch Changes
+
+- chore: bump solid base and example to vite 8 ([#437](https://github.com/TanStack/cli/pull/437))
+
+## 0.63.6
+
+### Patch Changes
+
+- Auto-generated changeset from semantic commits on main.
+
+  - chore: update to TS6.0, fix deprecated tsconfig options (#421) (847b396)
+
 ## 0.63.5
 
 ### Patch Changes

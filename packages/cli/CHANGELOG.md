@@ -1,5 +1,48 @@
 # @tanstack/cli
 
+## 0.64.5
+
+### Patch Changes
+
+- Updated dependencies [[`e38729f`](https://github.com/TanStack/cli/commit/e38729fe0b6a16e8d34417d2334baf2b2db94942)]:
+  - @tanstack/create@0.63.9
+
+## 0.64.4
+
+### Patch Changes
+
+- fix(cli): require Node.js >=20 and surface a clear error on older runtimes ([#438](https://github.com/TanStack/cli/pull/438))
+
+  Older Node versions (e.g. Node 16) lack `events.addAbortListener`, which is
+  used transitively by the CLI. Running on those versions produced a cryptic
+  `SyntaxError: ... does not provide an export named 'addAbortListener'` during
+  module instantiation. Both packages now declare `engines.node: ">=20"` so
+  package managers warn at install time, and the CLI bin performs an early
+  runtime check that prints an actionable message before any modules load.
+
+  Closes #433
+
+- Updated dependencies [[`0a8be74`](https://github.com/TanStack/cli/commit/0a8be74ff1300ed55c91a50da07312ee1feb478e)]:
+  - @tanstack/create@0.63.8
+
+## 0.64.3
+
+### Patch Changes
+
+- Updated dependencies [[`1b2091b`](https://github.com/TanStack/cli/commit/1b2091b8bdaf0e2e90f42cf268e91cbd18d6be3f)]:
+  - @tanstack/create@0.63.7
+
+## 0.64.2
+
+### Patch Changes
+
+- Auto-generated changeset from semantic commits on main.
+
+  - chore: update to TS6.0, fix deprecated tsconfig options (#421) (847b396)
+
+- Updated dependencies []:
+  - @tanstack/create@0.63.6
+
 ## 0.64.1
 
 ### Patch Changes
