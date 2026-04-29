@@ -5,7 +5,12 @@ import { inngest } from '../../inngest/client'
 import { helloWorld } from '../../inngest/functions'
 
 const sendHelloEvent = createServerFn({ method: 'POST' })
-  .inputValidator((name: string) => name)
+  .inputValidator((name: unknown) => {
+    if (typeof name !== 'string') throw new Error('Name must be a string')
+    const trimmed = name.trim()
+    if (!trimmed) throw new Error('Name is required')
+    return trimmed
+  })
   .handler(async ({ data: name }) => {
     const { ids } = await inngest.send(helloWorld.create({ name }))
     return { eventId: ids[0] }
@@ -95,7 +100,7 @@ function RouteComponent() {
           <li>
             Uncomment <code>INNGEST_DEV=1</code> in <code>.env.local</code>{' '}
             during development — without it, the SDK defaults to cloud mode and
-            will try to authenticate against Inngest Cloud.You can also use `INNGEST_DEV=1 pnpm dev` to start the application.
+            will try to authenticate against Inngest Cloud. You can also use `INNGEST_DEV=1 pnpm dev` to start the application.
           </li>
           <li>
             Run the Dev Server in a second terminal:{' '}
