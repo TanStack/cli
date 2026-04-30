@@ -13,6 +13,7 @@ import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { createTemplateFile } from './template-file.js'
 import { installShadcnComponents } from './integrations/shadcn.js'
 import { setupGit } from './integrations/git.js'
+import { setupIntent } from './integrations/intent.js'
 import { runSpecialSteps } from './special-steps/index.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
@@ -294,6 +295,8 @@ async function runCommandsAndInstallDependencies(
   }
 
   await installShadcnComponents(environment, options.targetDir, options)
+
+  await setupIntent(environment, options.targetDir, options)
 }
 
 async function seedEnvValues(environment: Environment, options: Options) {

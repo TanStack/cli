@@ -183,6 +183,7 @@ function getCreateTelemetryProperties(projectName: string, options: CliOptions) 
     framework: options.framework ? sanitizeId(options.framework) : undefined,
     git: options.git,
     install: options.install !== false,
+    intent: options.intent !== false,
     interactive: !!options.interactive,
     json: !!options.json,
     non_interactive: !!options.nonInteractive || !!options.yes,
@@ -221,6 +222,7 @@ function getResolvedCreateTelemetryProperties(
     framework: sanitizeId(finalOptions.framework.id),
     git: finalOptions.git,
     install: finalOptions.install !== false,
+    intent: finalOptions.intent,
     package_manager: finalOptions.packageManager,
     router_only: !!cliOptions.routerOnly,
     toolchain: toolchain ? sanitizeId(toolchain.id) : undefined,
@@ -876,6 +878,14 @@ export function cli({
       .option('--git', 'create a git repository')
       .option('--no-git', 'do not create a git repository')
       .option(
+        '--intent',
+        'set up TanStack Intent skill mappings for coding agents',
+      )
+      .option(
+        '--no-intent',
+        'skip TanStack Intent setup',
+      )
+      .option(
         '--target-dir <path>',
         'the target directory for the application root',
       )
@@ -1441,7 +1451,15 @@ Remove your node_modules directory and package lock file and re-install.`,
       'Name of the add-ons (or add-ons separated by spaces or commas)',
     )
     .option('--forced', 'Force the add-on to be added', false)
-    .action(async (addOns: Array<string>, options: { forced: boolean }) => {
+    .option(
+      '--intent',
+      'set up TanStack Intent skill mappings for coding agents',
+    )
+    .option(
+      '--no-intent',
+      'skip TanStack Intent setup',
+    )
+    .action(async (addOns: Array<string>, options: { forced: boolean; intent?: boolean }) => {
       try {
         await runWithTelemetry(
           'add',
@@ -1472,6 +1490,7 @@ Remove your node_modules directory and package lock file and re-install.`,
               if (selectedAddOns.length) {
                 await addToApp(environment, selectedAddOns, resolve(process.cwd()), {
                   forced: options.forced,
+                  intent: options.intent,
                 })
               }
               return
@@ -1484,6 +1503,7 @@ Remove your node_modules directory and package lock file and re-install.`,
             })
             await addToApp(environment, parsedAddOns, resolve(process.cwd()), {
               forced: options.forced,
+              intent: options.intent,
             })
           },
         )
