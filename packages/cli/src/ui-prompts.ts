@@ -133,9 +133,6 @@ export async function selectTemplate(
   return selected
 }
 
-// Track if we've shown the multiselect help text
-let hasShownMultiselectHelp = false
-
 export async function selectAddOns(
   framework: Framework,
   mode: string,
@@ -150,15 +147,6 @@ export async function selectAddOns(
     return []
   }
 
-  // Show help text only once
-  if (!hasShownMultiselectHelp) {
-    note(
-      'Use ↑/↓ to navigate • Space to select/deselect • Enter to confirm',
-      'Keyboard Shortcuts',
-    )
-    hasShownMultiselectHelp = true
-  }
-
   if (allowMultiple) {
     const selectableAddOns = addOns.filter(
       (addOn) => !forcedAddOns.includes(addOn.id),
@@ -168,13 +156,18 @@ export async function selectAddOns(
       return []
     }
 
+    note(
+      'Use ↑/↓ to navigate • Space to select/deselect • Enter to confirm',
+      'Keyboard Shortcuts',
+    )
+
     const value = await multiselect({
-      message,
+      message: `${message} (Space to toggle, Enter to confirm)`,
       options: selectableAddOns.map((addOn) => ({
-          value: addOn.id,
-          label: addOn.name,
-          hint: addOn.description,
-        })),
+        value: addOn.id,
+        label: addOn.name,
+        hint: addOn.description,
+      })),
       maxItems: selectableAddOns.length,
       required: false,
     })
