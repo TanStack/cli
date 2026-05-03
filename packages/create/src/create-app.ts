@@ -1,6 +1,6 @@
 import { basename, resolve } from 'node:path'
 
-import { isBase64 } from './file-helpers.js'
+import { isBase64, isDemoFilePath } from './file-helpers.js'
 import { formatCommand } from './utils.js'
 import { writeConfigFileToEnvironment } from './config-file.js'
 import {
@@ -17,26 +17,6 @@ import { setupIntent } from './integrations/intent.js'
 import { runSpecialSteps } from './special-steps/index.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
-
-function isDemoFilePath(path?: string) {
-  if (!path) return false
-  const normalized = path.replace(/\\/g, '/')
-
-  if (
-    normalized.includes('/routes/demo/') ||
-    normalized.includes('/routes/example/')
-  ) {
-    return true
-  }
-
-  const filename = normalized.split('/').pop() || ''
-  return (
-    filename.startsWith('demo.') ||
-    filename.startsWith('demo-') ||
-    filename.startsWith('example.') ||
-    filename.startsWith('example-')
-  )
-}
 
 function stripExamplesFromOptions(options: Options): Options {
   if (options.includeExamples !== false) {
@@ -325,6 +305,87 @@ async function seedEnvValues(environment: Environment, options: Options) {
   await environment.writeFile(envLocalPath, envContents)
 }
 
+async function writeEnvExample(environment: Environment, options: Options) {
+  const envExamplePath = resolve(options.targetDir, '.env.example')
+  const existing = environment.exists(envExamplePath)
+    ? await environment.readFile(envExamplePath)
+    : ''
+
+  const declared = new Set<string>()
+  for (const match of existing.matchAll(/^([A-Z_][A-Z0-9_]*)=/gm)) {
+    declared.add(match[1])
+  }
+
+  const sections: Array<string> = []
+  for (const addOn of options.chosenAddOns) {
+    const lines: Array<string> = []
+    for (const envVar of addOn.envVars || []) {
+      if (declared.has(envVar.name)) continue
+      declared.add(envVar.name)
+      if (envVar.description) {
+        const required = envVar.required ? ' (required)' : ''
+        lines.push(`# ${envVar.description}${required}`)
+      }
+      lines.push(`${envVar.name}=`)
+    }
+    if (lines.length > 0) {
+      sections.push(`# ${addOn.name}\n${lines.join('\n')}`)
+    }
+  }
+
+  if (sections.length === 0) return
+
+  const additions = sections.join('\n\n')
+  const newContent = existing
+    ? `${existing.trimEnd()}\n\n${additions}\n`
+    : `${additions}\n`
+
+  await environment.writeFile(envExamplePath, newContent)
+}
+
+const SHIPPING_CATEGORIES = new Set(['auth', 'database', 'orm', 'deploy'])
+
+function buildNextSteps(options: Options): string {
+  const collectedEnv = new Set(Object.keys(options.envVarValues || {}))
+  const listedEnvVars = new Set<string>()
+  const envVarLines: Array<string> = []
+  const docLines: Array<string> = []
+
+  for (const addOn of options.chosenAddOns) {
+    if (addOn.link && addOn.category && SHIPPING_CATEGORIES.has(addOn.category)) {
+      docLines.push(`  • ${addOn.name} (${addOn.category}) — ${addOn.link}`)
+    }
+
+    for (const envVar of addOn.envVars || []) {
+      if (listedEnvVars.has(envVar.name)) continue
+      listedEnvVars.add(envVar.name)
+      const required = envVar.required ? ' (required)' : ''
+      const status = collectedEnv.has(envVar.name)
+        ? ' — already set from your input'
+        : ' — needs a value'
+      const desc = envVar.description ? ` — ${envVar.description}` : ''
+      envVarLines.push(`  • ${envVar.name}${required}${desc}${status}`)
+    }
+  }
+
+  const sections: Array<string> = []
+  if (envVarLines.length > 0) {
+    sections.push(
+      `Environment variables (review/fill in .env.local before deploying):\n${envVarLines.join('\n')}`,
+    )
+  }
+  if (docLines.length > 0) {
+    sections.push(`Docs for the integrations you picked:\n${docLines.join('\n')}`)
+  }
+  if (options.intent) {
+    sections.push(
+      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  • "migrate this Next.js page to TanStack Start"\n  • "add a protected /dashboard route"\n  • "show me how to use TanStack Router search params"`,
+    )
+  }
+
+  return sections.length > 0 ? `\nNext steps:\n\n${sections.join('\n\n')}\n` : ''
+}
+
 function report(environment: Environment, options: Options) {
   const warnings: Array<string> = []
   for (const addOn of options.chosenAddOns) {
@@ -358,6 +419,8 @@ ${environment.getErrors().join('\n')}`
     : `% cd ${options.projectName}
 `
 
+  const nextSteps = buildNextSteps(options)
+
   // Use the force luke! :)
   environment.outro(
     `${locationMessage}
@@ -366,7 +429,7 @@ Use the following commands to start your app:
 ${cdInstruction}% ${formatCommand(
       getPackageManagerScriptCommand(options.packageManager, ['dev']),
     )}
-
+${nextSteps}
 Please read the README.md file for information on testing, styling, adding routes, etc.${errorStatement}`,
   )
 }
@@ -377,6 +440,7 @@ export async function createApp(environment: Environment, options: Options) {
   environment.startRun()
   await writeFiles(environment, effectiveOptions)
   await seedEnvValues(environment, effectiveOptions)
+  await writeEnvExample(environment, effectiveOptions)
   await runCommandsAndInstallDependencies(environment, effectiveOptions)
   environment.finishRun()
 

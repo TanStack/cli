@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import { resolve } from 'node:path'
+import { relative, resolve } from 'node:path'
 import { Command, InvalidArgumentError, Option } from 'commander'
 import { cancel, confirm, intro, isCancel, log } from '@clack/prompts'
 import chalk from 'chalk'
@@ -17,6 +17,7 @@ import {
   getFrameworks,
   initAddOn,
   initStarter,
+  isDemoFilePath,
 } from '@tanstack/create'
 import {
   LIBRARY_GROUPS,
@@ -288,6 +289,159 @@ export function cli({
       cancel('Operation cancelled.')
       process.exit(0)
     }
+  }
+
+  async function confirmCreateOptions(finalOptions: Options) {
+    const lines: Array<string> = []
+    lines.push(`  Project:         ${finalOptions.projectName}`)
+    lines.push(`  Location:        ${finalOptions.targetDir}`)
+    lines.push(`  Framework:       ${finalOptions.framework.name}`)
+    lines.push(`  Mode:            ${finalOptions.mode}`)
+    lines.push(`  Package manager: ${finalOptions.packageManager}`)
+    if (finalOptions.starter) {
+      lines.push(`  Template:        ${finalOptions.starter.name}`)
+    }
+
+    const auth: Array<string> = []
+    const database: Array<string> = []
+    const orm: Array<string> = []
+    const deploy: Array<string> = []
+    const otherAddOns: Array<string> = []
+    for (const addOn of finalOptions.chosenAddOns) {
+      switch (addOn.category) {
+        case 'auth':
+          auth.push(addOn.name)
+          break
+        case 'database':
+          database.push(addOn.name)
+          break
+        case 'orm':
+          orm.push(addOn.name)
+          break
+        case 'deploy':
+          deploy.push(addOn.name)
+          break
+        default:
+          otherAddOns.push(addOn.name)
+      }
+    }
+
+    if (
+      auth.length +
+        database.length +
+        orm.length +
+        deploy.length +
+        otherAddOns.length >
+      0
+    ) {
+      lines.push('')
+    }
+    if (auth.length > 0) {
+      lines.push(`  Auth:            ${auth.join(', ')}`)
+    }
+    if (database.length > 0) {
+      lines.push(`  Database:        ${database.join(', ')}`)
+    }
+    if (orm.length > 0) {
+      lines.push(`  ORM:             ${orm.join(', ')}`)
+    }
+    if (deploy.length > 0) {
+      lines.push(`  Deploy:          ${deploy.join(', ')}`)
+    }
+    if (otherAddOns.length > 0) {
+      lines.push(`  Other add-ons:   ${otherAddOns.join(', ')}`)
+    }
+
+    lines.push('')
+    lines.push(`  Initialize git:  ${finalOptions.git ? 'yes' : 'no'}`)
+    lines.push(
+      `  Install deps:    ${finalOptions.install === false ? 'no' : 'yes'}`,
+    )
+    lines.push(`  Agent skills:    ${finalOptions.intent ? 'yes' : 'no'}`)
+
+    log.info(`About to create:\n\n${lines.join('\n')}`)
+
+    const conflicts = findExclusiveConflicts(finalOptions.chosenAddOns)
+    if (conflicts.length > 0) {
+      log.warn(
+        `Conflicting selections detected:\n${conflicts
+          .map((c) => `  • ${c.category}: ${c.names.join(', ')}`)
+          .join('\n')}`,
+      )
+    }
+
+    const shouldContinue = await confirm({
+      message: 'Continue with these settings?',
+      initialValue: true,
+    })
+
+    if (isCancel(shouldContinue) || !shouldContinue) {
+      cancel('Operation cancelled.')
+      process.exit(0)
+    }
+  }
+
+  const CLEAN_DEMOS_SKIP_DIRS = new Set([
+    'node_modules',
+    '.git',
+    'dist',
+    '.output',
+    '.tanstack',
+    '.nitro',
+    '.wrangler',
+  ])
+
+  function findDemoFiles(root: string): Array<string> {
+    const results: Array<string> = []
+    function walk(dir: string) {
+      let entries: Array<fs.Dirent>
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true })
+      } catch {
+        return
+      }
+      for (const entry of entries) {
+        const full = resolve(dir, entry.name)
+        if (entry.isDirectory()) {
+          if (CLEAN_DEMOS_SKIP_DIRS.has(entry.name)) continue
+          walk(full)
+        } else if (entry.isFile() && isDemoFilePath(full)) {
+          results.push(full)
+        }
+      }
+    }
+    walk(root)
+    return results.sort()
+  }
+
+  function pruneEmptyDemoDirs(root: string) {
+    const candidates = ['src/routes/demo', 'src/routes/example']
+    for (const rel of candidates) {
+      const dir = resolve(root, rel)
+      if (!fs.existsSync(dir)) continue
+      try {
+        if (fs.readdirSync(dir).length === 0) {
+          fs.rmdirSync(dir)
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  function findExclusiveConflicts(
+    addOns: Options['chosenAddOns'],
+  ): Array<{ category: string; names: Array<string> }> {
+    const buckets: Record<string, Array<string>> = {}
+    for (const addOn of addOns) {
+      for (const exclusive of addOn.exclusive || []) {
+        buckets[exclusive] ??= []
+        buckets[exclusive].push(addOn.name)
+      }
+    }
+    return Object.entries(buckets)
+      .filter(([_, names]) => names.length > 1)
+      .map(([category, names]) => ({ category, names }))
   }
 
   const availableFrameworks = getFrameworks().map((f) => f.name)
@@ -694,6 +848,7 @@ export function cli({
             )
           }
 
+          let cameFromPrompts = false
           if (finalOptions) {
             intro(`Creating a new ${appName} app in ${projectName}...`)
           } else {
@@ -711,6 +866,7 @@ export function cli({
                 ? getFrameworkByName(defaultFramework)?.id
                 : undefined,
             })
+            cameFromPrompts = true
           }
 
           if (!finalOptions) {
@@ -734,6 +890,9 @@ export function cli({
             finalOptions.targetDir = resolve(process.cwd(), finalOptions.projectName)
           }
 
+          if (cameFromPrompts) {
+            await confirmCreateOptions(finalOptions)
+          }
           await confirmTargetDirectorySafety(finalOptions.targetDir, options.force)
           await createApp(environment, finalOptions)
         },
@@ -1387,6 +1546,87 @@ Remove your node_modules directory and package lock file and re-install.`,
         process.exit(1)
       }
     })
+
+  // === CLEAN-DEMOS SUBCOMMAND ===
+  program
+    .command('clean-demos')
+    .description('Remove demo/example files from a scaffolded TanStack project')
+    .argument('[target-dir]', 'project directory (default: current directory)', '.')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .option('-y, --yes', 'skip confirmation prompt', false)
+    .option('--dry-run', 'list files without deleting', false)
+    .action(
+      async (
+        targetDir: string,
+        cmdOptions: { yes: boolean; dryRun: boolean },
+      ) => {
+        try {
+          await runWithTelemetry(
+            'clean-demos',
+            {
+              properties: {
+                yes: cmdOptions.yes,
+                dry_run: cmdOptions.dryRun,
+              },
+            },
+            async (telemetry) => {
+              const root = resolve(targetDir)
+              if (!fs.existsSync(root)) {
+                throw new Error(`Directory not found: ${root}`)
+              }
+              if (!fs.existsSync(resolve(root, '.cta.json'))) {
+                log.warn(
+                  `No .cta.json in ${root} — this may not be a TanStack scaffold. Continuing anyway.`,
+                )
+              }
+
+              const demoFiles = findDemoFiles(root)
+              telemetry.mergeProperties({ result_count: demoFiles.length })
+
+              if (demoFiles.length === 0) {
+                log.info('No demo or example files found.')
+                return
+              }
+
+              log.info(
+                `Found ${demoFiles.length} demo/example file(s):\n${demoFiles
+                  .map((f) => `  • ${relative(root, f)}`)
+                  .join('\n')}`,
+              )
+
+              if (cmdOptions.dryRun) {
+                log.info('(dry run — nothing deleted)')
+                return
+              }
+
+              if (!cmdOptions.yes) {
+                const ok = await confirm({
+                  message: 'Delete these files?',
+                  initialValue: false,
+                })
+                if (isCancel(ok) || !ok) {
+                  cancel('Operation cancelled.')
+                  process.exit(0)
+                }
+              }
+
+              for (const file of demoFiles) {
+                fs.rmSync(file, { force: true })
+              }
+              pruneEmptyDemoDirs(root)
+              log.info(
+                `Deleted ${demoFiles.length} file(s). Run your dev server to regenerate routeTree.gen.ts.`,
+              )
+            },
+          )
+        } catch (error) {
+          log.error(formatErrorMessage(error))
+          process.exit(1)
+        }
+      },
+    )
 
   const telemetryCommand = program.command('telemetry')
   telemetryCommand

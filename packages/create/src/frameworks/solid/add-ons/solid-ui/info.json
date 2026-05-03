@@ -1,6 +1,6 @@
 {
   "name": "Solid-UI",
-  "description": "Add Solid-UI to your application.",
+  "description": "Copy-paste accessible UI components for Solid (Tailwind + Radix-style primitives).",
   "phase": "add-on",
   "link": "https://ui.shadcn.com/",
   "modes": ["file-router", "code-router"],

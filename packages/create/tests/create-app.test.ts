@@ -194,4 +194,99 @@ describe('createApp', () => {
 
     expect(output.files['/src/components/demo-AIAssistant.tsx']).toBeDefined()
   })
+
+  it('writes .env.example from add-on envVars metadata', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      chosenAddOns: [
+        {
+          id: 'fake-auth',
+          name: 'Fake Auth',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          envVars: [
+            {
+              name: 'AUTH_SECRET',
+              description: 'Random secret used to sign sessions',
+              required: true,
+            },
+            {
+              name: 'AUTH_URL',
+              description: 'Base URL for auth callbacks',
+              required: false,
+            },
+          ],
+          getFiles: () => [],
+          getFileContents: () => '',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    const envExample = output.files['/.env.example']
+    expect(envExample).toBeDefined()
+    expect(envExample).toContain('# Fake Auth')
+    expect(envExample).toContain(
+      '# Random secret used to sign sessions (required)',
+    )
+    expect(envExample).toContain('AUTH_SECRET=')
+    expect(envExample).toContain('# Base URL for auth callbacks')
+    expect(envExample).toContain('AUTH_URL=')
+  })
+
+  it('does not write .env.example when no add-on declares envVars', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      chosenAddOns: [],
+    } as Options)
+
+    expect(output.files['/.env.example']).toBeUndefined()
+  })
+
+  it('dedupes env vars across add-ons in .env.example', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      chosenAddOns: [
+        {
+          id: 'addon-a',
+          name: 'Addon A',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          envVars: [{ name: 'SHARED_KEY', required: true }],
+          getFiles: () => [],
+          getFileContents: () => '',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+        {
+          id: 'addon-b',
+          name: 'Addon B',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          envVars: [{ name: 'SHARED_KEY', required: true }],
+          getFiles: () => [],
+          getFileContents: () => '',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    const envExample = output.files['/.env.example'] || ''
+    const occurrences = envExample.match(/^SHARED_KEY=/gm) || []
+    expect(occurrences.length).toBe(1)
+  })
 })

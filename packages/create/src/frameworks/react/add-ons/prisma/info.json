@@ -1,6 +1,6 @@
 {
   "name": "Prisma",
-  "description": "Add Prisma Postgres, or Prisma ORM with other DBs to your application.",
+  "description": "Type-safe database client with schema migrations (Postgres, MySQL, SQLite, MongoDB).",
   "phase": "add-on",
   "type": "add-on",
   "category": "orm",
