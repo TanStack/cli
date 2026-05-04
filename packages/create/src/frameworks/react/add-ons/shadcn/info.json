@@ -1,6 +1,6 @@
 {
   "name": "Shadcn",
-  "description": "Add Shadcn UI to your application.",
+  "description": "Copy-paste accessible UI components (Tailwind + Radix primitives).",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],
   "link": "https://ui.shadcn.com/",

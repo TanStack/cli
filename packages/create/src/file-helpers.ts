@@ -112,6 +112,26 @@ export function isDirectory(path: string): boolean {
   return statSync(path).isDirectory()
 }
 
+export function isDemoFilePath(path?: string): boolean {
+  if (!path) return false
+  const normalized = path.replace(/\\/g, '/')
+
+  if (
+    normalized.includes('/routes/demo/') ||
+    normalized.includes('/routes/example/')
+  ) {
+    return true
+  }
+
+  const filename = normalized.split('/').pop() || ''
+  return (
+    filename.startsWith('demo.') ||
+    filename.startsWith('demo-') ||
+    filename.startsWith('example.') ||
+    filename.startsWith('example-')
+  )
+}
+
 export function findFilesRecursively(
   path: string,
   files: Record<string, string>,

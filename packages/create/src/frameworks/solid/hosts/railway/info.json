@@ -1,6 +1,6 @@
 {
   "name": "Railway",
-  "description": "Railway deployment setup",
+  "description": "Deploy to Railway (full-stack PaaS for Node + databases).",
   "link": "https://railway.com/",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],

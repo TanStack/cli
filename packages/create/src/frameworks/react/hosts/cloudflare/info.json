@@ -1,6 +1,6 @@
 {
   "name": "Cloudflare",
-  "description": "Cloudflare deployment setup",
+  "description": "Deploy to Cloudflare Workers (edge runtime, KV/D1/R2 bindings).",
   "link": "https://developers.cloudflare.com/workers/vite-plugin/",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],

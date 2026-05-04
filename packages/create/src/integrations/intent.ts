@@ -27,7 +27,7 @@ export async function setupIntent(
       resolve(targetDir),
       options.packageManager,
       '@tanstack/intent',
-      ['install'],
+      ['install', '--map'],
     )
     environment.finishStep('setup-intent', 'TanStack Intent configured')
     s.stop('TanStack Intent configured')
