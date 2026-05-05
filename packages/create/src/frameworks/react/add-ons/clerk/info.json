@@ -1,6 +1,6 @@
 {
   "name": "Clerk",
-  "description": "Add Clerk authentication to your application.",
+  "description": "Hosted user accounts with prebuilt sign-in UI and social providers (managed).",
   "phase": "add-on",
   "modes": ["file-router"],
   "type": "add-on",

@@ -272,6 +272,7 @@ export class DevWatchManager {
         targetDir: this.tempDir,
         git: false,
         install: packageMetadataChanged,
+        intent: false,
       }
 
       // Show package installation indicator if needed

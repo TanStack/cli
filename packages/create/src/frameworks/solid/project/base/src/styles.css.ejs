@@ -1,3 +1,20 @@
+<% if (!includeExamples) { %>
+@import 'tailwindcss';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+<% } else { %>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
@@ -193,3 +210,4 @@ code {
     transform: translateY(0);
   }
 }
+<% } %>

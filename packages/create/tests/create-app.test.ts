@@ -117,4 +117,176 @@ describe('createApp', () => {
     expect(output.files['/src/test2.txt']).toEqual('base64::aGVsbG8=')
     expect(output.commands.some(({ command }) => command === 'echo')).toBe(true)
   })
+
+  it('should strip demo files from add-ons when includeExamples is false', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    const demoFiles = [
+      'src/routes/demo/form.simple.tsx',
+      'src/routes/demo.form.tsx',
+      'src/routes/example.chat.tsx',
+      'src/components/demo-AIAssistant.tsx',
+      'src/components/demo.FormComponents.tsx',
+      'src/hooks/demo-useAudioRecorder.ts',
+      'src/hooks/demo.form.ts',
+      'src/lib/demo-store.ts',
+      'src/lib/demo.ai-hook.ts',
+      'src/data/demo-guitars.ts',
+      'src/store/demo.hooks.ts',
+      'src/store/demo.store.ts',
+      'src/demo.index.css',
+      'public/demo-neon.svg',
+      'public/example-guitar-flowers.jpg',
+    ]
+    const keepFiles = [
+      'src/routes/index.tsx',
+      'src/components/Header.tsx',
+      'src/lib/utils.ts',
+    ]
+    const allFiles = [...demoFiles, ...keepFiles]
+
+    await createApp(environment, {
+      ...simpleOptions,
+      includeExamples: false,
+      chosenAddOns: [
+        {
+          id: 'test-addon',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          getFiles: () => allFiles,
+          getFileContents: () => 'content',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    for (const file of demoFiles) {
+      expect(output.files[`/${file}`]).toBeUndefined()
+    }
+    for (const file of keepFiles) {
+      expect(output.files[`/${file}`]).toBeDefined()
+    }
+  })
+
+  it('should keep demo files from add-ons when includeExamples is true', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      includeExamples: true,
+      chosenAddOns: [
+        {
+          id: 'test-addon',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          getFiles: () => ['src/components/demo-AIAssistant.tsx'],
+          getFileContents: () => 'content',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    expect(output.files['/src/components/demo-AIAssistant.tsx']).toBeDefined()
+  })
+
+  it('writes .env.example from add-on envVars metadata', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      chosenAddOns: [
+        {
+          id: 'fake-auth',
+          name: 'Fake Auth',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          envVars: [
+            {
+              name: 'AUTH_SECRET',
+              description: 'Random secret used to sign sessions',
+              required: true,
+            },
+            {
+              name: 'AUTH_URL',
+              description: 'Base URL for auth callbacks',
+              required: false,
+            },
+          ],
+          getFiles: () => [],
+          getFileContents: () => '',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    const envExample = output.files['/.env.example']
+    expect(envExample).toBeDefined()
+    expect(envExample).toContain('# Fake Auth')
+    expect(envExample).toContain(
+      '# Random secret used to sign sessions (required)',
+    )
+    expect(envExample).toContain('AUTH_SECRET=')
+    expect(envExample).toContain('# Base URL for auth callbacks')
+    expect(envExample).toContain('AUTH_URL=')
+  })
+
+  it('does not write .env.example when no add-on declares envVars', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      chosenAddOns: [],
+    } as Options)
+
+    expect(output.files['/.env.example']).toBeUndefined()
+  })
+
+  it('dedupes env vars across add-ons in .env.example', async () => {
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, {
+      ...simpleOptions,
+      chosenAddOns: [
+        {
+          id: 'addon-a',
+          name: 'Addon A',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          envVars: [{ name: 'SHARED_KEY', required: true }],
+          getFiles: () => [],
+          getFileContents: () => '',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+        {
+          id: 'addon-b',
+          name: 'Addon B',
+          type: 'add-on',
+          phase: 'add-on',
+          packageAdditions: { dependencies: {}, devDependencies: {} },
+          routes: [],
+          integrations: [],
+          envVars: [{ name: 'SHARED_KEY', required: true }],
+          getFiles: () => [],
+          getFileContents: () => '',
+          getDeletedFiles: () => [],
+        } as unknown as AddOn,
+      ],
+    } as Options)
+
+    const envExample = output.files['/.env.example'] || ''
+    const occurrences = envExample.match(/^SHARED_KEY=/gm) || []
+    expect(occurrences.length).toBe(1)
+  })
 })

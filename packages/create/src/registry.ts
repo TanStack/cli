@@ -3,7 +3,7 @@ import { loadRemoteAddOn } from './custom-add-ons/add-on.js'
 import { loadStarter } from './custom-add-ons/starter.js'
 import { handleSpecialURL } from './utils.js'
 
-import type { AddOn, Starter } from './types'
+import type { AddOn, Starter } from './types.js'
 
 const registrySchema = z.object({
   templates: z

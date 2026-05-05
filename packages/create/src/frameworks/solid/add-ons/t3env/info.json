@@ -1,6 +1,6 @@
 {
   "name": "T3Env",
-  "description": "Add type safety to your environment variables",
+  "description": "Validate process.env at build time (catch missing/wrong env vars before runtime).",
   "phase": "add-on",
   "link": "https://github.com/t3-oss/t3-env",
   "type": "add-on",

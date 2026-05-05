@@ -1,0 +1,10 @@
+<% if (fileRouter) { ignoreFile() } %>import { describe, expect, test } from "vitest";
+import { render, screen } from "@solidjs/testing-library";
+import App from "./App.<%= jsx %>";
+
+describe("App", () => {
+  test("renders", () => {
+    render(() => <App />);
+    expect(screen.getByText("Learn Solid")).toBeDefined();
+  });
+});
