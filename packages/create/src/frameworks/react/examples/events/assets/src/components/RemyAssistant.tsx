@@ -88,13 +88,10 @@ export default function RemyAssistant({
   const [isOpen, setIsOpen] = useState(false)
   const { messages, sendMessage, isLoading } = useConferenceChat(speakerSlug, talkSlug)
   const [input, setInput] = useState('')
-
-  // Sync with store for header control
-  useEffect(() => {
-    return showRemyAssistant.subscribe(() => {
-      setIsOpen(showRemyAssistant.state)
-    })
-  }, [])
+  
+  showRemyAssistant.subscribe(() => {
+    setIsOpen(showRemyAssistant.state)
+  })
 
   const handleToggle = () => {
     const newState = !isOpen
