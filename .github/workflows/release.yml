@@ -23,9 +23,10 @@ jobs:
     name: Release
     if: ${{ github.repository_owner == 'TanStack' && !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
       - name: Setup Tools

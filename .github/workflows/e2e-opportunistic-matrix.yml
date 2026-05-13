@@ -19,6 +19,7 @@ jobs:
   matrix-e2e:
     name: Matrix (${{ matrix.scenario }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     continue-on-error: true
     strategy:
       fail-fast: false
@@ -34,9 +35,10 @@ jobs:
           - react-toolchain-deploy
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
       - name: Install Playwright Chrome
@@ -47,7 +49,7 @@ jobs:
         run: pnpm nx run @tanstack/cli:test:e2e:matrix
       - name: Upload Playwright Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report-${{ matrix.scenario }}
           path: packages/cli/playwright-report
