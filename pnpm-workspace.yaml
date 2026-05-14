@@ -6,3 +6,18 @@ packages:
   - 'cli-aliases/*'
   - 'packages/*'
   - 'examples/custom-cli/*'
+
+overrides:
+  '@tanstack/create-start': 'workspace:*'
+  'create-start-app': 'workspace:*'
+  'create-tanstack': 'workspace:*'
+  'create-tanstack-app': 'workspace:*'
+  'create-tsrouter-app': 'workspace:*'
+  '@tanstack/cli': 'workspace:*'
+  '@tanstack/create': 'workspace:*'
+
+allowBuilds:
+  # root dependencies
+  esbuild: true
+  nx: true
+  unrs-resolver: false # not directly required for build
