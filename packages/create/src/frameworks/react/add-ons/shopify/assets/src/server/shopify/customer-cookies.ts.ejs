@@ -1,0 +1,49 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import {
+  deleteCookie,
+  getCookie,
+  setCookie,
+} from '@tanstack/react-start/server'
+
+const SESSION_COOKIE = 'shopify_customer_session'
+const FLIGHT_COOKIE = 'shopify_oauth_state'
+
+const sessionCookieOptions = () => ({
+  path: '/' as const,
+  maxAge: 60 * 60 * 24 * 30, // 30 days
+  sameSite: 'lax' as const,
+  httpOnly: true,
+  secure: import.meta.env.PROD,
+})
+
+const flightCookieOptions = () => ({
+  path: '/' as const,
+  maxAge: 60 * 10, // 10 min
+  sameSite: 'lax' as const,
+  httpOnly: true,
+  secure: import.meta.env.PROD,
+})
+
+export function getSessionCookie() {
+  return getCookie(SESSION_COOKIE)
+}
+
+export function setSessionCookie(value: string) {
+  setCookie(SESSION_COOKIE, value, sessionCookieOptions())
+}
+
+export function clearSessionCookie() {
+  deleteCookie(SESSION_COOKIE, { path: '/' })
+}
+
+export function getFlightCookie() {
+  return getCookie(FLIGHT_COOKIE)
+}
+
+export function setFlightCookie(value: string) {
+  setCookie(FLIGHT_COOKIE, value, flightCookieOptions())
+}
+
+export function clearFlightCookie() {
+  deleteCookie(FLIGHT_COOKIE, { path: '/' })
+}

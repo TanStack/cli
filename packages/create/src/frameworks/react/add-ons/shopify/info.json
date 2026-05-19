@@ -1,0 +1,104 @@
+{
+  "name": "Shopify",
+  "description": "Headless Shopify storefront — products, cart, Shopify-hosted checkout, and optional customer accounts. Mounts /shop/* routes alongside your existing app.",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "add-on",
+  "category": "other",
+  "color": "#5A31F4",
+  "priority": 80,
+  "link": "https://shopify.dev/docs/storefronts/headless",
+  "dependsOn": ["tanstack-query"],
+  "options": {
+    "customerAccount": {
+      "type": "select",
+      "label": "Customer Accounts",
+      "description": "Add /shop/account/* routes (Shopify Customer Account API, OAuth setup required).",
+      "default": "disabled",
+      "options": [
+        { "value": "disabled", "label": "No (skip account routes)" },
+        { "value": "enabled", "label": "Yes (include OAuth + account dashboard)" }
+      ]
+    }
+  },
+  "integrations": [
+    {
+      "type": "header-user",
+      "jsName": "ShopifyHeaderCart",
+      "path": "src/integrations/shopify/header-cart.tsx"
+    }
+  ],
+  "routes": [
+    {
+      "icon": "ShoppingBag",
+      "url": "/shop",
+      "name": "Shop",
+      "path": "src/routes/shop.index.tsx",
+      "jsName": "ShopIndex"
+    },
+    {
+      "url": "/shop/cart",
+      "name": "Cart",
+      "path": "src/routes/shop.cart.tsx",
+      "jsName": "ShopCart"
+    }
+  ],
+  "envVars": [
+    {
+      "name": "SHOPIFY_STORE_DOMAIN",
+      "description": "Your store's myshopify.com domain. Defaults to Shopify's public Hydrogen demo store.",
+      "required": false,
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_STOREFRONT_API_VERSION",
+      "description": "Storefront API version (e.g. 2026-01).",
+      "required": false,
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_PUBLIC_STOREFRONT_TOKEN",
+      "description": "Public Storefront API token. Defaults to Shopify's public Hydrogen demo token.",
+      "required": false,
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_PRIVATE_STOREFRONT_TOKEN",
+      "description": "Optional private Storefront API token. Higher rate limits + buyer-IP forwarding when set.",
+      "required": false,
+      "secret": true,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID",
+      "description": "Customer Account API client ID. Required when customerAccount=enabled.",
+      "required": false,
+      "secret": true,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID",
+      "description": "Numeric Shop ID (Shopify admin > Settings > Customer accounts). Required when customerAccount=enabled.",
+      "required": false,
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI",
+      "description": "OAuth callback URL. Defaults to http://localhost:3000/shop/account/callback.",
+      "required": false,
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "SHOPIFY_SESSION_SECRET",
+      "description": "32+ char secret used to sign customer session cookies. Required when customerAccount=enabled.",
+      "required": false,
+      "secret": true,
+      "file": ".env.local"
+    }
+  ]
+}

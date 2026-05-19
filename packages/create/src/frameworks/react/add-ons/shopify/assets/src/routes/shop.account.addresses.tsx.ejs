@@ -1,0 +1,67 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { createFileRoute } from '@tanstack/react-router'
+
+import { getAddresses } from '#/server/shopify/customer.functions'
+
+export const Route = createFileRoute('/shop/account/addresses')({
+  loader: () => getAddresses(),
+  component: AddressesRoute,
+})
+
+function AddressesRoute() {
+  const { addresses, defaultAddressId } = Route.useLoaderData()
+
+  if (addresses.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-medium tracking-tight">Addresses</h2>
+        <div className="rounded-2xl border border-dashed border-[var(--storefront-line)] px-6 py-16 text-center text-[var(--storefront-fg-muted)]">
+          No saved addresses yet. Addresses you use at checkout will appear here.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-medium tracking-tight">Addresses</h2>
+      <ul className="grid gap-4 sm:grid-cols-2">
+        {addresses.map((address) => (
+          <li
+            key={address.id}
+            className="space-y-1 rounded-2xl border border-[var(--storefront-line)] p-4 text-sm"
+          >
+            <p className="font-medium">
+              {[address.firstName, address.lastName].filter(Boolean).join(' ')}
+              {address.id === defaultAddressId && (
+                <span className="ml-2 rounded-full bg-[var(--storefront-line)]/60 px-2 py-0.5 text-xs">
+                  Default
+                </span>
+              )}
+            </p>
+            <p className="text-[var(--storefront-fg-muted)]">
+              {address.address1}
+              {address.address2 && (
+                <>
+                  <br />
+                  {address.address2}
+                </>
+              )}
+              <br />
+              {[address.city, address.zoneCode, address.zip]
+                .filter(Boolean)
+                .join(', ')}
+              <br />
+              {address.territoryCode}
+            </p>
+            {address.phoneNumber && (
+              <p className="text-[var(--storefront-fg-muted)]">
+                {address.phoneNumber}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
