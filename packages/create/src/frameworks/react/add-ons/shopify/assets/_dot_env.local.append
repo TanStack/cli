@@ -1,0 +1,19 @@
+# ─── Shopify ─────────────────────────────────────────────────────────────────
+# These defaults point to Shopify's public Hydrogen demo store so the storefront
+# works on first run with zero config. Replace with your store's values to go live.
+# Get tokens at: Shopify admin > Settings > Apps and sales channels > Develop apps.
+SHOPIFY_STORE_DOMAIN=hydrogen-preview.myshopify.com
+SHOPIFY_STOREFRONT_API_VERSION=2026-01
+SHOPIFY_PUBLIC_STOREFRONT_TOKEN=3b580e70970c4528da70c98e097c2fa0
+# Optional — set to a private storefront token for higher rate limits + buyer-IP forwarding.
+SHOPIFY_PRIVATE_STOREFRONT_TOKEN=
+
+# ─── Shopify Customer Account API ────────────────────────────────────────────
+# Required only if you opted into customer accounts during scaffold.
+# Register a public client in Shopify admin > Settings > Customer accounts > Headless,
+# then paste the client ID and your numeric shop ID below.
+SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID=
+SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID=
+SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI=http://localhost:3000/shop/account/callback
+# 32+ random chars, e.g. `openssl rand -hex 32`. Used to sign customer session cookies.
+SHOPIFY_SESSION_SECRET=

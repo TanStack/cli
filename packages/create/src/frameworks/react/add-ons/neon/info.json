@@ -1,6 +1,6 @@
 {
   "name": "Neon",
-  "description": "Add the Neon database to your application.",
+  "description": "Serverless Postgres (auto-scales to zero, branchable per environment).",
   "link": "https://neon.com",
   "phase": "add-on",
   "type": "add-on",

@@ -1,5 +1,52 @@
 # create-tsrouter-app
 
+## 0.54.32
+
+### Patch Changes
+
+- Updated dependencies [[`e7ca15f`](https://github.com/TanStack/cli/commit/e7ca15f6ff0bee363495c97509dd0ef9f6bc663d)]:
+  - @tanstack/cli@0.68.0
+  - @tanstack/create@0.68.0
+
+## 0.54.31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @tanstack/create@0.67.0
+  - @tanstack/cli@0.67.1
+
+## 0.54.30
+
+### Patch Changes
+
+- Updated dependencies [[`814d222`](https://github.com/TanStack/cli/commit/814d222ac04e839eabe56abce5dcbe66d751c5d8)]:
+  - @tanstack/cli@0.67.0
+  - @tanstack/create@0.66.0
+
+## 0.54.29
+
+### Patch Changes
+
+- Updated dependencies [[`83ebd17`](https://github.com/TanStack/cli/commit/83ebd172c2f6d5006b6eae3a08a3b687a3d8f2ca)]:
+  - @tanstack/cli@0.66.0
+  - @tanstack/create@0.65.0
+
+## 0.54.28
+
+### Patch Changes
+
+- Updated dependencies [[`37e83fb`](https://github.com/TanStack/cli/commit/37e83fbf324c6d60da09a4f2f268f540c8687d5f)]:
+  - @tanstack/cli@0.65.0
+  - @tanstack/create@0.64.0
+
+## 0.54.27
+
+### Patch Changes
+
+- Updated dependencies [[`dcacf77`](https://github.com/TanStack/cli/commit/dcacf7734280c103ed7a77374c1bcb4520efcb98)]:
+  - @tanstack/cli@0.64.6
+
 ## 0.54.26
 
 ### Patch Changes

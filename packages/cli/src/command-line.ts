@@ -546,6 +546,7 @@ export async function normalizeOptions(
       DEFAULT_PACKAGE_MANAGER,
     git: cliOptions.git ?? true,
     install: cliOptions.install,
+    intent: cliOptions.intent ?? true,
     chosenAddOns,
     addOnOptions: {
       ...populateAddOnOptionsDefaults(chosenAddOns),

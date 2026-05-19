@@ -1,6 +1,6 @@
 {
   "name": "Strapi",
-  "description": "Use the Strapi CMS to manage your content.",
+  "description": "Headless CMS with admin UI (self-hosted, content models in TypeScript).",
   "link": "https://strapi.io/",
   "phase": "add-on",
   "type": "add-on",

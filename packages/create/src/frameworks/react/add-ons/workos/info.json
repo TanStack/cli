@@ -1,6 +1,6 @@
 {
   "name": "WorkOS",
-  "description": "Add WorkOS authentication to your application.",
+  "description": "Enterprise SSO, SAML, and directory sync (good for B2B apps).",
   "phase": "add-on",
   "modes": ["file-router"],
   "type": "add-on",

@@ -1,0 +1,45 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import * as v from 'valibot'
+
+import { completeLogin } from '#/server/shopify/customer.functions'
+
+const CallbackSearch = v.object({
+  code: v.optional(v.string()),
+  state: v.optional(v.string()),
+  error: v.optional(v.string()),
+  error_description: v.optional(v.string()),
+})
+
+export const Route = createFileRoute('/shop/account/callback')({
+  validateSearch: (search) => v.parse(CallbackSearch, search),
+  beforeLoad: async ({ search }) => {
+    if (search.error || !search.code || !search.state) {
+      return { error: search.error_description ?? search.error ?? 'Missing OAuth code/state.' }
+    }
+    try {
+      const { redirectAfter } = await completeLogin({
+        data: { code: search.code, state: search.state },
+      })
+      throw redirect({ to: redirectAfter || '/shop/account' })
+    } catch (err) {
+      if (err && typeof err === 'object' && 'isRedirect' in err) throw err
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
+  },
+  loader: ({ context }) => ({ error: context.error }),
+  component: CallbackRoute,
+})
+
+function CallbackRoute() {
+  const { error } = Route.useLoaderData()
+  if (error) {
+    return (
+      <div className="mx-auto max-w-xl space-y-3 rounded-2xl border border-red-500/40 p-8 text-center">
+        <h2 className="text-xl font-medium">Sign-in failed</h2>
+        <p className="text-sm text-[var(--storefront-fg-muted)]">{error}</p>
+      </div>
+    )
+  }
+  return null
+}
