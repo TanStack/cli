@@ -1,5 +1,18 @@
 # @tanstack/cli
 
+## 0.69.0
+
+### Minor Changes
+
+- Support initializing a project in the current directory from the create prompt or by passing `.` as the project name. ([#458](https://github.com/TanStack/cli/pull/458))
+
+### Patch Changes
+
+- Normalize generated demo pages to use the base template styling instead of bespoke full-page gradients and mismatched color treatments. ([#461](https://github.com/TanStack/cli/pull/461))
+
+- Updated dependencies [[`8f4d144`](https://github.com/TanStack/cli/commit/8f4d144c35495533864412a9ffb3ce36c7b62dae), [`9711cc4`](https://github.com/TanStack/cli/commit/9711cc48999dba96f0ec20b7ba95969a859acd0b), [`691f045`](https://github.com/TanStack/cli/commit/691f045cec982f7a0ac70aef94bd0d46499c9fe6)]:
+  - @tanstack/create@0.68.1
+
 ## 0.68.0
 
 ### Minor Changes

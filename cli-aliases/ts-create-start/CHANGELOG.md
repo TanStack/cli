@@ -1,5 +1,13 @@
 # @tanstack/create-start
 
+## 0.59.33
+
+### Patch Changes
+
+- Updated dependencies [[`6f3ef17`](https://github.com/TanStack/cli/commit/6f3ef1763a719b87d47a7f0e7ecd727b5df8ca9a), [`8f4d144`](https://github.com/TanStack/cli/commit/8f4d144c35495533864412a9ffb3ce36c7b62dae), [`9711cc4`](https://github.com/TanStack/cli/commit/9711cc48999dba96f0ec20b7ba95969a859acd0b), [`691f045`](https://github.com/TanStack/cli/commit/691f045cec982f7a0ac70aef94bd0d46499c9fe6)]:
+  - @tanstack/cli@0.69.0
+  - @tanstack/create@0.68.1
+
 ## 0.59.32
 
 ### Patch Changes
