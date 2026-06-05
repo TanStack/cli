@@ -45,14 +45,15 @@ function AddressForm() {
   })
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 text-white"
-      style={{
-        backgroundImage:
-          'radial-gradient(50% 50% at 5% 40%, #f4a460 0%, #8b4513 70%, #1a0f0a 100%)',
-      }}
-    >
-      <div className="w-full max-w-2xl p-8 rounded-xl backdrop-blur-md bg-black/50 shadow-xl border-8 border-black/10">
+    <main className="demo-page demo-center">
+      <section className="demo-panel w-full max-w-2xl">
+        <div className="mb-6">
+          <p className="island-kicker mb-2">TanStack Form</p>
+          <h1 className="demo-title">Address Form</h1>
+          <p className="demo-muted mt-2">
+            Nested fields, field-level validation, and a select input.
+          </p>
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -198,8 +199,8 @@ function AddressForm() {
             </form.AppForm>
           </div>
         </form>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 
