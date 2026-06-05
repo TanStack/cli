@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.68.2
+
+### Patch Changes
+
+- Keep the generated route tree tracked in new React and Solid apps and run route generation once during scaffold. ([#464](https://github.com/TanStack/cli/pull/464))
+
 ## 0.68.1
 
 ### Patch Changes
