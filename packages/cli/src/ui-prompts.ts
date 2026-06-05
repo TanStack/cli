@@ -15,7 +15,10 @@ import {
   getAllAddOns,
 } from '@tanstack/create'
 
-import { validateProjectName } from './utils.js'
+import {
+  isCurrentDirectoryProjectNameInput,
+  validateProjectName,
+} from './utils.js'
 import type { AddOn, PackageManager } from '@tanstack/create'
 
 import type { Framework } from '@tanstack/create/dist/types/types.js'
@@ -29,7 +32,7 @@ export async function selectFramework(
       frameworks.find(
         (f) => f.id.toLowerCase() === defaultFrameworkId.toLowerCase(),
       )?.id) ||
-    frameworks[0]!.id
+    frameworks[0].id
 
   const selected = await select({
     message: 'Select framework:',
@@ -64,10 +67,10 @@ export async function selectInstall(): Promise<boolean> {
 export async function getProjectName(): Promise<string> {
   const value = await text({
     message: 'What would you like to name your project?',
-    defaultValue: 'my-app',
+    placeholder: 'Leave empty to initialize in the current directory',
     validate(value) {
-      if (!value) {
-        return 'Please enter a name'
+      if (isCurrentDirectoryProjectNameInput(value)) {
+        return
       }
 
       const { valid, error } = validateProjectName(value)
@@ -82,7 +85,7 @@ export async function getProjectName(): Promise<string> {
     process.exit(0)
   }
 
-  return value
+  return value.trim()
 }
 
 export async function selectPackageManager(): Promise<PackageManager> {
@@ -284,34 +287,21 @@ export async function promptForAddOnOptions(
     addOnOptions[addOnId] = {}
 
     for (const [optionName, option] of Object.entries(addOn.options)) {
-      if (option && typeof option === 'object' && 'type' in option) {
-        if (option.type === 'select') {
-          const selectOption = option as {
-            type: 'select'
-            label: string
-            description?: string
-            default: string
-            options: Array<{ value: string; label: string }>
-          }
+      const value = await select({
+        message: `${addOn.name}: ${option.label}`,
+        options: option.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+        })),
+        initialValue: option.default,
+      })
 
-          const value = await select({
-            message: `${addOn.name}: ${selectOption.label}`,
-            options: selectOption.options.map((opt) => ({
-              value: opt.value,
-              label: opt.label,
-            })),
-            initialValue: selectOption.default,
-          })
-
-          if (isCancel(value)) {
-            cancel('Operation cancelled.')
-            process.exit(0)
-          }
-
-          addOnOptions[addOnId][optionName] = value
-        }
-        // Future option types can be added here
+      if (isCancel(value)) {
+        cancel('Operation cancelled.')
+        process.exit(0)
       }
+
+      addOnOptions[addOnId][optionName] = value
     }
   }
 
