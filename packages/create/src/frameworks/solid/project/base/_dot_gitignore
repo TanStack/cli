@@ -6,6 +6,7 @@ dist-ssr
 .env
 .nitro
 .tanstack
+src/routeTree.gen.ts
 .wrangler
 .output
 .vinxi
