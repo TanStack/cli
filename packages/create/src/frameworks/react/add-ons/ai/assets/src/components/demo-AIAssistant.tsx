@@ -97,7 +97,7 @@ export default function AIAssistant() {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-0 left-full ml-2 w-[700px] h-[600px] bg-gray-900 rounded-lg shadow-xl border border-orange-500/20 flex flex-col">
+        <div className="fixed inset-x-4 top-20 z-[100] flex h-[calc(100vh-6rem)] max-h-[600px] flex-col overflow-hidden rounded-lg border border-orange-500/20 bg-gray-900 shadow-xl sm:left-auto sm:w-[min(calc(100vw-2rem),700px)]">
           <div className="flex items-center justify-between p-3 border-b border-orange-500/20">
             <h3 className="font-semibold text-white">AI Assistant</h3>
             <button
