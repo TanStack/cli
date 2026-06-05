@@ -13,12 +13,9 @@ function RouteComponent() {
   const article = Route.useLoaderData()
 
   return (
-    <div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
-      <div class="max-w-4xl mx-auto">
-        <Link
-          to="/demo/strapi"
-          class="inline-flex items-center text-cyan-400 hover:text-cyan-300 mb-6 transition-colors"
-        >
+    <main class="demo-page">
+      <div class="mx-auto max-w-4xl">
+        <Link to="/demo/strapi" class="mb-6 inline-flex items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5 mr-2"
@@ -34,13 +31,11 @@ function RouteComponent() {
           Back to Articles
         </Link>
 
-        <article class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-8">
-          <h1 class="text-4xl font-bold text-white mb-4">
-            {article()?.title || 'Untitled'}
-          </h1>
+        <article class="demo-panel">
+          <h1 class="demo-title mb-4">{article()?.title || 'Untitled'}</h1>
 
           {article()?.createdAt && (
-            <p class="text-sm text-cyan-400/70 mb-6">
+            <p class="demo-muted mb-6 text-sm">
               Published on{' '}
               {new Date(
                 article()?.createdAt || article()?.attributes?.createdAt,
@@ -54,10 +49,8 @@ function RouteComponent() {
 
           {article()?.description && (
             <div class="mb-6">
-              <h2 class="text-xl font-semibold text-gray-300 mb-3">
-                Description
-              </h2>
-              <p class="text-gray-400 leading-relaxed">
+              <h2 class="demo-section-title mb-3">Description</h2>
+              <p class="demo-muted leading-relaxed">
                 {article()?.description || article()?.attributes?.description}
               </p>
             </div>
@@ -65,14 +58,14 @@ function RouteComponent() {
 
           {article()?.content && (
             <div>
-              <h2 class="text-xl font-semibold text-gray-300 mb-3">Content</h2>
-              <div class="text-gray-400 leading-relaxed whitespace-pre-wrap">
+              <h2 class="demo-section-title mb-3">Content</h2>
+              <div class="demo-muted whitespace-pre-wrap leading-relaxed">
                 {article()?.content}
               </div>
             </div>
           )}
         </article>
       </div>
-    </div>
+    </main>
   )
 }

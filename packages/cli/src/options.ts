@@ -30,8 +30,7 @@ import {
 } from './command-line.js'
 
 import {
-  getCurrentDirectoryName,
-  sanitizePackageName,
+  resolveProjectLocation,
   validateProjectName,
 } from './utils.js'
 import type { Options } from '@tanstack/create'
@@ -68,21 +67,23 @@ export async function promptForCreateOptions(
     }
   }
 
-  // Validate project name
-  if (cliOptions.projectName) {
-    // Handle "." as project name - use sanitized current directory name
-    if (cliOptions.projectName === '.') {
-      options.projectName = sanitizePackageName(getCurrentDirectoryName())
-    } else {
-      options.projectName = cliOptions.projectName
-    }
-    const { valid, error } = validateProjectName(options.projectName)
-    if (!valid) {
-      console.error(error)
-      process.exit(1)
-    }
-  } else {
-    options.projectName = await getProjectName()
+  const projectLocation = resolveProjectLocation({
+    projectName: cliOptions.projectName ?? (await getProjectName()),
+    targetDir: cliOptions.targetDir,
+    emptyProjectNameIsCurrentDirectory: true,
+  })
+
+  if (!projectLocation) {
+    throw new Error('Project name or target directory is required')
+  }
+
+  options.projectName = projectLocation.projectName
+  options.targetDir = projectLocation.targetDir
+
+  const { valid, error } = validateProjectName(options.projectName)
+  if (!valid) {
+    console.error(error)
+    process.exit(1)
   }
 
   // Mode is always file-router (TanStack Start)

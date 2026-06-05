@@ -28,6 +28,24 @@ describe('getProjectName', () => {
     expect(projectName).toBe('my-app')
   })
 
+  it('should allow blank and "." project names for current directory creation', async () => {
+    const textSpy = vi.spyOn(clack, 'text').mockImplementation(async () => '')
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    const projectName = await getProjectName()
+    const textOptions = textSpy.mock.calls[0]![0] as {
+      placeholder?: string
+      validate?: (value: string) => string | undefined
+    }
+
+    expect(projectName).toBe('')
+    expect(textOptions.placeholder).toBe(
+      'Leave empty to initialize in the current directory',
+    )
+    expect(textOptions.validate?.('')).toBeUndefined()
+    expect(textOptions.validate?.('.')).toBeUndefined()
+  })
+
   it('should exit on cancel', async () => {
     vi.spyOn(clack, 'text').mockImplementation(async () => 'Cancelled')
     vi.spyOn(clack, 'isCancel').mockImplementation(() => true)

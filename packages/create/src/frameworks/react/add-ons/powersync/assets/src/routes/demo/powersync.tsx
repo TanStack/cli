@@ -54,21 +54,22 @@ function PowerSyncDemo() {
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">PowerSync</h1>
           <p className="text-sm text-[var(--sea-ink-soft)]">
-            This demo writes to the local SQLite database immediately. Replace the sample
-            schema and backend connector with your real PowerSync configuration.
+            This demo writes to the local SQLite database immediately. Replace
+            the sample schema and backend connector with your real PowerSync
+            configuration.
           </p>
         </header>
 
-        <section className="rounded-3xl border border-[var(--line)] bg-white/70 p-5 shadow-sm">
+        <section className="demo-card">
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--sea-ink-soft)]">
             Connection State
           </h2>
-          <pre className="mt-3 overflow-auto rounded-2xl bg-[var(--chip-bg)] p-4 text-xs leading-6 text-[var(--sea-ink)]">
+          <pre className="demo-code-block mt-3 overflow-auto text-xs leading-6">
             {JSON.stringify(status, null, 2)}
           </pre>
         </section>
 
-        <section className="rounded-3xl border border-[var(--line)] bg-white/70 p-5 shadow-sm">
+        <section className="demo-card">
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--sea-ink-soft)]">
             Local Todos
           </h2>
@@ -77,39 +78,39 @@ function PowerSyncDemo() {
               {error}
             </p>
           ) : null}
-          <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={addTodo}>
+          <form
+            className="mt-4 flex flex-col gap-3 sm:flex-row"
+            onSubmit={addTodo}
+          >
             <label className="sr-only" htmlFor="powersync-todo-description">
               Todo description
             </label>
             <input
               id="powersync-todo-description"
-              className="min-w-0 flex-1 rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--sea-ink)] outline-none"
+              className="demo-input min-w-0 flex-1"
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Write to the local PowerSync database"
               value={description}
             />
-            <button
-              className="rounded-2xl bg-[var(--sea-ink)] px-4 py-3 text-sm font-semibold text-white"
-              type="submit"
-            >
+            <button className="demo-button" type="submit">
               Insert Local Row
             </button>
           </form>
 
           <ul className="mt-5 space-y-3">
             {todos.length === 0 ? (
-              <li className="rounded-2xl border border-dashed border-[var(--line)] px-4 py-5 text-sm text-[var(--sea-ink-soft)]">
-                No rows yet. Insert one locally, then wire `uploadData()` to send it upstream.
+              <li className="demo-list-item text-sm text-[var(--sea-ink-soft)]">
+                No rows yet. Insert one locally, then wire `uploadData()` to
+                send it upstream.
               </li>
             ) : (
               todos.map((todo) => (
-                <li
-                  className="rounded-2xl border border-[var(--line)] bg-[var(--chip-bg)] px-4 py-4"
-                  key={todo.id}
-                >
+                <li className="demo-list-item" key={todo.id}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-medium text-[var(--sea-ink)]">{todo.description}</p>
+                      <p className="font-medium text-[var(--sea-ink)]">
+                        {todo.description}
+                      </p>
                       <p className="mt-1 text-xs text-[var(--sea-ink-soft)]">
                         {todo.created_at}
                       </p>

@@ -1,4 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { resolve } from 'node:path'
 
 import { promptForCreateOptions } from '../src/options'
 import {
@@ -9,6 +10,10 @@ import * as create from '@tanstack/create'
 
 import * as prompts from '../src/ui-prompts'
 import * as commandLine from '../src/command-line'
+import {
+  getCurrentDirectoryName,
+  sanitizePackageName,
+} from '../src/utils'
 
 import type { Framework } from '@tanstack/create'
 
@@ -105,6 +110,30 @@ describe('promptForCreateOptions', () => {
     const options = await promptForCreateOptions(baseCliOptions, {})
 
     expect(options?.projectName).toBe('hello')
+  })
+
+  it('uses the current directory when the prompted project name is empty', async () => {
+    setBasicSpies()
+    vi.spyOn(prompts, 'getProjectName').mockImplementation(async () => '')
+
+    const options = await promptForCreateOptions(baseCliOptions, {})
+
+    expect(options?.projectName).toBe(
+      sanitizePackageName(getCurrentDirectoryName()),
+    )
+    expect(options?.targetDir).toBe(resolve(process.cwd()))
+  })
+
+  it('uses the current directory when the prompted project name is "."', async () => {
+    setBasicSpies()
+    vi.spyOn(prompts, 'getProjectName').mockImplementation(async () => '.')
+
+    const options = await promptForCreateOptions(baseCliOptions, {})
+
+    expect(options?.projectName).toBe(
+      sanitizePackageName(getCurrentDirectoryName()),
+    )
+    expect(options?.targetDir).toBe(resolve(process.cwd()))
   })
 
   it('accept incoming project name', async () => {
