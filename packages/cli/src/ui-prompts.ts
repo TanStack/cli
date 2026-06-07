@@ -66,8 +66,7 @@ export async function selectInstall(): Promise<boolean> {
 
 export async function getProjectName(): Promise<string> {
   const value = await text({
-    message: 'What would you like to name your project?',
-    placeholder: 'Leave empty to initialize in the current directory',
+    message: 'Project name (leave empty to use current directory)',
     validate(value) {
       if (isCurrentDirectoryProjectNameInput(value)) {
         return

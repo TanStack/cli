@@ -34,14 +34,16 @@ describe('getProjectName', () => {
 
     const projectName = await getProjectName()
     const textOptions = textSpy.mock.calls[0]![0] as {
+      message?: string
       placeholder?: string
       validate?: (value: string) => string | undefined
     }
 
     expect(projectName).toBe('')
-    expect(textOptions.placeholder).toBe(
-      'Leave empty to initialize in the current directory',
+    expect(textOptions.message).toBe(
+      'Project name (leave empty to use current directory)',
     )
+    expect(textOptions.placeholder).toBeUndefined()
     expect(textOptions.validate?.('')).toBeUndefined()
     expect(textOptions.validate?.('.')).toBeUndefined()
   })
