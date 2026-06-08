@@ -1,5 +1,11 @@
 # @tanstack/cli
 
+## 0.69.2
+
+### Patch Changes
+
+- Fix the interactive create prompt so accepting the current directory does not leak placeholder text into project-name validation. ([#468](https://github.com/TanStack/cli/pull/468))
+
 ## 0.69.1
 
 ### Patch Changes
