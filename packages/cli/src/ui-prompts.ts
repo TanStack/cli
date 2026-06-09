@@ -84,7 +84,7 @@ export async function getProjectName(): Promise<string> {
     process.exit(0)
   }
 
-  return value.trim()
+  return value?.trim() ?? ''
 }
 
 export async function selectPackageManager(): Promise<PackageManager> {

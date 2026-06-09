@@ -26,8 +26,8 @@ export function getCurrentDirectoryPackageName(): string {
   return getDirectoryPackageName(process.cwd())
 }
 
-export function isCurrentDirectoryProjectNameInput(name: string): boolean {
-  const normalized = name.trim()
+export function isCurrentDirectoryProjectNameInput(name?: string): boolean {
+  const normalized = name?.trim() ?? ''
   return normalized === '' || normalized === '.'
 }
 

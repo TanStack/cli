@@ -48,6 +48,15 @@ describe('getProjectName', () => {
     expect(textOptions.validate?.('.')).toBeUndefined()
   })
 
+  it('should treat undefined text input as the current directory', async () => {
+    vi.spyOn(clack, 'text').mockImplementation(async () => undefined)
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    const projectName = await getProjectName()
+
+    expect(projectName).toBe('')
+  })
+
   it('should exit on cancel', async () => {
     vi.spyOn(clack, 'text').mockImplementation(async () => 'Cancelled')
     vi.spyOn(clack, 'isCancel').mockImplementation(() => true)
