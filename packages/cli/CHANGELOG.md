@@ -1,5 +1,11 @@
 # @tanstack/cli
 
+## 0.69.3
+
+### Patch Changes
+
+- Fix blank project name submissions in interactive create prompts. ([#472](https://github.com/TanStack/cli/pull/472))
+
 ## 0.69.2
 
 ### Patch Changes
