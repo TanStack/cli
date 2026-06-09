@@ -67,12 +67,16 @@ export async function selectInstall(): Promise<boolean> {
 export async function getProjectName(): Promise<string> {
   const value = await text({
     message: 'Project name (leave empty to use current directory)',
+    // Clack prints `undefined` on blank submit when placeholder is omitted.
+    placeholder: '',
     validate(value) {
-      if (isCurrentDirectoryProjectNameInput(value)) {
+      const projectName = value ?? ''
+
+      if (isCurrentDirectoryProjectNameInput(projectName)) {
         return
       }
 
-      const { valid, error } = validateProjectName(value)
+      const { valid, error } = validateProjectName(projectName)
       if (!valid) {
         return error
       }
@@ -84,7 +88,7 @@ export async function getProjectName(): Promise<string> {
     process.exit(0)
   }
 
-  return value.trim()
+  return (value ?? '').trim()
 }
 
 export async function selectPackageManager(): Promise<PackageManager> {
