@@ -4,6 +4,7 @@ import {
   getPackageManagerExecuteCommand,
   getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
+  getPackageManagerUninstallCommand,
   translateExecuteCommand,
 } from '../src/package-manager.js'
 import { formatCommand } from '../src/utils.js'
@@ -151,6 +152,34 @@ describe('getPackageManagerInstallCommand', () => {
     expect(
       formatCommand(getPackageManagerInstallCommand('npm', 'vitest', true)),
     ).toBe('npm install vitest -D')
+  })
+})
+
+describe('getPackageManagerUninstallCommand', () => {
+  it('yarn uninstall radix-ui', () => {
+    expect(
+      formatCommand(getPackageManagerUninstallCommand('yarn', 'radix-ui')),
+    ).toBe('yarn remove radix-ui')
+  })
+  it('pnpm uninstall radix-ui', () => {
+    expect(
+      formatCommand(getPackageManagerUninstallCommand('pnpm', 'radix-ui')),
+    ).toBe('pnpm remove radix-ui')
+  })
+  it('bun uninstall radix-ui', () => {
+    expect(
+      formatCommand(getPackageManagerUninstallCommand('bun', 'radix-ui')),
+    ).toBe('bun remove radix-ui')
+  })
+  it('deno uninstall radix-ui', () => {
+    expect(
+      formatCommand(getPackageManagerUninstallCommand('deno', 'radix-ui')),
+    ).toBe('deno uninstall radix-ui')
+  })
+  it('npm uninstall radix-ui', () => {
+    expect(
+      formatCommand(getPackageManagerUninstallCommand('npm', 'radix-ui')),
+    ).toBe('npm uninstall radix-ui')
   })
 })
 

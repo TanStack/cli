@@ -166,6 +166,10 @@ describe('createTemplateFile', () => {
       "<%= getPackageManagerAddScript('foo', true) %>",
     )
     await templateFile(
+      'remove-foo.txt.ejs',
+      "<%= getPackageManagerRemoveScript('foo') %>",
+    )
+    await templateFile(
       'run-dev.txt.ejs',
       "<%= getPackageManagerRunScript('dev') %>",
     )
@@ -173,6 +177,7 @@ describe('createTemplateFile', () => {
 
     expect(output.files['/test/foo.txt']).toEqual('pnpm add foo')
     expect(output.files['/test/foo-dev.txt']).toEqual('pnpm add foo --dev')
+    expect(output.files['/test/remove-foo.txt']).toEqual('pnpm remove foo')
     expect(output.files['/test/run-dev.txt']).toEqual('pnpm dev')
   })
 

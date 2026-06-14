@@ -88,6 +88,26 @@ export function getPackageManagerInstallCommand(
   }
 }
 
+export function getPackageManagerUninstallCommand(
+  packagerManager: PackageManager,
+  pkg: string,
+) {
+  switch (packagerManager) {
+    case 'yarn':
+    case 'pnpm':
+    case 'bun':
+      return {
+        command: packagerManager,
+        args: ['remove', pkg],
+      }
+    default:
+      return {
+        command: packagerManager,
+        args: ['uninstall', pkg],
+      }
+  }
+}
+
 export function packageManagerInstall(
   environment: Environment,
   cwd: string,

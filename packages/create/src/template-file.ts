@@ -7,6 +7,7 @@ import {
   getPackageManagerExecuteCommand,
   getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
+  getPackageManagerUninstallCommand,
 } from './package-manager.js'
 import { relativePath } from './file-helpers.js'
 
@@ -58,6 +59,11 @@ export function createTemplateFile(environment: Environment, options: Options) {
         packageName,
         isDev,
       ),
+    )
+  }
+  function getPackageManagerRemoveScript(packageName: string) {
+    return formatCommand(
+      getPackageManagerUninstallCommand(options.packageManager, packageName),
     )
   }
   function getPackageManagerRunScript(
@@ -145,6 +151,7 @@ export function createTemplateFile(environment: Environment, options: Options) {
       routes,
 
       getPackageManagerAddScript,
+      getPackageManagerRemoveScript,
       getPackageManagerRunScript,
       getPackageManagerExecuteScript,
 
