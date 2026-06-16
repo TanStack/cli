@@ -30,7 +30,7 @@ import {
   getTelemetryStatus,
   setTelemetryEnabled,
 } from './telemetry-config.js'
-import { TelemetryClient, createTelemetryClient } from './telemetry.js'
+import { createTelemetryClient } from './telemetry.js'
 
 import { promptForAddOns, promptForCreateOptions } from './options.js'
 import {
@@ -43,6 +43,7 @@ import { createUIEnvironment } from './ui-environment.js'
 import { DevWatchManager } from './dev-watch.js'
 
 import type { CliOptions } from './types.js'
+import type { TelemetryClient } from './telemetry.js'
 import type {
   FrameworkDefinition,
   Options,
@@ -500,8 +501,7 @@ export function cli({
       getResolvedCreateTelemetryProperties(normalizedOpts, options),
     )
 
-    normalizedOpts.targetDir =
-      options.targetDir || resolve(process.cwd(), projectName)
+    normalizedOpts.targetDir = resolve(normalizedOpts.targetDir)
 
     // Create the initial app with minimal output for dev watch mode
     console.log(chalk.bold('\ndev-watch'))
@@ -850,7 +850,11 @@ export function cli({
 
           let cameFromPrompts = false
           if (finalOptions) {
-            intro(`Creating a new ${appName} app in ${projectName}...`)
+            const createLocation =
+              resolve(finalOptions.targetDir) === resolve(process.cwd())
+                ? 'the current directory'
+                : finalOptions.projectName
+            intro(`Creating a new ${appName} app in ${createLocation}...`)
           } else {
             if (!wantsInteractiveMode) {
               throw new Error(
@@ -880,12 +884,10 @@ export function cli({
           ;(finalOptions as Options & { routerOnly?: boolean }).routerOnly =
             !!cliOptions.routerOnly
 
-          if (options.targetDir) {
-            finalOptions.targetDir = options.targetDir
-          } else if (finalOptions.targetDir) {
+          if (finalOptions.targetDir) {
             // Keep the normalized target dir.
-          } else if (projectName === '.') {
-            finalOptions.targetDir = resolve(process.cwd())
+          } else if (options.targetDir) {
+            finalOptions.targetDir = resolve(options.targetDir)
           } else {
             finalOptions.targetDir = resolve(process.cwd(), finalOptions.projectName)
           }

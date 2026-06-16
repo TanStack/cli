@@ -2,34 +2,33 @@ name: Release
 
 on:
   push:
-    branches: [main, alpha, beta, rc]
+    branches: [main, alpha, beta, rc, 'v[0-9]', '*-pre', '*-maint']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   release:
     name: Release
-    if: ${{ github.repository_owner == 'TanStack' && !contains(github.event.head_commit.message, '[skip ci]') }}
+    if: ${{ github.repository_owner == 'TanStack' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
       id-token: write
-      pull-requests: read
-      statuses: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true # changesets/action pushes version PR commits
       - name: Setup Tools
         uses: tanstack/config/.github/setup@e4b48f16568324f76f467aa4c2aac2f05db632c3 # main
       - name: Build
@@ -40,28 +39,49 @@ jobs:
         run: pnpm --filter @tanstack/cli exec playwright install --with-deps chrome
       - name: E2E Blocking
         run: pnpm --filter @tanstack/cli test:e2e
-      - name: Generate Semantic Changeset Fallback
-        run: pnpm run changeset:generate
 
-      - name: Prepare Release Context
-        id: release
-        run: pnpm run release:prepare
+      - name: Enter Pre-Release Mode
+        if: "(contains(github.ref_name, '-pre') || github.ref_name == 'alpha' || github.ref_name == 'beta' || github.ref_name == 'rc') && !hashFiles('.changeset/pre.json')"
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          if [[ "$BRANCH" == "alpha" || "$BRANCH" == "beta" || "$BRANCH" == "rc" ]]; then
+            pnpm changeset pre enter "$BRANCH"
+          else
+            pnpm changeset pre enter pre
+          fi
+      - name: Determine dist-tag
+        id: dist-tag
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          if [[ "$BRANCH" == "alpha" || "$BRANCH" == "beta" || "$BRANCH" == "rc" ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$BRANCH" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" == *-pre ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "tag=pre" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" == *-maint ]]; then
+            echo "tag=maint" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" =~ ^v[0-9]+$ ]]; then
+            echo "tag=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Version Packages
-        if: steps.release.outputs.has_changesets == 'true'
-        run: pnpm run changeset:version
-
-      - name: Detect Versioning Changes
-        if: steps.release.outputs.has_changesets == 'true'
-        id: changes
-        run: pnpm run release:detect-changes
-
-      - name: Commit Version Updates
-        if: steps.release.outputs.has_changesets == 'true' && steps.changes.outputs.has_changes == 'true'
-        run: pnpm run release:commit-and-push
-
-      - name: Publish Packages
-        if: steps.release.outputs.has_changesets == 'true' && steps.changes.outputs.has_changes == 'true'
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
+        with:
+          version: pnpm run changeset:version
+          publish: pnpm run changeset:publish ${{ steps.dist-tag.outputs.tag && format('--tag {0}', steps.dist-tag.outputs.tag) }}
+          title: 'ci: Version Packages'
+          commit: 'ci: changeset release'
         env:
-          NPM_TAG: ${{ steps.release.outputs.npm_tag }}
-        run: pnpm changeset publish --tag "$NPM_TAG"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        run: node scripts/create-github-release.mjs ${PRERELEASE_FLAG} ${LATEST_FLAG}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE_FLAG: ${{ steps.dist-tag.outputs.prerelease == 'true' && '--prerelease' }}
+          LATEST_FLAG: ${{ steps.dist-tag.outputs.latest == 'true' && '--latest' }}

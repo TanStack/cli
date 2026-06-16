@@ -31,7 +31,7 @@ function stripExamplesFromOptions(options: Options): Options {
           !isDemoFilePath(route.path) &&
           !(route.url && route.url.startsWith('/demo')),
       )
-      
+
       const filteredIntegrations = (addOn.integrations || []).filter(
         (integration) => !isDemoFilePath(integration.path)
       )
@@ -277,6 +277,37 @@ async function runCommandsAndInstallDependencies(
   await installShadcnComponents(environment, options.targetDir, options)
 
   await setupIntent(environment, options.targetDir, options)
+
+  if (shouldGenerateRoutes(options)) {
+    s.start(`Generating route tree...`)
+    const command = getPackageManagerScriptCommand(options.packageManager, [
+      'generate-routes',
+    ])
+    const cmd = formatCommand(command)
+    environment.startStep({
+      id: 'generate-routes',
+      type: 'command',
+      message: cmd,
+    })
+    await environment.execute(
+      command.command,
+      command.args,
+      options.targetDir,
+      {
+        inherit: true,
+      },
+    )
+    environment.finishStep('generate-routes', 'Route tree generated')
+    s.stop(`Route tree generated`)
+  }
+}
+
+function shouldGenerateRoutes(options: Options) {
+  return (
+    options.install !== false &&
+    options.mode === 'file-router' &&
+    (options.framework.id === 'react' || options.framework.id === 'solid')
+  )
 }
 
 async function seedEnvValues(environment: Environment, options: Options) {

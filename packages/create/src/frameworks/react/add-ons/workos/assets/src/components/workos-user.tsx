@@ -5,7 +5,7 @@ export default function SignInButton({ large }: { large?: boolean }) {
 
   const buttonClasses = `${
     large ? 'px-6 py-3 text-base' : 'px-4 py-2 text-sm'
-  } bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed`
+  } demo-button disabled:opacity-50 disabled:cursor-not-allowed`
 
   if (user) {
     return (

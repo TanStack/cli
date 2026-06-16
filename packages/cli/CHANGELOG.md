@@ -1,5 +1,37 @@
 # @tanstack/cli
 
+## 0.69.3
+
+### Patch Changes
+
+- Fix blank project name submissions in interactive create prompts. ([#472](https://github.com/TanStack/cli/pull/472))
+
+## 0.69.2
+
+### Patch Changes
+
+- Fix the interactive create prompt so accepting the current directory does not leak placeholder text into project-name validation. ([#468](https://github.com/TanStack/cli/pull/468))
+
+## 0.69.1
+
+### Patch Changes
+
+- Updated dependencies [[`3811aac`](https://github.com/TanStack/cli/commit/3811aac7468e6df9c6df2df62b3f65d38ccc56a2)]:
+  - @tanstack/create@0.68.2
+
+## 0.69.0
+
+### Minor Changes
+
+- Support initializing a project in the current directory from the create prompt or by passing `.` as the project name. ([#458](https://github.com/TanStack/cli/pull/458))
+
+### Patch Changes
+
+- Normalize generated demo pages to use the base template styling instead of bespoke full-page gradients and mismatched color treatments. ([#461](https://github.com/TanStack/cli/pull/461))
+
+- Updated dependencies [[`8f4d144`](https://github.com/TanStack/cli/commit/8f4d144c35495533864412a9ffb3ce36c7b62dae), [`9711cc4`](https://github.com/TanStack/cli/commit/9711cc48999dba96f0ec20b7ba95969a859acd0b), [`691f045`](https://github.com/TanStack/cli/commit/691f045cec982f7a0ac70aef94bd0d46499c9fe6)]:
+  - @tanstack/create@0.68.1
+
 ## 0.68.0
 
 ### Minor Changes

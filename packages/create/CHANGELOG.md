@@ -1,5 +1,21 @@
 # @tanstack/create
 
+## 0.68.2
+
+### Patch Changes
+
+- Keep the generated route tree tracked in new React and Solid apps and run route generation once during scaffold. ([#464](https://github.com/TanStack/cli/pull/464))
+
+## 0.68.1
+
+### Patch Changes
+
+- Keep the generated AI assistant demo panel inside the viewport. ([#459](https://github.com/TanStack/cli/pull/459))
+
+- Normalize generated demo pages to use the base template styling instead of bespoke full-page gradients and mismatched color treatments. ([#461](https://github.com/TanStack/cli/pull/461))
+
+- Ignore the generated route tree in new React and Solid app gitignores. ([#460](https://github.com/TanStack/cli/pull/460))
+
 ## 0.68.0
 
 ### Minor Changes

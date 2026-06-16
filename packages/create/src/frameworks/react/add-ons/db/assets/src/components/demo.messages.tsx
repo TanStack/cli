@@ -2,14 +2,10 @@ import type { Message } from '#/db-collections'
 
 export const getAvatarColor = (username: string) => {
   const colors = [
-    'bg-blue-500',
-    'bg-green-500',
-    'bg-purple-500',
-    'bg-pink-500',
-    'bg-indigo-500',
-    'bg-red-500',
-    'bg-yellow-500',
-    'bg-teal-500',
+    'bg-[var(--lagoon-deep)]',
+    'bg-[var(--palm)]',
+    'bg-[var(--sea-ink-soft)]',
+    'bg-[var(--lagoon)]',
   ]
   const index = username
     .split('')
@@ -49,12 +45,12 @@ export default function Messages({
             <div
               className={`px-4 py-2 rounded-2xl ${
                 msg.user === user
-                  ? 'bg-blue-500 text-white rounded-br-md'
-                  : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
+                  ? 'bg-[var(--lagoon-deep)] text-white rounded-br-md'
+                  : 'border border-[var(--line)] bg-[var(--chip-bg)] text-[var(--sea-ink)] rounded-bl-md'
               }`}
             >
               {msg.user !== user && (
-                <p className="text-xs text-gray-500 mb-1 font-medium">
+                <p className="demo-muted mb-1 text-xs font-medium">
                   {msg.user}
                 </p>
               )}

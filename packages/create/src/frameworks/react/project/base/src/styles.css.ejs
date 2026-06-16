@@ -203,6 +203,209 @@ pre code {
   border-color: color-mix(in oklab, var(--lagoon-deep) 35%, var(--line));
 }
 
+.demo-page {
+  width: min(1080px, calc(100% - 2rem));
+  margin-inline: auto;
+  padding-block: clamp(2.25rem, 6vw, 4.5rem);
+  color: var(--sea-ink);
+}
+
+.demo-page-wide {
+  width: min(1280px, calc(100% - 2rem));
+}
+
+.demo-center {
+  min-height: calc(100vh - 13rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-panel,
+.demo-card {
+  border: 1px solid var(--line);
+  background: linear-gradient(165deg, var(--surface-strong), var(--surface));
+  box-shadow:
+    0 1px 0 var(--inset-glint) inset,
+    0 18px 34px rgba(30, 90, 72, 0.1),
+    0 4px 14px rgba(23, 58, 64, 0.06);
+  backdrop-filter: blur(4px);
+}
+
+.demo-panel {
+  border-radius: 1.25rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.demo-card {
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.demo-title {
+  margin: 0;
+  color: var(--sea-ink);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.demo-section-title {
+  margin: 0;
+  color: var(--sea-ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.demo-muted {
+  color: var(--sea-ink-soft);
+}
+
+.demo-input,
+.demo-select,
+.demo-textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: color-mix(in oklab, var(--surface-strong) 88%, white 12%);
+  color: var(--sea-ink);
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.demo-input,
+.demo-select {
+  padding: 0.7rem 0.9rem;
+}
+
+.demo-input-fit {
+  width: auto;
+}
+
+.demo-textarea {
+  min-height: 7rem;
+  padding: 0.8rem 0.9rem;
+  resize: vertical;
+}
+
+.demo-input:focus,
+.demo-select:focus,
+.demo-textarea:focus {
+  border-color: color-mix(in oklab, var(--lagoon-deep) 58%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lagoon) 24%, transparent);
+}
+
+.demo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--lagoon-deep) 34%, var(--line));
+  border-radius: 0.85rem;
+  background: color-mix(in oklab, var(--lagoon) 22%, var(--surface-strong));
+  color: var(--sea-ink);
+  padding: 0.72rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.demo-button:hover {
+  transform: translateY(-1px);
+  background: color-mix(in oklab, var(--lagoon) 30%, var(--surface-strong));
+}
+
+.demo-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.demo-button-secondary {
+  border-color: var(--line);
+  background: color-mix(in oklab, var(--surface-strong) 74%, transparent);
+  color: var(--sea-ink-soft);
+}
+
+.demo-button-danger {
+  border-color: rgba(196, 71, 71, 0.28);
+  background: rgba(196, 71, 71, 0.1);
+  color: #9f3030;
+}
+
+.demo-list-item {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: color-mix(in oklab, var(--chip-bg) 82%, transparent);
+  padding: 0.9rem 1rem;
+}
+
+.demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--chip-line);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--sea-ink-soft);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.demo-alert {
+  border: 1px solid rgba(193, 126, 42, 0.3);
+  border-radius: 1rem;
+  background: rgba(193, 126, 42, 0.1);
+  color: var(--sea-ink);
+  padding: 1rem;
+}
+
+.demo-alert-danger {
+  border-color: rgba(196, 71, 71, 0.3);
+  background: rgba(196, 71, 71, 0.1);
+}
+
+.demo-code-block {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in oklab, var(--chip-bg) 88%, transparent);
+  color: var(--sea-ink);
+  padding: 1rem;
+}
+
+.demo-table-shell {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in oklab, var(--surface-strong) 78%, transparent);
+}
+
+.demo-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--sea-ink);
+}
+
+.demo-table th,
+.demo-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.demo-table th {
+  background: color-mix(in oklab, var(--chip-bg) 88%, transparent);
+  color: var(--sea-ink);
+  font-weight: 700;
+}
+
+.demo-table tr:hover td {
+  background: color-mix(in oklab, var(--lagoon) 8%, transparent);
+}
+
 button,
 .island-shell,
 a {

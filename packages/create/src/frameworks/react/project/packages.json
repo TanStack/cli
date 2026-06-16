@@ -15,6 +15,9 @@
     }
   },
   "file-router": {
+    "devDependencies": {
+      "@tanstack/router-cli": "^1.132.0"
+    },
     "dependencies": {
       "@tanstack/router-plugin": "^1.132.0"
     }

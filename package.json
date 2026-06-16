@@ -20,9 +20,6 @@
     "prepare": "husky install",
     "changeset": "changeset",
     "changeset:generate": "node scripts/generate-semantic-changeset.mjs",
-    "release:prepare": "node scripts/prepare-release.mjs",
-    "release:detect-changes": "node scripts/release-detect-changes.mjs",
-    "release:commit-and-push": "node scripts/release-commit-and-push.mjs",
     "changeset:publish": "changeset publish",
     "changeset:version": "changeset version && pnpm install --no-frozen-lockfile"
   },

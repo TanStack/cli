@@ -1,10 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  SignIn,
-  SignedIn,
-  SignedOut,
-  useUser,
-} from '@clerk/clerk-react'
+import { SignIn, SignedIn, SignedOut, useUser } from '@clerk/clerk-react'
 
 export const Route = createFileRoute('/demo/clerk')({
   component: ClerkDemo,
@@ -12,27 +7,27 @@ export const Route = createFileRoute('/demo/clerk')({
 
 function ClerkDemo() {
   return (
-    <div className="flex justify-center py-10 px-4">
-      <div className="w-full max-w-md p-6 space-y-6">
+    <main className="demo-page demo-center">
+      <section className="demo-panel w-full max-w-md space-y-6">
         <SignedOut>
           <div className="space-y-1.5">
-            <h1 className="text-lg font-semibold leading-none tracking-tight">
-              Sign in to continue
-            </h1>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Clerk renders the sign-in UI, manages sessions, and handles social providers for you.
+            <p className="island-kicker mb-2">Clerk</p>
+            <h1 className="demo-title">Sign in to continue</h1>
+            <p className="demo-muted text-sm">
+              Clerk renders the sign-in UI, manages sessions, and handles social
+              providers for you.
             </p>
           </div>
           <div className="flex justify-center pt-2">
             <SignIn routing="hash" />
           </div>
-          <p className="text-xs text-center text-neutral-400 dark:text-neutral-500">
+          <p className="demo-muted text-center text-xs">
             Built with{' '}
             <a
               href="https://clerk.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium hover:text-neutral-600 dark:hover:text-neutral-300"
+              className="font-medium"
             >
               CLERK
             </a>
@@ -43,8 +38,8 @@ function ClerkDemo() {
         <SignedIn>
           <SignedInGreeting />
         </SignedIn>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 
@@ -58,12 +53,9 @@ function SignedInGreeting() {
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
-        <h1 className="text-lg font-semibold leading-none tracking-tight">
-          Welcome back
-        </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          You're signed in as {email}
-        </p>
+        <p className="island-kicker mb-2">Clerk</p>
+        <h1 className="demo-title">Welcome back</h1>
+        <p className="demo-muted text-sm">You're signed in as {email}</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -86,13 +78,13 @@ function SignedInGreeting() {
         </div>
       </div>
 
-      <p className="text-xs text-center text-neutral-400 dark:text-neutral-500">
+      <p className="demo-muted text-center text-xs">
         Manage your account from the avatar in the header. Built with{' '}
         <a
           href="https://clerk.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium hover:text-neutral-600 dark:hover:text-neutral-300"
+          className="font-medium"
         >
           CLERK
         </a>

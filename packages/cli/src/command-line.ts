@@ -12,8 +12,7 @@ import {
 } from '@tanstack/create'
 
 import {
-  getCurrentDirectoryName,
-  sanitizePackageName,
+  resolveProjectLocation,
   validateProjectName,
 } from './utils.js'
 import type { Options } from '@tanstack/create'
@@ -406,20 +405,17 @@ export async function normalizeOptions(
     forcedDeployment?: string
   },
 ): Promise<Options | undefined> {
-  let projectName = (cliOptions.projectName ?? '').trim()
-  let targetDir: string
+  const projectLocation = resolveProjectLocation({
+    projectName: cliOptions.projectName,
+    targetDir: cliOptions.targetDir,
+  })
 
-  // Handle "." as project name - use current directory
-  if (projectName === '.') {
-    projectName = sanitizePackageName(getCurrentDirectoryName())
-    targetDir = resolve(process.cwd())
-  } else {
-    targetDir = resolve(process.cwd(), projectName)
-  }
-
-  if (!projectName && !opts?.disableNameCheck) {
+  if (!projectLocation && !opts?.disableNameCheck) {
     return undefined
   }
+
+  const projectName = projectLocation?.projectName ?? ''
+  const targetDir = projectLocation?.targetDir ?? resolve(process.cwd())
 
   if (projectName) {
     const { valid, error } = validateProjectName(projectName)
