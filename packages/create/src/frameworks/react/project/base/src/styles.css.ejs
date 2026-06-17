@@ -204,7 +204,7 @@ pre code {
   width: min(1080px, calc(100% - 2rem));
   margin-inline: auto;
   padding-block: clamp(2.25rem, 6vw, 4.5rem);
-  color: var(--sea-ink);
+  color: var(--color-sea-ink);
 }
 
 .demo-page-wide {
@@ -220,10 +220,10 @@ pre code {
 
 .demo-panel,
 .demo-card {
-  border: 1px solid var(--line);
-  background: linear-gradient(165deg, var(--surface-strong), var(--surface));
+  border: 1px solid var(--color-line);
+  background: linear-gradient(165deg, var(--color-surface-strong), var(--color-surface));
   box-shadow:
-    0 1px 0 var(--inset-glint) inset,
+    0 1px 0 var(--color-inset-glint) inset,
     0 18px 34px rgba(30, 90, 72, 0.1),
     0 4px 14px rgba(23, 58, 64, 0.06);
   backdrop-filter: blur(4px);
@@ -241,7 +241,7 @@ pre code {
 
 .demo-title {
   margin: 0;
-  color: var(--sea-ink);
+  color: var(--color-sea-ink);
   font-size: clamp(1.75rem, 4vw, 2.75rem);
   line-height: 1.05;
   font-weight: 800;
@@ -250,23 +250,23 @@ pre code {
 
 .demo-section-title {
   margin: 0;
-  color: var(--sea-ink);
+  color: var(--color-sea-ink);
   font-size: 1rem;
   font-weight: 700;
 }
 
 .demo-muted {
-  color: var(--sea-ink-soft);
+  color: var(--color-sea-ink-soft);
 }
 
 .demo-input,
 .demo-select,
 .demo-textarea {
   width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-line);
   border-radius: 0.75rem;
-  background: color-mix(in oklab, var(--surface-strong) 88%, white 12%);
-  color: var(--sea-ink);
+  background: color-mix(in oklab, var(--color-surface-strong) 88%, white 12%);
+  color: var(--color-sea-ink);
   outline: none;
   transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
@@ -289,8 +289,8 @@ pre code {
 .demo-input:focus,
 .demo-select:focus,
 .demo-textarea:focus {
-  border-color: color-mix(in oklab, var(--lagoon-deep) 58%, var(--line));
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lagoon) 24%, transparent);
+  border-color: color-mix(in oklab, var(--color-lagoon-deep) 58%, var(--color-line));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-lagoon) 24%, transparent);
 }
 
 .demo-button {
@@ -298,10 +298,10 @@ pre code {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 1px solid color-mix(in oklab, var(--lagoon-deep) 34%, var(--line));
+  border: 1px solid color-mix(in oklab, var(--color-lagoon-deep) 34%, var(--color-line));
   border-radius: 0.85rem;
-  background: color-mix(in oklab, var(--lagoon) 22%, var(--surface-strong));
-  color: var(--sea-ink);
+  background: color-mix(in oklab, var(--color-lagoon) 22%, var(--color-surface-strong));
+  color: var(--color-sea-ink);
   padding: 0.72rem 1rem;
   font-size: 0.9rem;
   font-weight: 700;
@@ -311,7 +311,7 @@ pre code {
 
 .demo-button:hover {
   transform: translateY(-1px);
-  background: color-mix(in oklab, var(--lagoon) 30%, var(--surface-strong));
+  background: color-mix(in oklab, var(--color-lagoon) 30%, var(--color-surface-strong));
 }
 
 .demo-button:disabled {
@@ -321,9 +321,9 @@ pre code {
 }
 
 .demo-button-secondary {
-  border-color: var(--line);
-  background: color-mix(in oklab, var(--surface-strong) 74%, transparent);
-  color: var(--sea-ink-soft);
+  border-color: var(--color-line);
+  background: color-mix(in oklab, var(--color-surface-strong) 74%, transparent);
+  color: var(--color-sea-ink-soft);
 }
 
 .demo-button-danger {
@@ -333,9 +333,9 @@ pre code {
 }
 
 .demo-list-item {
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-line);
   border-radius: 0.9rem;
-  background: color-mix(in oklab, var(--chip-bg) 82%, transparent);
+  background: color-mix(in oklab, var(--color-chip-bg) 82%, transparent);
   padding: 0.9rem 1rem;
 }
 
@@ -343,10 +343,10 @@ pre code {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border: 1px solid var(--chip-line);
+  border: 1px solid var(--color-chip-line);
   border-radius: 999px;
-  background: var(--chip-bg);
-  color: var(--sea-ink-soft);
+  background: var(--color-chip-bg);
+  color: var(--color-sea-ink-soft);
   padding: 0.35rem 0.65rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -356,7 +356,7 @@ pre code {
   border: 1px solid rgba(193, 126, 42, 0.3);
   border-radius: 1rem;
   background: rgba(193, 126, 42, 0.1);
-  color: var(--sea-ink);
+  color: var(--color-sea-ink);
   padding: 1rem;
 }
 
@@ -366,41 +366,41 @@ pre code {
 }
 
 .demo-code-block {
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-line);
   border-radius: 1rem;
-  background: color-mix(in oklab, var(--chip-bg) 88%, transparent);
-  color: var(--sea-ink);
+  background: color-mix(in oklab, var(--color-chip-bg) 88%, transparent);
+  color: var(--color-sea-ink);
   padding: 1rem;
 }
 
 .demo-table-shell {
   overflow-x: auto;
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-line);
   border-radius: 1rem;
-  background: color-mix(in oklab, var(--surface-strong) 78%, transparent);
+  background: color-mix(in oklab, var(--color-surface-strong) 78%, transparent);
 }
 
 .demo-table {
   width: 100%;
   border-collapse: collapse;
-  color: var(--sea-ink);
+  color: var(--color-sea-ink);
 }
 
 .demo-table th,
 .demo-table td {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--color-line);
   padding: 0.75rem 1rem;
   text-align: left;
 }
 
 .demo-table th {
-  background: color-mix(in oklab, var(--chip-bg) 88%, transparent);
-  color: var(--sea-ink);
+  background: color-mix(in oklab, var(--color-chip-bg) 88%, transparent);
+  color: var(--color-sea-ink);
   font-weight: 700;
 }
 
 .demo-table tr:hover td {
-  background: color-mix(in oklab, var(--lagoon) 8%, transparent);
+  background: color-mix(in oklab, var(--color-lagoon) 8%, transparent);
 }
 
 button,
