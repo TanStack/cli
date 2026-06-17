@@ -10,9 +10,7 @@ import {
 import chalk from 'chalk'
 
 import { createDefaultEnvironment } from '@tanstack/create'
-import type { StatusEvent } from '@tanstack/create'
-
-import type { Environment } from '@tanstack/create'
+import type { Environment, StatusEvent } from '@tanstack/create'
 import type { TelemetryClient } from './telemetry.js'
 
 export function createUIEnvironment(

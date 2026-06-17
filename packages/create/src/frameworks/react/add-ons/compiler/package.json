@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@rolldown/plugin-babel": "^0.2.3",
     "babel-plugin-react-compiler": "^1.0.0"
   }
 }

@@ -51,6 +51,7 @@ export {
 export {
   cleanUpFiles,
   cleanUpFileArray,
+  isDemoFilePath,
   readFileHelper,
   getBinaryFile,
   recursivelyGatherFiles,

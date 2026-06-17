@@ -18,6 +18,7 @@ import {
 import { mergePackageJSON } from './package-json.js'
 import { runSpecialSteps } from './special-steps/index.js'
 import { loadStarter } from './custom-add-ons/starter.js'
+import { setupIntent } from './integrations/intent.js'
 
 import type { Environment, Options } from './types.js'
 import type { PersistedOptions } from './config-file.js'
@@ -54,6 +55,7 @@ async function createOptions(
     ]),
     targetDir,
     starter,
+    intent: json.intent ?? false,
   } as Options
 }
 
@@ -230,6 +232,7 @@ export async function addToApp(
   cwd: string,
   options?: {
     forced?: boolean
+    intent?: boolean
   },
 ) {
   const persistedOptions = await getCurrentConfiguration(environment, cwd)
@@ -317,6 +320,10 @@ export async function addToApp(
   // Handle new commands
 
   await runNewCommands(environment, persistedOptions, cwd, output)
+
+  const intent = options?.intent ?? persistedOptions.intent ?? true
+  newOptions.intent = intent
+  await setupIntent(environment, cwd, newOptions)
 
   environment.startStep({
     id: 'write-config-file',

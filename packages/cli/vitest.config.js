@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     setupFiles: ['./tests/setupVitest.js'],
     include: ['tests/**/*.test.ts'],
+    clearMocks: true,
   },
 })

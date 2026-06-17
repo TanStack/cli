@@ -1,5 +1,258 @@
 # @tanstack/cli
 
+## 0.69.3
+
+### Patch Changes
+
+- Fix blank project name submissions in interactive create prompts. ([#472](https://github.com/TanStack/cli/pull/472))
+
+## 0.69.2
+
+### Patch Changes
+
+- Fix the interactive create prompt so accepting the current directory does not leak placeholder text into project-name validation. ([#468](https://github.com/TanStack/cli/pull/468))
+
+## 0.69.1
+
+### Patch Changes
+
+- Updated dependencies [[`3811aac`](https://github.com/TanStack/cli/commit/3811aac7468e6df9c6df2df62b3f65d38ccc56a2)]:
+  - @tanstack/create@0.68.2
+
+## 0.69.0
+
+### Minor Changes
+
+- Support initializing a project in the current directory from the create prompt or by passing `.` as the project name. ([#458](https://github.com/TanStack/cli/pull/458))
+
+### Patch Changes
+
+- Normalize generated demo pages to use the base template styling instead of bespoke full-page gradients and mismatched color treatments. ([#461](https://github.com/TanStack/cli/pull/461))
+
+- Updated dependencies [[`8f4d144`](https://github.com/TanStack/cli/commit/8f4d144c35495533864412a9ffb3ce36c7b62dae), [`9711cc4`](https://github.com/TanStack/cli/commit/9711cc48999dba96f0ec20b7ba95969a859acd0b), [`691f045`](https://github.com/TanStack/cli/commit/691f045cec982f7a0ac70aef94bd0d46499c9fe6)]:
+  - @tanstack/create@0.68.1
+
+## 0.68.0
+
+### Minor Changes
+
+- feat(create): add React PowerSync scaffolding add-on ([#448](https://github.com/TanStack/cli/pull/448))
+
+  `tanstack add powersync` (or `--add-ons powersync` on `tanstack create`)
+  wires the PowerSync Web SDK into a React TanStack Start app:
+
+  - `@powersync/web` + `@powersync/react` + `@journeyapps/wa-sqlite`
+    dependencies and a Vite plugin that excludes `@powersync/web` from
+    `optimizeDeps` and emits ES-module workers (required for the
+    WA-SQLite VFS).
+  - A `PowerSyncProvider` integration that opens a WA-SQLite database
+    and connects with `disableSSRWarning` so SSR doesn't warn.
+  - A sample `AppSchema` (todos table) and `BackendConnector` with
+    `fetchCredentials` reading `VITE_POWERSYNC_URL` / `VITE_POWERSYNC_TOKEN`
+    from `.env.local` and a stubbed `uploadData()` ready for the user's
+    upstream write logic.
+  - A `/demo/powersync` route that inserts rows locally and renders
+    live `useQuery` results plus connection status, so the scaffold
+    works zero-config and shows the SDK is wired up before any
+    PowerSync instance is configured.
+
+### Patch Changes
+
+- Updated dependencies [[`e7ca15f`](https://github.com/TanStack/cli/commit/e7ca15f6ff0bee363495c97509dd0ef9f6bc663d)]:
+  - @tanstack/create@0.68.0
+
+## 0.67.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @tanstack/create@0.67.0
+
+## 0.67.0
+
+### Minor Changes
+
+- feat(cli, create): add Shopify storefront add-on + storefront template ([`814d222`](https://github.com/TanStack/cli/commit/814d222ac04e839eabe56abce5dcbe66d751c5d8))
+
+  Headless Shopify support for TanStack Start apps, scaffold-ready and
+  runtime-portable. The pitch: prove that TanStack Start is a first-class
+  target for Shopify, not just Next.js Commerce or Hydrogen.
+
+  **`shopify` add-on** — additive. `tanstack add shopify` mounts `/shop/*`
+  routes alongside an existing app without touching the home page. Includes:
+
+  - Storefront API client (server-only fetch via `createServerFn`, public
+    token by default + optional private token for higher rate limits and
+    buyer-IP forwarding).
+  - Hand-written GraphQL queries with hydrogen-react types (type-only;
+    zero runtime weight).
+  - httpOnly cookie cart (`tanstack_cart_id`) + React Query single-key
+    cache + optimistic updates with module-level mutation counter to
+    batch invalidations during rapid clicks.
+  - Hydrogen-demo parity routes: shop landing, product detail (with
+    variants + availability), collections, cart, search, Shopify CMS
+    pages, policies.
+  - Hydrogen-stock UI components (ProductCard, VariantSelector,
+    AddToCartButton, CartLineItem, CartSummary, ShopImage with CDN
+    transforms, Money via Intl) themed with six CSS custom properties
+    for easy reskinning.
+  - Header cart-count badge via the `header-user` integration slot.
+  - Shopify-hosted checkout (redirect to `cart.checkoutUrl`).
+  - **Optional Customer Account API** behind a `customerAccount` select
+    option. Hand-rolled OAuth 2.1 PKCE with `.well-known` discovery
+    cached in module memory (no usable npm client exists yet),
+    HMAC-signed httpOnly session cookies (HS256), lazy token refresh,
+    account dashboard / orders / order detail / addresses routes — all
+    EJS-guarded so the files only emit when enabled.
+
+  **`shopify-storefront` template** — storefront-first.
+  `tanstack create my-shop --template shopify-storefront` cascades the
+  `shopify` add-on (which cascades `tanstack-query`) and replaces the
+  home route with a polished landing (hero + featured collections + best
+  sellers grid).
+
+  **Zero-config first run.** Defaults to Shopify's public Hydrogen demo
+  store (`hydrogen-preview.myshopify.com`) so the storefront renders
+  real products immediately. Override the four env vars in `.env.local`
+  (or your deploy target's dashboard) to point at your store. Demo
+  defaults are baked into source as fallbacks, so the experience doesn't
+  break when a runtime doesn't load `.env` files into `process.env`.
+
+  **Portable.** Cookie ops via `@tanstack/react-start/server`; crypto via
+  Web Crypto (`crypto.subtle`); generic `CDN-Cache-Control` for browse
+  (`s-maxage=300, stale-while-revalidate=600`) and `private, no-store`
+  for cart. Works on Node, Cloudflare Workers, Shopify Oxygen (just
+  Workers), Vercel, Netlify, Bun, Deno.
+
+  **Header layout fix.** While the cart-count badge is the new
+  right-aligned action, the base scaffold's `Header` was placing the
+  social icons left-of-center on `sm+`. Reordered the JSX so navigation
+  sits between the logo and the right-side actions in DOM order, with
+  one mobile-only `order-3` to keep `flex-wrap` putting nav on its own
+  row. Result: logo → nav → (auto-spaced) → cart/social/theme on every
+  breakpoint, and a more sensible reading order for screen readers.
+
+### Patch Changes
+
+- Updated dependencies [[`814d222`](https://github.com/TanStack/cli/commit/814d222ac04e839eabe56abce5dcbe66d751c5d8)]:
+  - @tanstack/create@0.66.0
+
+## 0.66.0
+
+### Minor Changes
+
+- feat(cli, create): close the gap between `tanstack create` and shipping a real app ([#445](https://github.com/TanStack/cli/pull/445))
+
+  A bundle of UX improvements aimed at beginners (especially those coming from Next.js) and the AI agents they pair with:
+
+  - **Tailored post-creation next steps.** The scaffold completion message now lists the env vars you still need to fill in `.env.local`, links the docs for each shipping-critical integration you picked (auth, database, ORM, deployment), and surfaces the Intent-wired AGENTS.md / CLAUDE.md with concrete prompt examples.
+  - **Pre-creation review screen.** After interactive prompts, the CLI shows a categorized summary (auth, database, ORM, deploy, other) and asks for confirmation before writing files. Conflicting selections (two auth providers, two ORMs, etc.) are flagged in the same step.
+  - **`.env.example` generation.** A checked-in `.env.example` is now derived from the env-var schemas of selected add-ons, with descriptions and a `(required)` marker. Plays nicely with add-ons that ship their own `_dot_env.example.append`.
+  - **Better add-on descriptions.** Concept-first one-liners replace generic "Add X to your application." Reads like a menu instead of a list of brand names.
+  - **Deployment quickstarts.** Each `--deployment` host (Netlify, Cloudflare, Railway, Nitro) now contributes its own README section explaining the actual steps to ship — push, dashboard URL, env var sync.
+  - **Clerk demo route parity.** Clerk's scaffold now ships a proper sign-in flow (matching Better Auth's depth) using Clerk's prebuilt components, plus a richer README with route-protection patterns and a production checklist.
+  - **Intent install passes `--map`.** The auto-invoked `intent install` now writes explicit task→skill mappings into the agent config instead of relying on runtime discovery, so agents see directly which skill matches which task.
+  - **`tanstack clean-demos` command.** A new subcommand removes leftover `demo.*` and `example.*` files (and prunes empty `routes/demo`/`routes/example` directories) so a beginner can ship without the scaffold's training wheels.
+
+### Patch Changes
+
+- Updated dependencies [[`83ebd17`](https://github.com/TanStack/cli/commit/83ebd172c2f6d5006b6eae3a08a3b687a3d8f2ca)]:
+  - @tanstack/create@0.65.0
+
+## 0.65.0
+
+### Minor Changes
+
+- feat(cli): auto-install TanStack Intent during scaffolding ([#442](https://github.com/TanStack/cli/pull/442))
+
+  `tanstack create` and `tanstack add` now run `npx @tanstack/intent install`
+  after dependency installation, wiring up skill mappings for coding agents.
+  The behavior is controlled by a new `--intent` / `--no-intent` flag (default
+  on) and persists to `.cta.json` so subsequent `add` invocations honor the
+  original choice. Failures are surfaced as warnings instead of aborting the
+  scaffold.
+
+### Patch Changes
+
+- Updated dependencies [[`37e83fb`](https://github.com/TanStack/cli/commit/37e83fbf324c6d60da09a4f2f268f540c8687d5f)]:
+  - @tanstack/create@0.64.0
+
+## 0.64.6
+
+### Patch Changes
+
+- fix(cli): make add-on multiselect keyboard controls discoverable ([#441](https://github.com/TanStack/cli/pull/441))
+
+  Users encountering the add-on multiselect prompt during `tanstack create`
+  often didn't realize the entries are checkboxes (toggle with Space) and
+  that the selection must be confirmed with Enter. The existing keyboard
+  shortcuts note was only shown once per session and could appear before
+  single-select prompts where it didn't apply. Now:
+
+  - The "Keyboard Shortcuts" note is shown immediately above every
+    multiselect prompt and is no longer shown before single-select prompts.
+  - The multiselect message itself includes an inline `(Space to toggle,
+Enter to confirm)` hint so the cue is inseparable from the prompt.
+
+## 0.64.5
+
+### Patch Changes
+
+- Updated dependencies [[`e38729f`](https://github.com/TanStack/cli/commit/e38729fe0b6a16e8d34417d2334baf2b2db94942)]:
+  - @tanstack/create@0.63.9
+
+## 0.64.4
+
+### Patch Changes
+
+- fix(cli): require Node.js >=20 and surface a clear error on older runtimes ([#438](https://github.com/TanStack/cli/pull/438))
+
+  Older Node versions (e.g. Node 16) lack `events.addAbortListener`, which is
+  used transitively by the CLI. Running on those versions produced a cryptic
+  `SyntaxError: ... does not provide an export named 'addAbortListener'` during
+  module instantiation. Both packages now declare `engines.node: ">=20"` so
+  package managers warn at install time, and the CLI bin performs an early
+  runtime check that prints an actionable message before any modules load.
+
+  Closes #433
+
+- Updated dependencies [[`0a8be74`](https://github.com/TanStack/cli/commit/0a8be74ff1300ed55c91a50da07312ee1feb478e)]:
+  - @tanstack/create@0.63.8
+
+## 0.64.3
+
+### Patch Changes
+
+- Updated dependencies [[`1b2091b`](https://github.com/TanStack/cli/commit/1b2091b8bdaf0e2e90f42cf268e91cbd18d6be3f)]:
+  - @tanstack/create@0.63.7
+
+## 0.64.2
+
+### Patch Changes
+
+- Auto-generated changeset from semantic commits on main.
+
+  - chore: update to TS6.0, fix deprecated tsconfig options (#421) (847b396)
+
+- Updated dependencies []:
+  - @tanstack/create@0.63.6
+
+## 0.64.1
+
+### Patch Changes
+
+- Fix interactive mode not prompting for all options. ([#435](https://github.com/TanStack/cli/pull/435))
+
+  - Default to interactive mode. Previously, `tanstack create my-app` silently applied defaults for framework, deployment, and install. Opt out with `--yes` / `--non-interactive`.
+  - Add framework selection prompt when the CLI supports multiple frameworks and no `--framework` flag is passed.
+  - Add "install dependencies now?" prompt when `--no-install` is not passed.
+  - Show deployment adapter prompt by default (previously required `showDeploymentOptions: true`).
+  - Honor `forcedDeployment` as the default selection in the deployment prompt, so deprecated aliases keep a sensible default.
+  - Preserve explicit `--add-ons` arrays instead of overwriting them with the interactive sentinel.
+
+- Updated dependencies [[`e3de582`](https://github.com/TanStack/cli/commit/e3de582f050bff32009d3ebefffbb9ec94a15c92)]:
+  - @tanstack/create@0.63.5
+
 ## 0.64.0
 
 ### Minor Changes

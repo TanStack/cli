@@ -1,0 +1,168 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { createServerFn } from '@tanstack/react-start'
+import { setResponseHeaders } from '@tanstack/react-start/server'
+import * as v from 'valibot'
+
+import {
+  customerFetch,
+  getCustomerSession,
+  requireCustomerSession,
+} from '#/server/shopify/customer-client'
+import {
+  clearFlightCookie,
+  clearSessionCookie,
+  getFlightCookie,
+  setFlightCookie,
+  setSessionCookie,
+} from '#/server/shopify/customer-cookies'
+import {
+  buildAuthorizationUrl,
+  buildEndSessionUrl,
+  buildSession,
+  createPkcePair,
+  createState,
+  exchangeCodeForTokens,
+  signFlightState,
+  signSession,
+  verifyFlightState,
+} from '#/server/shopify/oauth'
+import {
+  CUSTOMER_ADDRESSES_QUERY,
+  CUSTOMER_QUERY,
+  ORDER_QUERY,
+  ORDERS_QUERY,
+  type CustomerAddress,
+  type CustomerAddressesQueryResult,
+  type CustomerProfile,
+  type CustomerQueryResult,
+  type OrderDetail,
+  type OrderListItem,
+  type OrderQueryResult,
+  type OrdersQueryResult,
+} from '#/lib/shopify/customer-queries'
+
+function setPrivateHeaders() {
+  setResponseHeaders(
+    new Headers({ 'Cache-Control': 'private, no-store, must-revalidate' }),
+  )
+}
+
+export const startLogin = createServerFn({ method: 'POST' })
+  .inputValidator(
+    v.object({
+      redirectAfter: v.optional(v.string(), '/shop/account'),
+    }),
+  )
+  .handler(async ({ data }): Promise<{ authorizationUrl: string }> => {
+    setPrivateHeaders()
+    const { codeVerifier, codeChallenge } = await createPkcePair()
+    const state = createState()
+    const flight = await signFlightState({
+      state,
+      codeVerifier,
+      redirectAfter: data.redirectAfter,
+    })
+    setFlightCookie(flight)
+    const authorizationUrl = await buildAuthorizationUrl({ state, codeChallenge })
+    return { authorizationUrl }
+  })
+
+export const completeLogin = createServerFn({ method: 'POST' })
+  .inputValidator(v.object({ code: v.string(), state: v.string() }))
+  .handler(async ({ data }): Promise<{ redirectAfter: string }> => {
+    setPrivateHeaders()
+    const flightCookie = getFlightCookie()
+    if (!flightCookie) throw new Error('OAuth flight cookie missing or expired.')
+    const flight = await verifyFlightState(flightCookie)
+    if (!flight) throw new Error('OAuth flight cookie failed verification.')
+    if (flight.state !== data.state) throw new Error('OAuth state mismatch.')
+
+    const tokens = await exchangeCodeForTokens({
+      code: data.code,
+      codeVerifier: flight.codeVerifier,
+    })
+    const session = buildSession(tokens)
+    setSessionCookie(await signSession(session))
+    clearFlightCookie()
+    return { redirectAfter: flight.redirectAfter }
+  })
+
+export const logout = createServerFn({ method: 'POST' }).handler(
+  async (): Promise<{ endSessionUrl: string | null }> => {
+    setPrivateHeaders()
+    const session = await getCustomerSession()
+    clearSessionCookie()
+    if (!session) return { endSessionUrl: null }
+    return { endSessionUrl: await buildEndSessionUrl(session.idToken) }
+  },
+)
+
+export const getCustomer = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<CustomerProfile | null> => {
+    setPrivateHeaders()
+    const session = await getCustomerSession()
+    if (!session) return null
+    const result = await customerFetch<CustomerQueryResult>({
+      query: CUSTOMER_QUERY,
+      session,
+    })
+    return result.customer
+  },
+)
+
+export const getOrders = createServerFn({ method: 'POST' })
+  .inputValidator(
+    v.object({
+      first: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 20),
+      after: v.optional(v.nullable(v.string())),
+    }),
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{
+      nodes: Array<OrderListItem>
+      pageInfo: { hasNextPage: boolean; endCursor: string | null }
+    }> => {
+      setPrivateHeaders()
+      const session = await requireCustomerSession()
+      const result = await customerFetch<OrdersQueryResult>({
+        query: ORDERS_QUERY,
+        variables: { first: data.first, after: data.after ?? null },
+        session,
+      })
+      return result.customer.orders
+    },
+  )
+
+export const getOrder = createServerFn({ method: 'POST' })
+  .inputValidator(v.object({ id: v.string() }))
+  .handler(async ({ data }): Promise<OrderDetail | null> => {
+    setPrivateHeaders()
+    const session = await requireCustomerSession()
+    const result = await customerFetch<OrderQueryResult>({
+      query: ORDER_QUERY,
+      variables: { id: data.id },
+      session,
+    })
+    return result.order
+  })
+
+export const getAddresses = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<{
+    addresses: Array<CustomerAddress>
+    defaultAddressId: string | null
+  }> => {
+    setPrivateHeaders()
+    const session = await requireCustomerSession()
+    const result = await customerFetch<CustomerAddressesQueryResult>({
+      query: CUSTOMER_ADDRESSES_QUERY,
+      variables: { first: 50 },
+      session,
+    })
+    return {
+      addresses: result.customer.addresses.nodes,
+      defaultAddressId: result.customer.defaultAddress?.id ?? null,
+    }
+  },
+)

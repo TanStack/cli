@@ -1,6 +1,6 @@
 {
   "name": "AI",
-  "description": "TanStack AI integration and examples.",
+  "description": "Streaming chat UI with model-agnostic backend (OpenAI, Anthropic, etc).",
   "phase": "add-on",
   "modes": ["file-router"],
   "type": "add-on",

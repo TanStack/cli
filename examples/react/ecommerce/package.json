@@ -32,20 +32,19 @@
     "react-dom": "^19.2.0",
     "streamdown": "^1.6.5",
     "tailwindcss": "^4.0.6",
-    "vite-tsconfig-paths": "^6.0.3",
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@tanstack/devtools-vite": "^0.3.11",
+    "@tanstack/devtools-vite": "^0.6.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react": "^6.0.1",
     "jsdom": "^27.0.0",
-    "typescript": "^5.7.2",
-    "vite": "^7.3.1",
-    "vitest": "^3.0.5",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5",
     "web-vitals": "^5.1.0"
   }
 }

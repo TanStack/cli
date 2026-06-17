@@ -1,5 +1,206 @@
 # @tanstack/create
 
+## 0.68.2
+
+### Patch Changes
+
+- Keep the generated route tree tracked in new React and Solid apps and run route generation once during scaffold. ([#464](https://github.com/TanStack/cli/pull/464))
+
+## 0.68.1
+
+### Patch Changes
+
+- Keep the generated AI assistant demo panel inside the viewport. ([#459](https://github.com/TanStack/cli/pull/459))
+
+- Normalize generated demo pages to use the base template styling instead of bespoke full-page gradients and mismatched color treatments. ([#461](https://github.com/TanStack/cli/pull/461))
+
+- Ignore the generated route tree in new React and Solid app gitignores. ([#460](https://github.com/TanStack/cli/pull/460))
+
+## 0.68.0
+
+### Minor Changes
+
+- feat(create): add React PowerSync scaffolding add-on ([#448](https://github.com/TanStack/cli/pull/448))
+
+  `tanstack add powersync` (or `--add-ons powersync` on `tanstack create`)
+  wires the PowerSync Web SDK into a React TanStack Start app:
+
+  - `@powersync/web` + `@powersync/react` + `@journeyapps/wa-sqlite`
+    dependencies and a Vite plugin that excludes `@powersync/web` from
+    `optimizeDeps` and emits ES-module workers (required for the
+    WA-SQLite VFS).
+  - A `PowerSyncProvider` integration that opens a WA-SQLite database
+    and connects with `disableSSRWarning` so SSR doesn't warn.
+  - A sample `AppSchema` (todos table) and `BackendConnector` with
+    `fetchCredentials` reading `VITE_POWERSYNC_URL` / `VITE_POWERSYNC_TOKEN`
+    from `.env.local` and a stubbed `uploadData()` ready for the user's
+    upstream write logic.
+  - A `/demo/powersync` route that inserts rows locally and renders
+    live `useQuery` results plus connection status, so the scaffold
+    works zero-config and shows the SDK is wired up before any
+    PowerSync instance is configured.
+
+## 0.67.0
+
+### Minor Changes
+
+- Auto-generated changeset from semantic commits on main.
+
+  - feat(create): add React PowerSync scaffolding add-on (#407) (8f24af5)
+
+## 0.66.0
+
+### Minor Changes
+
+- feat(cli, create): add Shopify storefront add-on + storefront template ([`814d222`](https://github.com/TanStack/cli/commit/814d222ac04e839eabe56abce5dcbe66d751c5d8))
+
+  Headless Shopify support for TanStack Start apps, scaffold-ready and
+  runtime-portable. The pitch: prove that TanStack Start is a first-class
+  target for Shopify, not just Next.js Commerce or Hydrogen.
+
+  **`shopify` add-on** — additive. `tanstack add shopify` mounts `/shop/*`
+  routes alongside an existing app without touching the home page. Includes:
+
+  - Storefront API client (server-only fetch via `createServerFn`, public
+    token by default + optional private token for higher rate limits and
+    buyer-IP forwarding).
+  - Hand-written GraphQL queries with hydrogen-react types (type-only;
+    zero runtime weight).
+  - httpOnly cookie cart (`tanstack_cart_id`) + React Query single-key
+    cache + optimistic updates with module-level mutation counter to
+    batch invalidations during rapid clicks.
+  - Hydrogen-demo parity routes: shop landing, product detail (with
+    variants + availability), collections, cart, search, Shopify CMS
+    pages, policies.
+  - Hydrogen-stock UI components (ProductCard, VariantSelector,
+    AddToCartButton, CartLineItem, CartSummary, ShopImage with CDN
+    transforms, Money via Intl) themed with six CSS custom properties
+    for easy reskinning.
+  - Header cart-count badge via the `header-user` integration slot.
+  - Shopify-hosted checkout (redirect to `cart.checkoutUrl`).
+  - **Optional Customer Account API** behind a `customerAccount` select
+    option. Hand-rolled OAuth 2.1 PKCE with `.well-known` discovery
+    cached in module memory (no usable npm client exists yet),
+    HMAC-signed httpOnly session cookies (HS256), lazy token refresh,
+    account dashboard / orders / order detail / addresses routes — all
+    EJS-guarded so the files only emit when enabled.
+
+  **`shopify-storefront` template** — storefront-first.
+  `tanstack create my-shop --template shopify-storefront` cascades the
+  `shopify` add-on (which cascades `tanstack-query`) and replaces the
+  home route with a polished landing (hero + featured collections + best
+  sellers grid).
+
+  **Zero-config first run.** Defaults to Shopify's public Hydrogen demo
+  store (`hydrogen-preview.myshopify.com`) so the storefront renders
+  real products immediately. Override the four env vars in `.env.local`
+  (or your deploy target's dashboard) to point at your store. Demo
+  defaults are baked into source as fallbacks, so the experience doesn't
+  break when a runtime doesn't load `.env` files into `process.env`.
+
+  **Portable.** Cookie ops via `@tanstack/react-start/server`; crypto via
+  Web Crypto (`crypto.subtle`); generic `CDN-Cache-Control` for browse
+  (`s-maxage=300, stale-while-revalidate=600`) and `private, no-store`
+  for cart. Works on Node, Cloudflare Workers, Shopify Oxygen (just
+  Workers), Vercel, Netlify, Bun, Deno.
+
+  **Header layout fix.** While the cart-count badge is the new
+  right-aligned action, the base scaffold's `Header` was placing the
+  social icons left-of-center on `sm+`. Reordered the JSX so navigation
+  sits between the logo and the right-side actions in DOM order, with
+  one mobile-only `order-3` to keep `flex-wrap` putting nav on its own
+  row. Result: logo → nav → (auto-spaced) → cart/social/theme on every
+  breakpoint, and a more sensible reading order for screen readers.
+
+## 0.65.0
+
+### Minor Changes
+
+- feat(cli, create): close the gap between `tanstack create` and shipping a real app ([#445](https://github.com/TanStack/cli/pull/445))
+
+  A bundle of UX improvements aimed at beginners (especially those coming from Next.js) and the AI agents they pair with:
+
+  - **Tailored post-creation next steps.** The scaffold completion message now lists the env vars you still need to fill in `.env.local`, links the docs for each shipping-critical integration you picked (auth, database, ORM, deployment), and surfaces the Intent-wired AGENTS.md / CLAUDE.md with concrete prompt examples.
+  - **Pre-creation review screen.** After interactive prompts, the CLI shows a categorized summary (auth, database, ORM, deploy, other) and asks for confirmation before writing files. Conflicting selections (two auth providers, two ORMs, etc.) are flagged in the same step.
+  - **`.env.example` generation.** A checked-in `.env.example` is now derived from the env-var schemas of selected add-ons, with descriptions and a `(required)` marker. Plays nicely with add-ons that ship their own `_dot_env.example.append`.
+  - **Better add-on descriptions.** Concept-first one-liners replace generic "Add X to your application." Reads like a menu instead of a list of brand names.
+  - **Deployment quickstarts.** Each `--deployment` host (Netlify, Cloudflare, Railway, Nitro) now contributes its own README section explaining the actual steps to ship — push, dashboard URL, env var sync.
+  - **Clerk demo route parity.** Clerk's scaffold now ships a proper sign-in flow (matching Better Auth's depth) using Clerk's prebuilt components, plus a richer README with route-protection patterns and a production checklist.
+  - **Intent install passes `--map`.** The auto-invoked `intent install` now writes explicit task→skill mappings into the agent config instead of relying on runtime discovery, so agents see directly which skill matches which task.
+  - **`tanstack clean-demos` command.** A new subcommand removes leftover `demo.*` and `example.*` files (and prunes empty `routes/demo`/`routes/example` directories) so a beginner can ship without the scaffold's training wheels.
+
+## 0.64.0
+
+### Minor Changes
+
+- feat(cli): auto-install TanStack Intent during scaffolding ([#442](https://github.com/TanStack/cli/pull/442))
+
+  `tanstack create` and `tanstack add` now run `npx @tanstack/intent install`
+  after dependency installation, wiring up skill mappings for coding agents.
+  The behavior is controlled by a new `--intent` / `--no-intent` flag (default
+  on) and persists to `.cta.json` so subsequent `add` invocations honor the
+  original choice. Failures are surfaced as warnings instead of aborting the
+  scaffold.
+
+## 0.63.9
+
+### Patch Changes
+
+- fix(create): correct netlify.toml key, eslint scripts, and missing eslint dep ([`e38729f`](https://github.com/TanStack/cli/commit/e38729fe0b6a16e8d34417d2334baf2b2db94942))
+
+  - The generated `netlify.toml` for both React and Solid used `dir` under
+    `[build]`, which is not a valid Netlify configuration key. Per Netlify's
+    TanStack Start guide it must be `publish`. Closes #423.
+  - The eslint toolchain had `format` and `check` scripts swapped: `format`
+    ran prettier in read-only mode while `check` mutated files. Swap them so
+    `format` writes (`prettier --write . && eslint --fix`) and `check` is
+    read-only (`prettier --check .`). Closes #403.
+  - `@tanstack/eslint-config` lists `eslint` as a peer dependency, so eslint
+    was not installed by package managers that don't auto-install peers. Add
+    `eslint` to `devDependencies` in the eslint toolchain. Closes #417.
+
+## 0.63.8
+
+### Patch Changes
+
+- fix(cli): require Node.js >=20 and surface a clear error on older runtimes ([#438](https://github.com/TanStack/cli/pull/438))
+
+  Older Node versions (e.g. Node 16) lack `events.addAbortListener`, which is
+  used transitively by the CLI. Running on those versions produced a cryptic
+  `SyntaxError: ... does not provide an export named 'addAbortListener'` during
+  module instantiation. Both packages now declare `engines.node: ">=20"` so
+  package managers warn at install time, and the CLI bin performs an early
+  runtime check that prints an actionable message before any modules load.
+
+  Closes #433
+
+## 0.63.7
+
+### Patch Changes
+
+- chore: bump solid base and example to vite 8 ([#437](https://github.com/TanStack/cli/pull/437))
+
+## 0.63.6
+
+### Patch Changes
+
+- Auto-generated changeset from semantic commits on main.
+
+  - chore: update to TS6.0, fix deprecated tsconfig options (#421) (847b396)
+
+## 0.63.5
+
+### Patch Changes
+
+- Fix demo/example files leaking into projects when users opt out of demo pages. ([#434](https://github.com/TanStack/cli/pull/434))
+
+  - Strip add-on demo support files in `src/lib/`, `src/hooks/`, `src/data/`, `src/components/`, `src/store/`, and any `demo.*` / `demo-*` / `example.*` / `example-*` files.
+  - Strip example image assets under `public/`.
+  - Generate a minimal base starter (no Header, Footer, ThemeToggle, about page, or styled index page) when declining demo/example pages.
+  - Render Better Auth header-user component as `null` when its demo route is excluded, instead of linking to a non-existent route.
+
+  Closes #422, #409.
+
 ## 0.63.4
 
 ### Patch Changes

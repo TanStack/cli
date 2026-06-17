@@ -20,6 +20,7 @@ export interface CliOptions {
   devWatch?: string
   runDev?: boolean
   install?: boolean
+  intent?: boolean
   addOnConfig?: string
   force?: boolean
   routerOnly?: boolean

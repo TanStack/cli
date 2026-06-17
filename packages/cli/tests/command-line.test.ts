@@ -70,6 +70,15 @@ describe('normalizeOptions', () => {
     expect(options?.targetDir).toBe(resolve(process.cwd()))
   })
 
+  it('should derive the project name from target-dir when no name is provided', async () => {
+    const options = await normalizeOptions({
+      targetDir: 'my-target-app',
+    })
+
+    expect(options?.projectName).toBe('my-target-app')
+    expect(options?.targetDir).toBe(resolve(process.cwd(), 'my-target-app'))
+  })
+
   it('should always enable typescript (file-router/TanStack Start requires it)', async () => {
     const options = await normalizeOptions({
       projectName: 'test',

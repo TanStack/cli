@@ -8,7 +8,12 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 <% } else { %>
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 <% } %>
+<% if (addOnEnabled.compiler) { -%>
+import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
+<% } else { -%>
 import viteReact from '@vitejs/plugin-react'
+<% } -%>
 import tailwindcss from "@tailwindcss/vite"
 <% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportContent(integration) %>
 <% } %>
@@ -22,11 +27,8 @@ const config = defineConfig({
   }), <% } %><% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportCode(integration) %>,<% } %>
     tailwindcss(),
     <% if (routerOnly) { %>tanstackRouter({ target: 'react', autoCodeSplitting: true }),<% } else { %>tanstackStart(),<% } %>
-    viteReact(<% if (addOnEnabled.compiler) { %>{
-      babel: {
-        plugins: ["babel-plugin-react-compiler"],
-      },
-    }<% } %>),
+    viteReact(),<% if (addOnEnabled.compiler) { %>
+    babel({ presets: [reactCompilerPreset()] }),<% } %>
   ],
 })
 

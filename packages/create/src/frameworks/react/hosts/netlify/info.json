@@ -1,6 +1,6 @@
 {
   "name": "Netlify",
-  "description": "Netlify deployment setup",
+  "description": "Deploy to Netlify (Functions and Edge Functions, GitHub-driven).",
   "link": "https://docs.netlify.com",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],

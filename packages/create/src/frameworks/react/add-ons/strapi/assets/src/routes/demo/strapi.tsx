@@ -73,28 +73,25 @@ export const Route = createFileRoute('/demo/strapi')({
 
 function StrapiServerInstructions() {
   return (
-    <div className="bg-slate-800/50 rounded-lg p-6 text-left mt-6">
-      <h2 className="text-lg font-semibold text-white mb-4">
-        Start the Strapi Server
-      </h2>
-      <div className="space-y-2 text-sm font-mono text-gray-400">
+    <div className="demo-card mt-6 text-left">
+      <h2 className="demo-section-title mb-4">Start the Strapi Server</h2>
+      <div className="demo-muted space-y-2 font-mono text-sm">
         <p>
-          <span className="text-cyan-400">$</span> cd ../server
+          <span>$</span> cd ../server
         </p>
         <p>
-          <span className="text-cyan-400">$</span> npm install
+          <span>$</span> npm install
         </p>
         <p>
-          <span className="text-cyan-400">$</span> npm run develop
+          <span>$</span> npm run develop
         </p>
       </div>
-      <p className="text-gray-500 text-sm mt-4">
+      <p className="demo-muted text-sm mt-4">
         Then create an admin at{' '}
         <a
           href="http://localhost:1337/admin"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-cyan-400 hover:underline"
         >
           http://localhost:1337/admin
         </a>
@@ -105,22 +102,17 @@ function StrapiServerInstructions() {
 
 function ConnectionError({ error }: { error?: string }) {
   return (
-    <div className="bg-amber-900/20 border border-amber-500/50 rounded-xl p-8">
+    <div className="demo-alert">
       <div className="flex items-start gap-4">
-        <div className="text-amber-400 text-2xl">⚠️</div>
         <div>
-          <h2 className="text-xl font-semibold text-amber-400 mb-2">
+          <h2 className="text-xl font-semibold mb-2">
             Cannot Connect to Strapi
           </h2>
-          <p className="text-gray-300 mb-4">
+          <p className="demo-muted mb-4">
             Make sure your Strapi server is running at{' '}
-            <code className="text-cyan-400 bg-slate-800 px-2 py-1 rounded">
-              http://localhost:1337
-            </code>
+            <code>http://localhost:1337</code>
           </p>
-          {error && (
-            <p className="text-gray-500 text-sm mb-4">Error: {error}</p>
-          )}
+          {error && <p className="demo-muted text-sm mb-4">Error: {error}</p>}
           <StrapiServerInstructions />
         </div>
       </div>
@@ -131,13 +123,10 @@ function ConnectionError({ error }: { error?: string }) {
 function NoArticlesFound({ query }: { query?: string }) {
   if (query) {
     return (
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
+      <div className="demo-card">
         <div className="text-center">
-          <div className="text-6xl mb-4">🔍</div>
-          <h2 className="text-2xl font-semibold text-white mb-4">
-            No Results Found
-          </h2>
-          <p className="text-gray-400 mb-6 max-w-md mx-auto">
+          <h2 className="text-2xl font-semibold mb-4">No Results Found</h2>
+          <p className="demo-muted mb-6 max-w-md mx-auto">
             No articles match your search for "{query}". Try adjusting your
             search terms.
           </p>
@@ -147,54 +136,54 @@ function NoArticlesFound({ query }: { query?: string }) {
   }
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
+    <div className="demo-card">
       <div className="text-center">
-        <div className="text-6xl mb-4">📝</div>
-        <h2 className="text-2xl font-semibold text-white mb-4">
-          No Articles Yet
-        </h2>
-        <p className="text-gray-400 mb-6 max-w-md mx-auto">
+        <h2 className="text-2xl font-semibold mb-4">No Articles Yet</h2>
+        <p className="demo-muted mb-6 max-w-md mx-auto">
           Your Strapi server is running, but there are no published articles.
           Create and publish your first article to see it here.
         </p>
 
-        <div className="bg-slate-900/50 rounded-lg p-6 text-left max-w-md mx-auto">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            How to add articles:
-          </h3>
-          <ol className="space-y-3 text-gray-400">
+        <div className="demo-card max-w-md mx-auto text-left">
+          <h3 className="demo-section-title mb-4">How to add articles:</h3>
+          <ol className="demo-muted space-y-3">
             <li className="flex gap-3">
-              <span className="text-cyan-400 font-bold">1.</span>
+              <span className="font-bold">1.</span>
               <span>
                 Open{' '}
                 <a
                   href="http://localhost:1337/admin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-cyan-400 hover:underline"
                 >
                   Strapi Admin Panel
                 </a>
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="text-cyan-400 font-bold">2.</span>
+              <span className="font-bold">2.</span>
               <span>
-                Go to <strong className="text-white">Content Manager</strong> →{' '}
-                <strong className="text-white">Article</strong>
+                Go to{' '}
+                <strong className="text-[var(--sea-ink)]">
+                  Content Manager
+                </strong>{' '}
+                → <strong className="text-[var(--sea-ink)]">Article</strong>
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="text-cyan-400 font-bold">3.</span>
+              <span className="font-bold">3.</span>
               <span>
-                Click <strong className="text-white">Create new entry</strong>
+                Click{' '}
+                <strong className="text-[var(--sea-ink)]">
+                  Create new entry
+                </strong>
               </span>
             </li>
             <li className="flex gap-3">
-              <span className="text-cyan-400 font-bold">4.</span>
+              <span className="font-bold">4.</span>
               <span>
                 Fill in the details and click{' '}
-                <strong className="text-white">Publish</strong>
+                <strong className="text-[var(--sea-ink)]">Publish</strong>
               </span>
             </li>
           </ol>
@@ -208,14 +197,10 @@ function RouteComponent() {
   const { status, articles, meta, error, query } = Route.useLoaderData()
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold mb-6 text-white">
-          <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            Strapi
-          </span>{' '}
-          <span className="text-gray-300">Articles</span>
-        </h1>
+    <main className="demo-page demo-page-wide">
+      <div>
+        <p className="island-kicker mb-2">CMS</p>
+        <h1 className="demo-title mb-6">Strapi Articles</h1>
 
         <div className="mb-8">
           <Search />
@@ -235,7 +220,7 @@ function RouteComponent() {
                   params={{ articleId: article.documentId }}
                   className="block"
                 >
-                  <article className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl overflow-hidden hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10 cursor-pointer h-full flex flex-col">
+                  <article className="demo-card h-full cursor-pointer overflow-hidden p-0 transition hover:-translate-y-0.5">
                     <StrapiImage
                       src={article.cover?.url}
                       alt={article.cover?.alternativeText || article.title}
@@ -243,24 +228,24 @@ function RouteComponent() {
                     />
 
                     <div className="p-6 flex flex-col flex-1">
-                      <h2 className="text-xl font-semibold text-white mb-3">
+                      <h2 className="text-xl font-semibold mb-3">
                         {article.title || 'Untitled'}
                       </h2>
 
                       {article.description && (
-                        <p className="text-gray-400 mb-4 leading-relaxed line-clamp-2">
+                        <p className="demo-muted mb-4 leading-relaxed line-clamp-2">
                           {article.description}
                         </p>
                       )}
 
                       <div className="mt-auto flex items-center justify-between">
                         {article.author?.name && (
-                          <span className="text-sm text-gray-500">
+                          <span className="demo-muted text-sm">
                             By {article.author.name}
                           </span>
                         )}
                         {article.createdAt && (
-                          <span className="text-sm text-cyan-400/70">
+                          <span className="demo-muted text-sm">
                             {new Date(article.createdAt).toLocaleDateString()}
                           </span>
                         )}
@@ -268,7 +253,7 @@ function RouteComponent() {
 
                       {article.category?.name && (
                         <div className="mt-3">
-                          <span className="text-xs px-2 py-1 bg-slate-700 text-cyan-400 rounded-full">
+                          <span className="demo-pill">
                             {article.category.name}
                           </span>
                         </div>
@@ -287,6 +272,6 @@ function RouteComponent() {
           </>
         )}
       </div>
-    </div>
+    </main>
   )
 }

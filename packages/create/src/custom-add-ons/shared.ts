@@ -82,6 +82,7 @@ export async function createAppOptionsFromPersisted(
     starter: json.starter ? await loadStarter(json.starter) : undefined,
     chosenAddOns,
     addOnOptions: populateAddOnOptionsDefaults(chosenAddOns),
+    intent: json.intent ?? false,
   }
 }
 
@@ -103,6 +104,7 @@ export function createSerializedOptionsFromPersisted(
     framework: json.framework,
     starter: json.starter,
     addOnOptions: {},
+    intent: json.intent ?? false,
   }
 }
 
