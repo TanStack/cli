@@ -72,8 +72,9 @@ export const AddOnBaseSchema = z.object({
       z.object({
         url: z.string().optional(),
         name: z.string().optional(),
-        path: z.string(),
-        jsName: z.string(),
+        path: z.string().optional(),
+        jsName: z.string().optional(),
+        icon: z.string().optional(),
       }),
     )
     .optional(),
@@ -84,6 +85,7 @@ export const AddOnBaseSchema = z.object({
       scripts: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
+  variables: z.array(z.unknown()).optional(),
   shadcnComponents: z.array(z.string()).optional(),
   dependsOn: z.array(z.string()).optional(),
   smallLogo: z.string().optional(),
@@ -130,7 +132,7 @@ export const IntegrationSchema = z.object({
 export const AddOnInfoSchema = AddOnBaseSchema.extend({
   modes: z.array(z.string()),
   integrations: z.array(IntegrationSchema).optional(),
-  phase: z.enum(['setup', 'add-on']),
+  phase: z.enum(['setup', 'add-on', 'example']),
   readme: z.string().optional(),
   readmeIsEjs: z.boolean().optional(),
 })

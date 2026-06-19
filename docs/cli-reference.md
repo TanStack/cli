@@ -44,6 +44,45 @@ tanstack create --list-add-ons --framework React --json
 tanstack create --addon-details drizzle --framework React --json
 ```
 
+### Worker-safe programmatic generation
+
+Use `@tanstack/create/edge` in Cloudflare Workers and other runtimes that do not expose a Node package filesystem. The default `@tanstack/create` export is still the Node/CLI path and scans framework templates from disk.
+
+```ts
+import {
+  createApp,
+  createMemoryEnvironment,
+  finalizeAddOns,
+  getFrameworkById,
+  populateAddOnOptionsDefaults,
+} from '@tanstack/create/edge'
+
+const framework = getFrameworkById('react')!
+const chosenAddOns = await finalizeAddOns(framework, 'file-router', [
+  'tanstack-query',
+  'cloudflare',
+])
+const addOnOptions = populateAddOnOptionsDefaults(chosenAddOns)
+const { environment, output } = createMemoryEnvironment('/app')
+
+await createApp(environment, {
+  projectName: 'app',
+  targetDir: '/app',
+  framework,
+  mode: 'file-router',
+  typescript: true,
+  tailwind: true,
+  packageManager: 'pnpm',
+  git: false,
+  install: false,
+  intent: false,
+  chosenAddOns,
+  addOnOptions,
+})
+
+// output.files contains generated files for ZIP creation.
+```
+
 ---
 
 ## tanstack add

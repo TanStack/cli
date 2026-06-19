@@ -19,3 +19,5 @@ my-app
 coverage
 playwright-report
 test-results
+
+packages/create/src/generated/
