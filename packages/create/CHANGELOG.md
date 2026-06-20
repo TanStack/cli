@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.68.3
+
+### Patch Changes
+
+- Add a Worker-safe edge export backed by a build-time generated template and add-on manifest. ([#475](https://github.com/TanStack/cli/pull/475))
+
 ## 0.68.2
 
 ### Patch Changes
