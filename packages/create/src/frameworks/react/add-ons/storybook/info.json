@@ -7,14 +7,9 @@
   "type": "add-on",
   "category": "tooling",
   "color": "#FF4785",
-  "priority": 18,
-  "routes": [
-    {
-      "icon": "BookOpen",
-      "url": "/demo/storybook",
-      "name": "Storybook",
-      "path": "src/routes/demo.storybook.tsx",
-      "jsName": "StorybookDemo"
-    }
-  ]
+  "priority": 1,
+  "command": {
+    "command": "npx",
+    "args": ["storybook", "init", "-y", "--no-dev"]
+  }
 }
