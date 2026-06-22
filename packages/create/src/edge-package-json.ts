@@ -1,4 +1,4 @@
-import { render } from './edge-render.js'
+import { renderForOptions } from './edge-render.js'
 import { formatCommand, sortObject } from './utils.js'
 import { getPackageManagerExecuteCommand } from './package-manager.js'
 
@@ -151,7 +151,9 @@ export function createPackageJSON(options: Options) {
       }
 
       try {
-        addOnPackageJSON = JSON.parse(render(addOn.packageTemplate, templateValues))
+        addOnPackageJSON = JSON.parse(
+          renderForOptions(options, addOn.packageTemplate, templateValues),
+        )
       } catch (error) {
         console.error(
           `Error processing package.json.ejs for add-on ${addOn.id}:`,

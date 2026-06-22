@@ -29,3 +29,28 @@ describe('@tanstack/create/edge import', () => {
     expect(edge.getFrameworkById('react')?.id).toBe('react')
   })
 })
+
+describe('@tanstack/create/worker import', () => {
+  afterEach(() => {
+    for (const moduleName of blockedModules) {
+      vi.doUnmock(moduleName)
+    }
+    vi.resetModules()
+  })
+
+  it('does not import Node-only modules or the bundled manifest', async () => {
+    vi.resetModules()
+    for (const moduleName of blockedModules) {
+      vi.doMock(moduleName, () => {
+        throw new Error(`${moduleName} is unavailable`)
+      })
+    }
+    vi.doMock('../src/generated/create-manifest.js', () => {
+      throw new Error('full manifest should not be imported')
+    })
+
+    const worker = await import('../src/worker.js')
+
+    expect(typeof worker.createWorkerCreate).toBe('function')
+  })
+})

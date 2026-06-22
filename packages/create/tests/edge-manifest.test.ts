@@ -105,64 +105,68 @@ describe('@tanstack/create/edge manifest', () => {
   })
 
   it('generates a React app from the manifest-backed catalog', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        return new Response(JSON.stringify({ version: '1.0.0' }), {
-          status: 200,
-        })
-      }),
-    )
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response(JSON.stringify({ version: '1.0.0' }), {
+            status: 200,
+          })
+        }),
+      )
 
-    const framework = getFrameworkById('react')
-    expect(framework).toBeDefined()
+      const framework = getFrameworkById('react')
+      expect(framework).toBeDefined()
 
-    const featureIds = getAllAddOns(framework!, 'file-router').map(
-      (addOn) => addOn.id,
-    )
-    expect(featureIds).toContain('tanstack-query')
-    expect(featureIds).toContain('clerk')
-    expect(featureIds).toContain('cloudflare')
+      const featureIds = getAllAddOns(framework!, 'file-router').map(
+        (addOn) => addOn.id,
+      )
+      expect(featureIds).toContain('tanstack-query')
+      expect(featureIds).toContain('clerk')
+      expect(featureIds).toContain('cloudflare')
 
-    const chosenAddOns = await finalizeAddOns(framework!, 'file-router', [
-      'tanstack-query',
-      'clerk',
-      'cloudflare',
-      'biome',
-    ])
-    const addOnOptions = populateAddOnOptionsDefaults(chosenAddOns)
-    const { environment, output } = createMemoryEnvironment('/worker-app')
+      const chosenAddOns = await finalizeAddOns(framework!, 'file-router', [
+        'tanstack-query',
+        'clerk',
+        'cloudflare',
+        'biome',
+      ])
+      const addOnOptions = populateAddOnOptionsDefaults(chosenAddOns)
+      const { environment, output } = createMemoryEnvironment('/worker-app')
 
-    await createApp(environment, {
-      projectName: 'worker-app',
-      targetDir: '/worker-app',
-      framework: framework!,
-      mode: 'file-router',
-      typescript: true,
-      tailwind: true,
-      packageManager: 'pnpm',
-      git: false,
-      install: false,
-      intent: false,
-      chosenAddOns,
-      addOnOptions,
-      includeExamples: false,
-    } satisfies Options)
+      await createApp(environment, {
+        projectName: 'worker-app',
+        targetDir: '/worker-app',
+        framework: framework!,
+        mode: 'file-router',
+        typescript: true,
+        tailwind: true,
+        packageManager: 'pnpm',
+        git: false,
+        install: false,
+        intent: false,
+        chosenAddOns,
+        addOnOptions,
+        includeExamples: false,
+      } satisfies Options)
 
-    const packageJSON = JSON.parse(output.files['package.json'])
+      const packageJSON = JSON.parse(output.files['package.json'])
 
-    expect(packageJSON.scripts.dev).toBe('vite dev --port 3000')
-    expect(packageJSON.scripts.deploy).toBe(
-      'pnpm run build && wrangler deploy',
-    )
-    expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-start')
-    expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-query')
-    expect(packageJSON.dependencies).toHaveProperty('@clerk/clerk-react')
-    expect(packageJSON.devDependencies).toHaveProperty('wrangler')
-    expect(output.files['wrangler.jsonc']).toContain('tanstack-start-app')
-    expect(output.files['.env.example']).toContain(
-      'VITE_CLERK_PUBLISHABLE_KEY=',
-    )
-    expect(output.files['src/routes/index.tsx']).toContain('createFileRoute')
+      expect(packageJSON.scripts.dev).toBe('vite dev --port 3000')
+      expect(packageJSON.scripts.deploy).toBe(
+        'pnpm run build && wrangler deploy',
+      )
+      expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-start')
+      expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-query')
+      expect(packageJSON.dependencies).toHaveProperty('@clerk/clerk-react')
+      expect(packageJSON.devDependencies).toHaveProperty('wrangler')
+      expect(output.files['wrangler.jsonc']).toContain('tanstack-start-app')
+      expect(output.files['.env.example']).toContain(
+        'VITE_CLERK_PUBLISHABLE_KEY=',
+      )
+      expect(output.files['src/routes/index.tsx']).toContain('createFileRoute')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

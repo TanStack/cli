@@ -44,31 +44,76 @@ tanstack create --list-add-ons --framework React --json
 tanstack create --addon-details drizzle --framework React --json
 ```
 
-### Worker-safe programmatic generation
+### Programmatic generation
 
-Use `@tanstack/create/edge` in Cloudflare Workers and other runtimes that do not expose a Node package filesystem. The default `@tanstack/create` export is still the Node/CLI path and scans framework templates from disk.
+Use `@tanstack/create/worker` in Cloudflare Workers and other edge SSR runtimes. It does not import the generated template manifest at module startup. Instead, provide a loader for the framework and add-on chunks your Worker supports.
+
+The default `@tanstack/create` export is still the Node/CLI path and scans framework templates from disk. `@tanstack/create/edge` remains the bundled in-memory manifest path; it is Worker-compatible at runtime, but it imports the full generated manifest and is not appropriate for size-constrained Worker bundles.
 
 ```ts
 import {
-  createApp,
   createMemoryEnvironment,
-  finalizeAddOns,
-  getFrameworkById,
-  populateAddOnOptionsDefaults,
-} from '@tanstack/create/edge'
+  createWorkerCreate,
+  createWorkerManifestLoader,
+} from '@tanstack/create/worker'
+import { manifestCatalog } from '@tanstack/create/worker-manifest/catalog'
 
-const framework = getFrameworkById('react')!
-const chosenAddOns = await finalizeAddOns(framework, 'file-router', [
+import type {
+  WorkerAddOnManifestModule,
+  WorkerFrameworkManifestModule,
+} from '@tanstack/create/worker'
+
+const frameworkLoaders: Record<
+  string,
+  () => Promise<WorkerFrameworkManifestModule>
+> = {
+  react: () => import('@tanstack/create/worker-manifest/frameworks/react'),
+}
+
+const addOnLoaders: Record<
+  string,
+  Record<string, () => Promise<WorkerAddOnManifestModule>>
+> = {
+  react: {
+    'tanstack-query': () =>
+      import(
+        '@tanstack/create/worker-manifest/frameworks/react/add-ons/tanstack-query'
+      ),
+    cloudflare: () =>
+      import(
+        '@tanstack/create/worker-manifest/frameworks/react/add-ons/cloudflare'
+      ),
+  },
+}
+
+const create = createWorkerCreate(
+  createWorkerManifestLoader({
+    loadCatalog: async () => manifestCatalog,
+    async loadFramework(frameworkId) {
+      const load = frameworkLoaders[frameworkId]
+      if (!load) throw new Error(`Unsupported framework: ${frameworkId}`)
+      return load()
+    },
+    async loadAddOn(frameworkId, addOnId) {
+      const load = addOnLoaders[frameworkId]?.[addOnId]
+      if (!load) throw new Error(`Unsupported add-on: ${addOnId}`)
+      return load()
+    },
+  }),
+)
+
+const framework = await create.getFrameworkById('react')
+const chosenAddOns = await create.finalizeAddOns(framework!, 'file-router', [
   'tanstack-query',
   'cloudflare',
 ])
-const addOnOptions = populateAddOnOptionsDefaults(chosenAddOns)
+const addOnOptions = create.populateAddOnOptionsDefaults(chosenAddOns)
 const { environment, output } = createMemoryEnvironment('/app')
 
-await createApp(environment, {
+await create.createApp(environment, {
   projectName: 'app',
   targetDir: '/app',
-  framework,
+  framework: framework!,
   mode: 'file-router',
   typescript: true,
   tailwind: true,

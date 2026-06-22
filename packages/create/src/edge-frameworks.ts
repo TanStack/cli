@@ -1,4 +1,11 @@
-import { createManifestFrameworks } from './generated/create-manifest.js'
+import {
+  createManifestFrameworks,
+  renderManifestTemplate,
+} from './generated/create-manifest.js'
+import {
+  registerTemplateRenderer,
+  setDefaultTemplateRenderer,
+} from './edge-render.js'
 
 import type {
   AddOn,
@@ -33,7 +40,13 @@ export function createFrameworkFromManifest(
   }
 }
 
-const frameworks = createManifestFrameworks().map(createFrameworkFromManifest)
+setDefaultTemplateRenderer(renderManifestTemplate)
+
+const frameworks = createManifestFrameworks().map((frameworkDefinition) => {
+  const framework = createFrameworkFromManifest(frameworkDefinition)
+  registerTemplateRenderer(framework, renderManifestTemplate)
+  return framework
+})
 
 export function getFrameworkById(id: string) {
   if (id === 'react-cra') {

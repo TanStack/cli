@@ -1,4 +1,4 @@
-import { render } from './edge-render.js'
+import { renderForOptions } from './edge-render.js'
 import { relativePath } from './edge-file-helpers.js'
 import { joinPaths } from './edge-path.js'
 import { formatCommand } from './utils.js'
@@ -152,7 +152,7 @@ export function createTemplateFile(environment: Environment, options: Options) {
       integrationImportCode,
 
       renderTemplate: (templateContent: string) => {
-        return render(templateContent, templateValues)
+        return renderForOptions(options, templateContent, templateValues)
       },
 
       ignoreFile: () => {
@@ -164,7 +164,7 @@ export function createTemplateFile(environment: Environment, options: Options) {
 
     if (file.endsWith('.ejs')) {
       try {
-        content = render(content, templateValues)
+        content = renderForOptions(options, content, templateValues)
       } catch (error) {
         if (error instanceof IgnoreFileError) {
           ignoreFile = true

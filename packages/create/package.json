@@ -16,6 +16,21 @@
       "import": "./dist/edge.js",
       "default": "./dist/edge.js"
     },
+    "./worker": {
+      "types": "./dist/types/worker.d.ts",
+      "import": "./dist/worker.js",
+      "default": "./dist/worker.js"
+    },
+    "./worker/bundled": {
+      "types": "./dist/types/worker-bundled.d.ts",
+      "import": "./dist/worker-bundled.js",
+      "default": "./dist/worker-bundled.js"
+    },
+    "./worker-manifest/*": {
+      "types": "./dist/types/generated/worker/*.d.ts",
+      "import": "./dist/generated/worker/*.js",
+      "default": "./dist/generated/worker/*.js"
+    },
     "./manifest": {
       "types": "./dist/types/manifest.d.ts",
       "import": "./dist/manifest.js",
@@ -31,7 +46,7 @@
     "dev": "npm run generate-manifest && tsc --watch",
     "test": "npm run generate-manifest && eslint ./src && vitest run",
     "test:watch": "npm run generate-manifest && vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "npm run generate-manifest && vitest run --coverage"
   },
   "repository": {
     "type": "git",
