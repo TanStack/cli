@@ -89,6 +89,9 @@ describe('framework templates', () => {
       const { main, router } = await renderRouterOnlyEntries(createDefinition())
 
       expect(main).toContain(getRouterImport)
+      expect(main).toContain(
+        `import { RouterProvider } from '${routerPackage}'`,
+      )
       expect(main).toContain('const router = getRouter()')
       expect(main).toContain(`<RouterProvider router={router} />`)
       expect(main).not.toContain('createRouter')
