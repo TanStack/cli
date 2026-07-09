@@ -2,10 +2,10 @@ import { useDescope, useSession, useUser } from '@descope/react-sdk'
 
 export default function HeaderUser() {
   const { isAuthenticated, isSessionLoading } = useSession()
-  const { user } = useUser()
+  const { user, isUserLoading } = useUser()
   const sdk = useDescope()
 
-  if (isSessionLoading || !isAuthenticated) return null
+  if (isSessionLoading || isUserLoading || !isAuthenticated) return null
 
   const email = user?.email
   const initial = (user?.name || email || 'U').charAt(0).toUpperCase()
@@ -23,7 +23,9 @@ export default function HeaderUser() {
       )}
       <button
         type="button"
-        onClick={() => sdk.logout()}
+        onClick={() =>
+          sdk.logout().catch((err) => console.error('Descope logout error', err))
+        }
         className="rounded-xl px-3 py-1.5 text-sm font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
       >
         Sign out

@@ -13,7 +13,7 @@
 ### What's wired up
 
 - **`<AuthProvider>`** at the app root (`src/integrations/descope/provider.tsx`) supplies auth context to the whole tree
-- **Header user menu** (`src/integrations/descope/header-user.tsx`) swaps between a "Sign in" link and the signed-in avatar + "Sign out"
+- **Header user menu** (`src/integrations/descope/header-user.tsx`) renders the signed-in avatar + "Sign out" button (hidden when signed out)
 - **`/demo/descope`** renders the Descope `<Descope flowId="sign-up-or-in" />` flow and a signed-in greeting
 
 ### Protecting a route
