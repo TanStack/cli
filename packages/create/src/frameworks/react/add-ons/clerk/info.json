@@ -8,6 +8,7 @@
   "exclusive": ["auth"],
   "color": "#6C47FF",
   "priority": 150,
+  "partner": { "id": "clerk", "tier": "silver" },
   "link": "https://clerk.com",
   "routes": [
     {

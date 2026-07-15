@@ -61,6 +61,13 @@ export const AddOnBaseSchema = z.object({
     .optional(),
   color: z.string().optional(),
   priority: z.number().optional(),
+  partner: z
+    .object({
+      id: z.string(),
+      tier: z.enum(['gold', 'silver', 'bronze']),
+      placementWeight: z.number().positive().optional(),
+    })
+    .optional(),
   command: z
     .object({
       command: z.string(),

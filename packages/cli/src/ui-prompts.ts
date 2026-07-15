@@ -19,6 +19,7 @@ import {
   isCurrentDirectoryProjectNameInput,
   validateProjectName,
 } from './utils.js'
+import { orderAddOnsForPartnerPlacement } from './partner-placement.js'
 import type { AddOn, PackageManager } from '@tanstack/create'
 
 import type { Framework } from '@tanstack/create/dist/types/types.js'
@@ -154,8 +155,9 @@ export async function selectAddOns(
   }
 
   if (allowMultiple) {
-    const selectableAddOns = addOns.filter(
-      (addOn) => !forcedAddOns.includes(addOn.id),
+    const selectableAddOns = orderAddOnsForPartnerPlacement(
+      addOns.filter((addOn) => !forcedAddOns.includes(addOn.id)),
+      'add-ons',
     )
 
     if (selectableAddOns.length === 0) {
@@ -381,19 +383,21 @@ export async function selectDeployment(
 ): Promise<string | undefined> {
   const deployments = new Set<AddOn>()
   let initialValue: string | undefined = undefined
-  for (const addOn of framework
-    .getAddOns()
-    .sort((a, b) => a.name.localeCompare(b.name))) {
-    if (addOn.type === 'deployment') {
-      deployments.add(addOn)
-      if (deployment && addOn.id === deployment) {
-        return deployment
-      }
-      if (forcedDeployment && addOn.id === forcedDeployment) {
-        initialValue = addOn.id
-      } else if (!initialValue && addOn.default) {
-        initialValue = addOn.id
-      }
+  for (const addOn of orderAddOnsForPartnerPlacement(
+    framework
+      .getAddOns()
+      .filter((addOn) => addOn.type === 'deployment')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    'deployment',
+  )) {
+    deployments.add(addOn)
+    if (deployment && addOn.id === deployment) {
+      return deployment
+    }
+    if (forcedDeployment && addOn.id === forcedDeployment) {
+      initialValue = addOn.id
+    } else if (!initialValue && addOn.default) {
+      initialValue = addOn.id
     }
   }
 

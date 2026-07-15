@@ -9,6 +9,7 @@
   "exclusive": ["deploy"],
   "color": "#9B4DCA",
   "priority": 160,
+  "partner": { "id": "railway", "tier": "gold" },
   "integrations": [
     {
       "type": "vite-plugin",

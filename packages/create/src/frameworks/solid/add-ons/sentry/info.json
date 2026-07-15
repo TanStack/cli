@@ -7,6 +7,7 @@
   "type": "add-on",
   "category": "monitoring",
   "color": "#362D59",
+  "partner": { "id": "sentry", "tier": "bronze" },
   "routes": [
     {
       "url": "/demo/sentry/bad-event-handler",
