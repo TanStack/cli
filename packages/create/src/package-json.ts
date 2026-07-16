@@ -66,6 +66,25 @@ export function createPackageJSON(options: Options) {
     return formatCommand(getPackageManagerExecuteCommand(packageManager, pkg, args))
   }
 
+  function applyRouterOnlyPackageJSONCompat() {
+    const routerPluginVersion =
+      packageJSON.devDependencies?.['@tanstack/router-plugin'] ??
+      packageJSON.dependencies?.['@tanstack/router-plugin'] ??
+      'latest'
+
+    delete packageJSON.dependencies?.['@tanstack/router-plugin']
+
+    packageJSON.devDependencies = {
+      ...(packageJSON.devDependencies ?? {}),
+      '@tanstack/router-plugin': routerPluginVersion,
+    }
+    packageJSON.dependencies = {
+      ...(packageJSON.dependencies ?? {}),
+      '@tanstack/router-core':
+        packageJSON.dependencies?.['@tanstack/router-core'] ?? 'latest',
+    }
+  }
+
   let packageJSON = {
     ...JSON.parse(JSON.stringify(options.framework.basePackageJSON)),
     name: options.projectName,
@@ -133,22 +152,14 @@ export function createPackageJSON(options: Options) {
     if (options.framework.id === 'react') {
       delete packageJSON.dependencies?.['@tanstack/react-start']
       delete packageJSON.dependencies?.['@tanstack/react-router-ssr-query']
-      packageJSON.devDependencies = {
-        ...(packageJSON.devDependencies ?? {}),
-        '@tanstack/router-plugin':
-          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
-      }
+      applyRouterOnlyPackageJSONCompat()
     }
 
     if (options.framework.id === 'solid') {
       delete packageJSON.dependencies?.['@tanstack/solid-start']
       delete packageJSON.dependencies?.['@tanstack/solid-router-ssr-query']
       delete packageJSON.scripts?.start
-      packageJSON.devDependencies = {
-        ...(packageJSON.devDependencies ?? {}),
-        '@tanstack/router-plugin':
-          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
-      }
+      applyRouterOnlyPackageJSONCompat()
     }
   }
 

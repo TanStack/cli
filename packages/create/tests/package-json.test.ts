@@ -60,6 +60,100 @@ describe('createPackageJSON', () => {
     expect(JSON.stringify(packageJSON)).toEqual(JSON.stringify(expected))
   })
 
+  it('should create a strict package-manager compatible React router-only package.json', () => {
+    const packageJSON = createPackageJSON({
+      chosenAddOns: [],
+      mode: 'file-router',
+      routerOnly: true,
+      typescript: true,
+      tailwind: true,
+      projectName: 'test',
+      framework: {
+        id: 'react',
+        basePackageJSON: {
+          dependencies: {
+            '@tanstack/react-router': 'latest',
+            '@tanstack/react-router-devtools': 'latest',
+            '@tanstack/react-router-ssr-query': 'latest',
+            '@tanstack/react-start': 'latest',
+          },
+          devDependencies: {},
+        },
+        optionalPackages: {
+          typescript: {},
+          tailwindcss: {},
+          'file-router': {
+            dependencies: {
+              '@tanstack/router-plugin': '^1.132.0',
+            },
+            devDependencies: {
+              '@tanstack/router-cli': '^1.132.0',
+            },
+          },
+        },
+      } as unknown as Framework,
+    } as unknown as Options)
+
+    expect(packageJSON.dependencies).toEqual({
+      '@tanstack/react-router': 'latest',
+      '@tanstack/react-router-devtools': 'latest',
+      '@tanstack/router-core': 'latest',
+    })
+    expect(packageJSON.devDependencies).toEqual({
+      '@tanstack/router-cli': '^1.132.0',
+      '@tanstack/router-plugin': '^1.132.0',
+    })
+  })
+
+  it('should move router-plugin to devDependencies for Solid router-only package.json', () => {
+    const packageJSON = createPackageJSON({
+      chosenAddOns: [],
+      mode: 'file-router',
+      routerOnly: true,
+      typescript: true,
+      tailwind: true,
+      projectName: 'test',
+      framework: {
+        id: 'solid',
+        basePackageJSON: {
+          scripts: {
+            start: 'node .output/server/index.mjs',
+          },
+          dependencies: {
+            '@tanstack/solid-router': 'latest',
+            '@tanstack/solid-router-devtools': 'latest',
+            '@tanstack/solid-router-ssr-query': 'latest',
+            '@tanstack/solid-start': 'latest',
+          },
+          devDependencies: {},
+        },
+        optionalPackages: {
+          typescript: {},
+          tailwindcss: {},
+          'file-router': {
+            dependencies: {
+              '@tanstack/router-plugin': '^1.133.21',
+            },
+            devDependencies: {
+              '@tanstack/router-cli': '^1.133.21',
+            },
+          },
+        },
+      } as unknown as Framework,
+    } as unknown as Options)
+
+    expect(packageJSON.dependencies).toEqual({
+      '@tanstack/router-core': 'latest',
+      '@tanstack/solid-router': 'latest',
+      '@tanstack/solid-router-devtools': 'latest',
+    })
+    expect(packageJSON.devDependencies).toEqual({
+      '@tanstack/router-cli': '^1.133.21',
+      '@tanstack/router-plugin': '^1.133.21',
+    })
+    expect(packageJSON.scripts).toEqual({})
+  })
+
   it('should include sqlite build approval for pnpm templates', () => {
     const packageJSON = createPackageJSON({
       chosenAddOns: [
