@@ -8,6 +8,7 @@
   "exclusive": ["auth"],
   "color": "#6363F1",
   "priority": 160,
+  "partner": { "id": "workos", "tier": "silver" },
   "link": "https://workos.com",
   "routes": [
     {

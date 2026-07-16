@@ -1,5 +1,14 @@
 # @tanstack/cli
 
+## 0.69.6
+
+### Patch Changes
+
+- Order partner integrations by sponsorship tier and rotate integrations within each tier for every CLI run. ([#486](https://github.com/TanStack/cli/pull/486))
+
+- Updated dependencies [[`0c2c22b`](https://github.com/TanStack/cli/commit/0c2c22bfbbcd5cc65611a9741e13c30365166b82)]:
+  - @tanstack/create@0.68.5
+
 ## 0.69.5
 
 ### Patch Changes
