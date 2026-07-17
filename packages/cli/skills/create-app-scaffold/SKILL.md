@@ -90,7 +90,7 @@ In non-interactive runs, empty add-on selection can complete with defaults and s
 
 Source: https://github.com/TanStack/cli/issues/234
 
-### HIGH Use --no-tailwind when a minimal scaffold is required
+### HIGH Avoid --no-tailwind; use --blank for a minimal scaffold
 
 Wrong:
 ```bash

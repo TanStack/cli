@@ -1,7 +1,7 @@
 <% if (blank) { -%>
 # <%= projectName %>
 
-A minimal TanStack Start app with one route and plain CSS.
+A minimal TanStack Start app with one route and <%= tailwind ? 'Tailwind CSS' : 'plain CSS' %>.
 
 ```bash
 <%= packageManager %> install

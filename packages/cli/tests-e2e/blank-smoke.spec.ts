@@ -9,7 +9,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { promisify } from 'node:util'
 
 import { expect, test } from '@playwright/test'
@@ -99,6 +99,65 @@ test('@blocking refuses a non-empty target in non-interactive mode', async () =>
   } finally {
     await rm(rootDir, { recursive: true, force: true })
   }
+})
+
+test('@blocking rejects conflicting blank flags for dev', async () => {
+  const rootDir = await mkdtemp(join(tmpdir(), 'tanstack-blank-dev-conflict-'))
+  const appName = 'invalid-blank-dev-app'
+
+  try {
+    let failure: unknown
+    try {
+      await execFileAsync(
+        process.execPath,
+        [
+          getRepoPath('packages/cli/dist/index.js'),
+          'dev',
+          appName,
+          '--blank',
+          '--tailwind',
+          '-y',
+          '--no-install',
+          '--no-git',
+        ],
+        { cwd: rootDir, encoding: 'utf8' },
+      )
+    } catch (error) {
+      failure = error
+    }
+
+    const commandError = failure as
+      | (Error & { code?: number; stdout?: string; stderr?: string })
+      | undefined
+    expect(commandError?.code).toBe(1)
+    expect(
+      `${commandError?.stdout ?? ''}\n${commandError?.stderr ?? ''}`,
+    ).toContain('--blank cannot be combined with --tailwind')
+    await expect(access(join(rootDir, appName))).rejects.toThrow()
+  } finally {
+    await rm(rootDir, { recursive: true, force: true })
+  }
+})
+
+test('@blocking cleans up a fixture when setup fails', async () => {
+  let failedRootDir: string | undefined
+
+  await expect(
+    createReactAppFixture({
+      appName: 'failed-blank-fixture',
+      blank: true,
+      packageManager: 'pnpm',
+      skipDevServer: true,
+      afterCreate: async (appDir) => {
+        failedRootDir = dirname(appDir)
+        await access(join(appDir, 'node_modules'))
+        throw new Error('fixture setup sentinel')
+      },
+    }),
+  ).rejects.toThrow('fixture setup sentinel')
+
+  expect(failedRootDir).toBeDefined()
+  await expect(access(failedRootDir!)).rejects.toThrow()
 })
 
 test('@blocking creates a production-valid blank React app', async ({

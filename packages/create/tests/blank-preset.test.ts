@@ -117,6 +117,7 @@ describe('blank project preset', () => {
     expect(files['src/styles.css']).not.toContain('tailwindcss')
     expect(files['vite.config.ts']).not.toMatch(/devtools|tailwindcss/)
     expect(files['README.md']).not.toMatch(/Tailwind CSS|Vitest/)
+    expect(files['README.md']).toContain('plain CSS')
   })
 
   it('uses only blank dependencies and keeps Node and edge composition equal', () => {
@@ -173,6 +174,7 @@ describe('blank project preset', () => {
       'vite',
       'vite-plugin-solid',
     ])
+    expect(output.files['/blank-app/README.md']).toContain('plain CSS')
   })
 
   it('lets an explicit styling add-on opt back into Tailwind', async () => {
@@ -211,6 +213,36 @@ describe('blank project preset', () => {
       "@plugin '@tailwindcss/typography'",
     )
     expect(output.files['/blank-app/vite.config.ts']).toContain('tailwindcss()')
+    expect(output.files['/blank-app/README.md']).toContain('Tailwind CSS')
+    expect(output.files['/blank-app/README.md']).not.toContain('plain CSS')
+  })
+
+  it('describes Tailwind accurately for a Solid styling add-on', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ version: '1.0.0' }), { status: 200 }),
+      ),
+    )
+
+    const framework = frameworkFromDefinition(createSolidFrameworkDefinition())
+    const chosenAddOns = await finalizeAddOns(framework, 'file-router', [
+      'solid-ui',
+    ])
+    const options = {
+      ...createBlankOptions(framework),
+      tailwind: chosenAddOns.some((addOn) => addOn.tailwind === true),
+      chosenAddOns,
+      addOnOptions: populateAddOnOptionsDefaults(chosenAddOns),
+    }
+    const { environment, output } = createMemoryEnvironment()
+
+    await createApp(environment, options)
+
+    expect(options.tailwind).toBe(true)
+    expect(output.files['/blank-app/README.md']).toContain('Tailwind CSS')
+    expect(output.files['/blank-app/README.md']).not.toContain('plain CSS')
   })
 
   it('keeps Shopify storefront styling in the blank preset', async () => {

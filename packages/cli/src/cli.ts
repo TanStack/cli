@@ -633,6 +633,17 @@ export function cli({
 
   addHiddenAgentFlag(program)
 
+  function validateCreateCommandOptions(options: CliOptions) {
+    const legacyCreateFlags = validateLegacyCreateFlags(options)
+    if (legacyCreateFlags.error) {
+      throw new Error(legacyCreateFlags.error)
+    }
+
+    for (const warning of legacyCreateFlags.warnings) {
+      log.warn(warning)
+    }
+  }
+
   // Helper to create the create command action handler
   async function handleCreate(projectName: string, options: CliOptions) {
     try {
@@ -643,14 +654,7 @@ export function cli({
           properties: getCreateTelemetryProperties(projectName, options),
         },
         async (telemetry) => {
-          const legacyCreateFlags = validateLegacyCreateFlags(options)
-          if (legacyCreateFlags.error) {
-            throw new Error(legacyCreateFlags.error)
-          }
-
-          for (const warning of legacyCreateFlags.warnings) {
-            log.warn(warning)
-          }
+          validateCreateCommandOptions(options)
 
           if (options.listAddOns) {
             const addOns = await getAllAddOns(
@@ -1118,6 +1122,8 @@ export function cli({
           },
         },
         async () => {
+          validateCreateCommandOptions(options)
+
           const frameworkName = options.framework || defaultFramework || 'React'
           const framework = getFrameworkByName(frameworkName)
           if (!framework) {
