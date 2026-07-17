@@ -266,6 +266,7 @@ function createTemplateRendererSource(renderers = templateRenderers) {
     projectName,
     typescript,
     tailwind,
+    blank,
     js,
     jsx,
     fileRouter,
@@ -317,6 +318,7 @@ type TemplateRenderContext = {
   projectName: any
   typescript: any
   tailwind: any
+  blank: any
   js: any
   jsx: any
   fileRouter: any

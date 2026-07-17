@@ -1,4 +1,26 @@
-Welcome to your new TanStack Start app! 
+<% if (blank) { -%>
+# <%= projectName %>
+
+A minimal TanStack Start app with one route and plain CSS.
+
+```bash
+<%= packageManager %> install
+<%= getPackageManagerRunScript('dev') %>
+```
+
+Edit `src/routes/index.tsx` to get started. Add route files under
+`src/routes`; TanStack Router updates `src/routeTree.gen.ts` for you.
+
+Build the production app with:
+
+```bash
+<%= getPackageManagerRunScript('build') %>
+```
+<% for(const addon of addOns.filter(addon => addon.readme)) { %>
+<%- addon.readmeIsEjs ? renderTemplate(addon.readme) : addon.readme %>
+<% } %>
+<% } else { -%>
+Welcome to your new TanStack Start app!
 
 # Getting Started
 
@@ -17,14 +39,6 @@ To build this application for production:
 <%= getPackageManagerRunScript('build') %>
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
-
-```bash
-<%= getPackageManagerRunScript('test') %>
-```
-
 ## Styling
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
@@ -36,7 +50,7 @@ If you prefer not to use Tailwind CSS:
 1. Remove the demo pages in `src/routes/demo/`
 2. Replace the Tailwind import in `src/styles.css` with your own styles
 3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `<%= getPackageManagerAddScript('@tailwindcss/vite tailwindcss', true) %>`
+4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
 <% if (addOnEnabled.biome || addOnEnabled.eslint) { %>
 ## Linting & Formatting
 <% if (addOnEnabled.biome) { %>
@@ -197,12 +211,15 @@ function PeopleComponent() {
 
 Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
 
+<% if (includeExamples) { %>
 # Demo files
 
 Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
+<% } %>
 
 # Learn More
 
 You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
 
 For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+<% } -%>

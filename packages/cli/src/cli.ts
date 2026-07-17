@@ -182,6 +182,7 @@ function getCreateTelemetryProperties(projectName: string, options: CliOptions) 
     command_variant: getCreateCommandVariant(options),
     deployment: options.deployment ? sanitizeId(options.deployment) : undefined,
     examples: options.examples,
+    blank: !!options.blank,
     framework: options.framework ? sanitizeId(options.framework) : undefined,
     git: options.git,
     install: options.install !== false,
@@ -221,6 +222,7 @@ function getResolvedCreateTelemetryProperties(
     add_on_ids: addOnIds,
     deployment: deployment ? sanitizeId(deployment.id) : undefined,
     examples: includeExamples,
+    blank: finalOptions.projectPreset === 'blank',
     framework: sanitizeId(finalOptions.framework.id),
     git: finalOptions.git,
     install: finalOptions.install !== false,
@@ -264,6 +266,7 @@ export function cli({
   async function confirmTargetDirectorySafety(
     targetDir: string,
     forced?: boolean,
+    nonInteractive?: boolean,
   ) {
     if (forced) {
       return
@@ -279,6 +282,12 @@ export function cli({
 
     if (fs.readdirSync(targetDir).length === 0) {
       return
+    }
+
+    if (nonInteractive) {
+      throw new Error(
+        `Target directory "${targetDir}" already exists and is not empty. Pass --force to continue non-interactively.`,
+      )
     }
 
     const shouldContinue = await confirm({
@@ -298,6 +307,9 @@ export function cli({
     lines.push(`  Location:        ${finalOptions.targetDir}`)
     lines.push(`  Framework:       ${finalOptions.framework.name}`)
     lines.push(`  Mode:            ${finalOptions.mode}`)
+    if (finalOptions.projectPreset === 'blank') {
+      lines.push(`  Preset:          blank`)
+    }
     lines.push(`  Package manager: ${finalOptions.packageManager}`)
     if (finalOptions.starter) {
       lines.push(`  Template:        ${finalOptions.starter.name}`)
@@ -512,7 +524,11 @@ export function cli({
       )
     }
     const silentEnvironment = createUIEnvironment(appName, true, () => currentTelemetry)
-    await confirmTargetDirectorySafety(normalizedOpts.targetDir, options.force)
+    await confirmTargetDirectorySafety(
+      normalizedOpts.targetDir,
+      options.force,
+      !!options.nonInteractive || !!options.yes,
+    )
     await createApp(silentEnvironment, normalizedOpts)
     console.log(chalk.gray('└─') + ' ' + chalk.green('✓') + ` app created`)
 
@@ -895,7 +911,11 @@ export function cli({
           if (cameFromPrompts) {
             await confirmCreateOptions(finalOptions)
           }
-          await confirmTargetDirectorySafety(finalOptions.targetDir, options.force)
+          await confirmTargetDirectorySafety(
+            finalOptions.targetDir,
+            options.force,
+            nonInteractive,
+          )
           await createApp(environment, finalOptions)
         },
       )
@@ -969,12 +989,16 @@ export function cli({
         'Use router-only compatibility mode (file-based routing without TanStack Start)',
       )
       .option(
+        '--blank',
+        'Create a minimal one-route app without default starter UI, Tailwind, devtools, or tests',
+      )
+      .option(
         '--tailwind',
-        'Deprecated: compatibility flag; Tailwind is always enabled',
+        'Deprecated: compatibility flag; standard scaffolds always enable Tailwind',
       )
       .option(
         '--no-tailwind',
-        'Deprecated: compatibility flag; Tailwind opt-out is ignored',
+        'Deprecated: compatibility flag; use --blank for a project without Tailwind',
       )
       .option('--examples', 'include demo/example pages')
       .option('--no-examples', 'exclude demo/example pages')

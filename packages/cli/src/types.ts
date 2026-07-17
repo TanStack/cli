@@ -24,6 +24,7 @@ export interface CliOptions {
   addOnConfig?: string
   force?: boolean
   routerOnly?: boolean
+  blank?: boolean
   template?: string
   tailwind?: boolean
   examples?: boolean

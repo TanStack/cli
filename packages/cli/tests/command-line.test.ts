@@ -588,6 +588,61 @@ describe('normalizeOptions', () => {
     expect((options as any)?.includeExamples).toBe(false)
   })
 
+  it('normalizes --blank to the blank project preset', async () => {
+    const options = await normalizeOptions({
+      projectName: 'test',
+      blank: true,
+    })
+
+    expect(options?.projectPreset).toBe('blank')
+    expect(options?.includeExamples).toBe(false)
+    expect(options?.tailwind).toBe(false)
+    expect(options?.intent).toBe(false)
+  })
+
+  it('keeps explicitly selected integrations in the blank preset', async () => {
+    __testRegisterFramework({
+      id: 'react',
+      name: 'react',
+      getAddOns: () => [
+        {
+          id: 'biome',
+          name: 'Biome',
+          modes: ['file-router'],
+          type: 'toolchain',
+        },
+        {
+          id: 'cloudflare',
+          name: 'Cloudflare',
+          modes: ['file-router'],
+          type: 'deployment',
+        },
+        {
+          id: 'tanstack-query',
+          name: 'TanStack Query',
+          modes: ['file-router'],
+          type: 'add-on',
+        },
+      ],
+    })
+
+    const options = await normalizeOptions({
+      projectName: 'test',
+      framework: 'react',
+      blank: true,
+      toolchain: 'biome',
+      deployment: 'cloudflare',
+      addOns: ['tanstack-query'],
+    })
+
+    expect(options?.projectPreset).toBe('blank')
+    expect(options?.chosenAddOns.map((addOn) => addOn.id).sort()).toEqual([
+      'biome',
+      'cloudflare',
+      'tanstack-query',
+    ])
+  })
+
   it('should ignore add-ons and deployment in router-only mode but keep toolchain', async () => {
     __testRegisterFramework({
       id: 'react',
@@ -668,6 +723,25 @@ describe('validateLegacyCreateFlags', () => {
     expect(result.error).toBeUndefined()
   })
 
+  it('accepts --blank by itself', () => {
+    const result = validateLegacyCreateFlags({ blank: true })
+    expect(result.warnings).toEqual([])
+    expect(result.error).toBeUndefined()
+  })
+
+  it.each([
+    [{ starter: 'ecommerce' }, '--starter'],
+    [{ template: 'ecommerce' }, '--template'],
+    [{ templateId: 'ecommerce' }, '--template-id'],
+    [{ examples: true }, '--examples'],
+    [{ tailwind: true }, '--tailwind'],
+  ])('rejects --blank with conflicting flags containing %s', (flags, name) => {
+    const result = validateLegacyCreateFlags({ blank: true, ...flags })
+
+    expect(result.error).toContain('--blank')
+    expect(result.error).toContain(name)
+  })
+
   it('warns when --router-only is used', () => {
     const result = validateLegacyCreateFlags({ routerOnly: true })
     expect(result.error).toBeUndefined()
@@ -684,7 +758,7 @@ describe('validateLegacyCreateFlags', () => {
     const result = validateLegacyCreateFlags({ tailwind: false })
     expect(result.error).toBeUndefined()
     expect(result.warnings[0]).toContain('--no-tailwind')
-    expect(result.warnings[0]).toContain('intentionally unsupported')
+    expect(result.warnings[0]).toContain('--blank')
   })
 
   it('errors for JavaScript templates', () => {

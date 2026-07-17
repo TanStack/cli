@@ -96,6 +96,14 @@ export function mergePackageJSON(
 
 export function createPackageJSON(options: Options) {
   const packageManager = options.packageManager
+  const blank = options.projectPreset === 'blank'
+  const includeDevtools =
+    !blank ||
+    options.chosenAddOns.some((addOn) =>
+      addOn.integrations?.some(
+        (integration) => integration.type === 'devtools',
+      ),
+    )
 
   function getPackageManagerExecuteScript(
     pkg: string,
@@ -113,7 +121,13 @@ export function createPackageJSON(options: Options) {
 
   const additions: Array<Record<string, unknown> | undefined> = [
     options.framework.optionalPackages.typescript,
-    options.framework.optionalPackages.tailwindcss,
+    includeDevtools ? options.framework.optionalPackages.devtools : undefined,
+    !blank && options.includeExamples !== false
+      ? options.framework.optionalPackages.examples
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.tailwindcss
+      : undefined,
     options.mode ? options.framework.optionalPackages[options.mode] : undefined,
   ]
   for (const addition of additions.filter(
@@ -132,7 +146,8 @@ export function createPackageJSON(options: Options) {
         packageManager: options.packageManager,
         projectName: options.projectName,
         typescript: true,
-        tailwind: true,
+        tailwind: options.tailwind,
+        blank,
         js: 'ts',
         jsx: 'tsx',
         fileRouter: options.mode === 'file-router',

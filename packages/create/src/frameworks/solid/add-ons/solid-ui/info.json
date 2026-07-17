@@ -6,5 +6,6 @@
   "modes": ["file-router", "code-router"],
   "type": "add-on",
   "category": "styling",
+  "tailwind": true,
   "color": "#000000"
 }

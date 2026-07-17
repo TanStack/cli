@@ -228,6 +228,7 @@ export interface Options {
   chosenAddOns: Array<AddOn>
   addOnOptions: Record<string, Record<string, any>>
   starter?: Starter | undefined
+  projectPreset?: 'default' | 'blank'
   routerOnly?: boolean
   includeExamples?: boolean
   envVarValues?: Record<string, string>

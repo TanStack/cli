@@ -15,13 +15,14 @@ tanstack create [project-name] [options]
 |--------|-------------|
 | `--add-ons <ids>` | Comma-separated add-on IDs |
 | `--template <url-or-id>` | Template URL/path or built-in template ID |
+| `--blank` | Create a minimal one-route Start project without default starter UI, examples, Tailwind, devtools, or a test stack |
 | `--package-manager <pm>` | `npm`, `pnpm`, `yarn`, `bun`, `deno` |
 | `--framework <name>` | `React`, `Solid` |
 | `--router-only` | Create file-based Router-only app without TanStack Start (add-ons/deployment/template disabled) |
 | `--toolchain <id>` | Toolchain add-on (use `--list-add-ons` to see options) |
 | `--deployment <id>` | Deployment add-on (use `--list-add-ons` to see options) |
 | `--examples` / `--no-examples` | Include or exclude demo/example pages |
-| `--tailwind` / `--no-tailwind` | Deprecated compatibility flags; accepted but ignored (Tailwind is always enabled) |
+| `--tailwind` / `--no-tailwind` | Deprecated compatibility flags for standard projects; blank projects omit Tailwind |
 | `--no-git` | Skip git init |
 | `--no-install` | Skip dependency install |
 | `-y, --yes` | Use defaults, skip prompts |
@@ -36,6 +37,8 @@ tanstack create [project-name] [options]
 ```bash
 # Examples
 tanstack create my-app -y
+tanstack create my-app --blank -y
+tanstack create my-app --blank --deployment cloudflare -y
 tanstack create my-app --add-ons clerk,drizzle,tanstack-query
 tanstack create my-app --router-only --toolchain eslint --no-examples
 tanstack create my-app --template https://example.com/template.json
@@ -43,6 +46,14 @@ tanstack create my-app --template ecommerce
 tanstack create --list-add-ons --framework React --json
 tanstack create --addon-details drizzle --framework React --json
 ```
+
+`--blank` creates the smallest useful TanStack Start project: one route and no
+default starter interface, examples, Tailwind, devtools, test dependencies, or
+TanStack Intent setup. Pass `--intent` when the project should include local
+skill mappings for coding agents.
+Explicit add-ons and deployment adapters can add their own required files and
+dependencies. Add `-y` to use defaults for every remaining option; when the
+target is non-empty, also pass `--force` or the command exits without writing.
 
 ### Programmatic generation
 
@@ -295,7 +306,7 @@ Removes `^` from version ranges for TanStack packages and adds any missing peer 
 
 ## Configuration
 
-Projects include `.tanstack.json`:
+Projects include `.cta.json`:
 
 ```json
 {

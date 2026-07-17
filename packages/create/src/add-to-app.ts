@@ -43,16 +43,19 @@ async function createOptions(
   const framework = getFrameworkById(json.framework)
 
   const starter = json.starter ? await loadStarter(json.starter) : undefined
+  const chosenAddOns = await finalizeAddOns(framework!, json.mode!, [
+    ...json.chosenAddOns,
+    ...addOns,
+  ])
 
   return {
     ...json,
     framework,
-    tailwind: true,
+    tailwind:
+      (json.tailwind ?? true) ||
+      chosenAddOns.some((addOn) => addOn.tailwind === true),
     addOns: true,
-    chosenAddOns: await finalizeAddOns(framework!, json.mode!, [
-      ...json.chosenAddOns,
-      ...addOns,
-    ]),
+    chosenAddOns,
     targetDir,
     starter,
     intent: json.intent ?? false,

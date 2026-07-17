@@ -61,6 +61,7 @@ beforeEach(() => {
         type: 'add-on',
         phase: 'add-on',
         modes: ['code-router', 'file-router'],
+        tailwind: true,
         command: {
           command: 'echo',
           args: ['baz'],
@@ -390,5 +391,35 @@ describe('addToApp', () => {
         2,
       ),
     })
+  })
+
+  it('enables Tailwind when an add-on requires it', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify({ ...fakeCTAJSON, tailwind: false }, null, 2),
+    )
+    environment.writeFile(
+      '/foo/package.json',
+      JSON.stringify(
+        {
+          name: 'test',
+          version: '1.0.0',
+          scripts: {},
+          dependencies: {},
+          devDependencies: {},
+        },
+        null,
+        2,
+      ),
+    )
+
+    await addToApp(environment, ['test'], '/foo', {
+      forced: true,
+    })
+
+    const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
+    expect(persisted.tailwind).toBe(true)
   })
 })

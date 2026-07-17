@@ -15,7 +15,10 @@ import {
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
 function stripExamplesFromOptions(options: Options): Options {
-  if (options.includeExamples !== false) {
+  const includeExamples =
+    options.projectPreset !== 'blank' && options.includeExamples !== false
+
+  if (includeExamples) {
     return options
   }
 
@@ -49,6 +52,7 @@ function stripExamplesFromOptions(options: Options): Options {
 
   return {
     ...options,
+    includeExamples: false,
     chosenAddOns,
   }
 }
@@ -567,6 +571,10 @@ ${environment.getErrors().join('\n')}`
 `
 
   const nextSteps = buildNextSteps(options)
+  const readmeDescription =
+    options.projectPreset === 'blank'
+      ? 'running, building, adding routes, and selected integrations.'
+      : 'testing, styling, adding routes, etc.'
 
   environment.outro(
     `${locationMessage}
@@ -576,7 +584,7 @@ ${cdInstruction}% ${formatCommand(
       getPackageManagerScriptCommand(options.packageManager, ['dev']),
     )}
 ${nextSteps}
-Please read the README.md file for information on testing, styling, adding routes, etc.${errorStatement}`,
+Please read the README.md file for information on ${readmeDescription}${errorStatement}`,
   )
 }
 

@@ -23,10 +23,13 @@ type CreateAppFixtureOptions = {
   appName: string
   framework?: 'react' | 'solid'
   packageManager?: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'deno'
+  blank?: boolean
+  deployment?: string
   routerOnly?: boolean
   template?: string
   addOns?: Array<string>
   postCreateAddOns?: Array<string>
+  afterCreate?: (appDir: string) => Promise<void>
   skipDevServer?: boolean
   runQualityGatesChecks?: boolean
 }
@@ -349,8 +352,11 @@ export async function createAppFixture(
   const rootDir = await mkdtemp(join(tmpdir(), 'tanstack-cli-e2e-'))
   const {
     appName,
+    blank = false,
+    deployment,
     template,
     addOns,
+    afterCreate,
     postCreateAddOns,
     skipDevServer,
     runQualityGatesChecks = false,
@@ -375,6 +381,14 @@ export async function createAppFixture(
     createArgs.push('--router-only')
   }
 
+  if (blank) {
+    createArgs.push('--blank', '--yes', '--no-intent')
+  }
+
+  if (deployment) {
+    createArgs.push('--deployment', deployment)
+  }
+
   if (template) {
     createArgs.push('--template', template)
   }
@@ -395,6 +409,8 @@ export async function createAppFixture(
     },
   )
   mark('create', createStartedAt)
+
+  await afterCreate?.(appDir)
 
   await patchViteConfigForE2E(appDir)
 

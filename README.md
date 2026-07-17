@@ -39,6 +39,9 @@ npx @tanstack/cli create my-app
 # Create TanStack Start app (recommended)
 npx @tanstack/cli create my-app
 
+# Create a minimal one-route Start app without selection prompts
+npx @tanstack/cli create my-app --blank -y
+
 # Create Router-only SPA (no SSR)
 npx @tanstack/cli create my-app --router-only
 
