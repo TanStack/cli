@@ -43,6 +43,7 @@ describe('createPackageJSON', () => {
       } as unknown as Options
 
       const startPackageJSON = createPackageJSON(options)
+      expect(startPackageJSON.dependencies).toHaveProperty(startPackage, 'latest')
       expect(startPackageJSON.devDependencies).not.toHaveProperty(
         '@tanstack/router-plugin',
       )
