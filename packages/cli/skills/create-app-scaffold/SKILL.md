@@ -5,9 +5,10 @@ description: >
   --toolchain, --deployment, --add-ons, --blank, and --router-only. Covers flag
   compatibility, non-interactive defaults, and intent-preserving command
   construction.
-type: core
-library: tanstack-cli
-library_version: "0.70.0"
+metadata:
+  type: core
+  library: tanstack-cli
+  library_version: "0.70.0"
 ---
 
 # Create App Scaffold
