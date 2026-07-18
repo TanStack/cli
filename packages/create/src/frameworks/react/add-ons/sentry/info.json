@@ -2,7 +2,7 @@
   "name": "Sentry",
   "phase": "setup",
   "description": "Add Sentry for error monitoring, tracing, and session replays (requires Start).",
-  "link": "https://sentry.com/",
+  "link": "https://sentry.io/",
   "modes": ["file-router"],
   "type": "add-on",
   "category": "monitoring",
