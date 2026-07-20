@@ -37,6 +37,18 @@
       "required": true,
       "secret": false,
       "file": ".env.local"
+    },
+    {
+      "name": "CLERK_SECRET_KEY",
+      "description": "Clerk secret key",
+      "required": true,
+      "secret": true,
+      "file": ".env.local"
     }
-  ]
+  ],
+  "packageAdditions": {
+    "dependencies": {
+      "@clerk/tanstack-react-start": "^1.0.4"
+    }
+  }
 }

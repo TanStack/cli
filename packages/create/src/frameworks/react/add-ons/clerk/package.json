@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@clerk/clerk-react": "^5.61.3"
+    "@clerk/tanstack-react-start": "^1.0.4"
   }
 }

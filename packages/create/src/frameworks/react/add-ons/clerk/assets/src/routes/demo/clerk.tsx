@@ -1,3 +1,4 @@
+import { useUser } from '@clerk/tanstack-react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { SignIn, SignedIn, SignedOut, useUser } from '@clerk/clerk-react'
 
