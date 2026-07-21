@@ -5,7 +5,12 @@
     "start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs"
   },
   "dependencies": {
-    "@sentry/tanstackstart-react": "^10.42.0",
+    "@sentry/tanstackstart-react": "^10.67.0",
     "dotenv-cli": "^11.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli"
+    ]
   }
 }

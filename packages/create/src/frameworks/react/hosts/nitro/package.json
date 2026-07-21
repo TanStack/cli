@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "nitro": "npm:nitro-nightly@latest"
+    "nitro": "latest"
   }
 }

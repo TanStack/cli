@@ -30,5 +30,44 @@
       "jsName": "WorkOSProvider",
       "path": "src/integrations/workos/provider.tsx"
     }
+  ],
+  "envVars": [
+    {
+      "name": "WORKOS_CLIENT_ID",
+      "description": "WorkOS client ID",
+      "required": true,
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "WORKOS_API_KEY",
+      "description": "WorkOS API key",
+      "required": true,
+      "secret": true,
+      "file": ".env.local"
+    },
+    {
+      "name": "WORKOS_REDIRECT_URI",
+      "description": "AuthKit callback URL",
+      "required": true,
+      "default": "http://localhost:3000/api/auth/callback",
+      "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "WORKOS_COOKIE_PASSWORD",
+      "description": "Session cookie encryption password (at least 32 characters)",
+      "required": true,
+      "secret": true,
+      "file": ".env.local"
+    },
+    {
+      "name": "WORKOS_API_HOSTNAME",
+      "description": "WorkOS API hostname",
+      "required": false,
+      "default": "api.workos.com",
+      "secret": false,
+      "file": ".env.local"
+    }
   ]
 }

@@ -158,7 +158,9 @@ describe('@tanstack/create/edge manifest', () => {
       )
       expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-start')
       expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-query')
-      expect(packageJSON.dependencies).toHaveProperty('@clerk/clerk-react')
+      expect(packageJSON.dependencies).toHaveProperty(
+        '@clerk/tanstack-react-start',
+      )
       expect(packageJSON.devDependencies).toHaveProperty('wrangler')
       expect(output.files['wrangler.jsonc']).toContain('tanstack-start-app')
       expect(output.files['.env.example']).toContain(

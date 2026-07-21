@@ -33,6 +33,9 @@ describe('writeConfigFile', () => {
         } as AddOn,
       ],
       targetDir,
+      envVarValues: {
+        API_SECRET: 'do-not-persist',
+      },
     } as unknown as Options
     const persistedOptions = {
       version: 1,
@@ -78,6 +81,9 @@ describe('readConfigFileFromEnvironment', () => {
       mode: 'code-router',
       git: true,
       variableValues: {},
+      envVarValues: {
+        API_SECRET: 'legacy-secret',
+      },
       version: 1,
       existingAddOns: [],
     }

@@ -1,0 +1,14 @@
+<% if (packageManager !== 'pnpm') { ignoreFile(); return; } -%>
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+<% if (addOnEnabled.sentry) { -%>
+  '@sentry/cli': true
+<% } -%>
+<% if (addOnEnabled.cloudflare) { -%>
+  sharp: true
+  workerd: true
+<% } -%>
+<% if (addOnEnabled.drizzle || addOnEnabled.prisma) { -%>
+  better-sqlite3: true
+<% } -%>
