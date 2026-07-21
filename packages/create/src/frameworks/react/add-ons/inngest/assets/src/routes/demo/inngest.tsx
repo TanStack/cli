@@ -13,7 +13,9 @@ const sendHelloEvent = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data: name }) => {
     const { ids } = await inngest.send(helloWorld.create({ name }))
-    return { eventId: ids[0] }
+    const eventId = ids[0]
+    if (!eventId) throw new Error('Inngest did not return an event ID')
+    return { eventId }
   })
 
 export const Route = createFileRoute('/demo/inngest')({
@@ -87,7 +89,11 @@ function RouteComponent() {
           )}
 
           {error && (
-            <div className="rounded-xl border border-[rgba(200,70,70,0.3)] bg-[rgba(200,70,70,0.08)] p-4 text-sm text-[#c04646]">
+            <div
+              role="alert"
+              aria-live="polite"
+              className="rounded-xl border border-[rgba(200,70,70,0.3)] bg-[rgba(200,70,70,0.08)] p-4 text-sm text-[#c04646]"
+            >
               {error}
             </div>
           )}
@@ -100,7 +106,8 @@ function RouteComponent() {
           <li>
             Uncomment <code>INNGEST_DEV=1</code> in <code>.env.local</code>{' '}
             during development — without it, the SDK defaults to cloud mode and
-            will try to authenticate against Inngest Cloud. You can also use `INNGEST_DEV=1 pnpm dev` to start the application.
+            will try to authenticate against Inngest Cloud. You can also use{' '}
+            <code>INNGEST_DEV=1 pnpm dev</code> to start the application.
           </li>
           <li>
             Run the Dev Server in a second terminal:{' '}
