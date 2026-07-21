@@ -17,8 +17,7 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
       "WebFetch(domain:tanstack.com)",
-      "WebFetch(domain:www.npmjs.com)",
-      "Bash(gh api *)"
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": []
   }
