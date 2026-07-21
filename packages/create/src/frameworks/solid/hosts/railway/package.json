@@ -3,6 +3,6 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
-    "nitro": "latest"
+    "nitro": "3.0.260610-beta"
   }
 }

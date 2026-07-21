@@ -158,7 +158,10 @@ describe('partner add-on scaffolds', () => {
       const packageJSON = JSON.parse(output.files['package.json'])
       const readme = output.files['README.md']
 
-      expect(packageJSON.dependencies).toHaveProperty('nitro')
+      expect(packageJSON.dependencies).toHaveProperty(
+        'nitro',
+        '3.0.260610-beta',
+      )
       expect(packageJSON.dependencies).not.toHaveProperty('nitro-nightly')
       expect(Object.values(packageJSON.dependencies)).not.toContain(
         'npm:nitro-nightly@latest',
