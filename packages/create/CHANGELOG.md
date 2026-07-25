@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.69.1
+
+### Patch Changes
+
+- Fix pnpm 11 build approvals for Prisma and Netlify projects, make generated Prisma MySQL apps use their configured `DATABASE_URL`, and update the Prisma demo to current server-function and package-script APIs. ([#492](https://github.com/TanStack/cli/pull/492))
+
 ## 0.69.0
 
 ### Minor Changes

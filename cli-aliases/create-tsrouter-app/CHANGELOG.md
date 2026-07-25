@@ -1,5 +1,13 @@
 # create-tsrouter-app
 
+## 0.54.41
+
+### Patch Changes
+
+- Updated dependencies [[`4bb1384`](https://github.com/TanStack/cli/commit/4bb13849454f5dbe126f2f67e87b0367be28bcd7)]:
+  - @tanstack/create@0.69.1
+  - @tanstack/cli@0.70.1
+
 ## 0.54.40
 
 ### Patch Changes
