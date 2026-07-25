@@ -1,5 +1,10 @@
 {
   "devDependencies": {
     "@netlify/vite-plugin-tanstack-start": "^1.2.15"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp"
+    ]
   }
 }

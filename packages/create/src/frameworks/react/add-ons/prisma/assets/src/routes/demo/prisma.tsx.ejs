@@ -13,7 +13,7 @@ const getTodos = createServerFn({
 const createTodo = createServerFn({
   method: 'POST',
 })
-  .inputValidator((data: { title: string }) => data)
+  .validator((data: { title: string }) => data)
   .handler(async ({ data }) => {
     return await prisma.todo.create({
       data,
@@ -31,15 +31,15 @@ function DemoPrisma() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const formData = new FormData(e.target as HTMLFormElement)
-    const title = formData.get('title') as string
+    const form = e.currentTarget
+    const title = new FormData(form).get('title')
 
-    if (!title) return
+    if (typeof title !== 'string' || !title) return
 
     try {
       await createTodo({ data: { title } })
       router.invalidate()
-      ;(e.target as HTMLFormElement).reset()
+      form.reset()
     } catch (error) {
       console.error('Failed to create todo:', error)
     }
@@ -99,7 +99,7 @@ function DemoPrisma() {
             Powered by Prisma ORM
           </h3>
           <p className="demo-muted mb-4 text-sm">
-            Next-generation ORM for Node.js & TypeScript with PostgreSQL
+            Next-generation ORM for Node.js & TypeScript with <%= addOnOption.prisma.database === 'postgres' ? 'PostgreSQL' : addOnOption.prisma.database === 'mysql' ? 'MySQL' : 'SQLite' %>
           </p>
           <div className="space-y-2 text-sm">
             <p className="font-medium">Setup Instructions:</p>
@@ -112,19 +112,19 @@ function DemoPrisma() {
               <li>
                 Run:{' '}
                 <code>
-                  <%- getPackageManagerExecuteScript('prisma', ['generate']) %>
+                  <%- getPackageManagerRunScript('db:generate') %>
                 </code>
               </li>
               <li>
                 Run:{' '}
                 <code>
-                  <%- getPackageManagerExecuteScript('prisma', ['db', 'push']) %>
+                  <%- getPackageManagerRunScript('db:push') %>
                 </code>
               </li>
               <li>
                 Optional:{' '}
                 <code>
-                  <%- getPackageManagerExecuteScript('prisma', ['studio']) %>
+                  <%- getPackageManagerRunScript('db:studio') %>
                 </code>
               </li>
             </ol>

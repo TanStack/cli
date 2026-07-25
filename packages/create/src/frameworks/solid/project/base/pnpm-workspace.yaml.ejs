@@ -2,7 +2,9 @@
 allowBuilds:
   esbuild: true
   lightningcss: true
-<% if (addOnEnabled.cloudflare) { -%>
+<% if (addOnEnabled.cloudflare || addOnEnabled.netlify) { -%>
   sharp: true
+<% } -%>
+<% if (addOnEnabled.cloudflare) { -%>
   workerd: true
 <% } -%>

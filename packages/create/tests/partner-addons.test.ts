@@ -23,9 +23,11 @@ function frameworkFromDefinition(definition: FrameworkDefinition): Framework {
 async function generateApp(
   definition: FrameworkDefinition,
   addOnIds: Array<string>,
+  addOnOptions: Options['addOnOptions'] = {},
 ) {
   const framework = frameworkFromDefinition(definition)
   const chosenAddOns = await finalizeAddOns(framework, 'file-router', addOnIds)
+  const defaultAddOnOptions = populateAddOnOptionsDefaults(chosenAddOns)
   const targetDir = '/partner-app'
   const { environment, output } = createMemoryEnvironment(targetDir)
 
@@ -41,7 +43,10 @@ async function generateApp(
     install: false,
     intent: false,
     chosenAddOns,
-    addOnOptions: populateAddOnOptionsDefaults(chosenAddOns),
+    addOnOptions: {
+      ...defaultAddOnOptions,
+      ...addOnOptions,
+    },
     includeExamples: true,
   } satisfies Options)
 
@@ -175,6 +180,78 @@ describe('partner add-on scaffolds', () => {
       expect(readme).not.toContain('dist/client')
     },
   )
+
+  it.each([
+    ['React', createReactFrameworkDefinition],
+    ['Solid', createSolidFrameworkDefinition],
+  ])(
+    'approves Netlify build dependencies for pnpm in %s projects',
+    async (_name, createFrameworkDefinition) => {
+      const output = await generateApp(createFrameworkDefinition(), ['netlify'])
+      const packageJSON = JSON.parse(output.files['package.json'])
+      const pnpmWorkspace = output.files['pnpm-workspace.yaml']
+
+      expect(packageJSON.pnpm.onlyBuiltDependencies).toContain('sharp')
+      expect(pnpmWorkspace).toContain('sharp: true')
+      expect(pnpmWorkspace).not.toContain('workerd: true')
+    },
+  )
+
+  it.each(['postgres', 'mysql', 'sqlite'])(
+    'approves Prisma build dependencies for pnpm with %s',
+    async (database) => {
+      const output = await generateApp(
+        createReactFrameworkDefinition(),
+        ['prisma'],
+        { prisma: { database } },
+      )
+      const packageJSON = JSON.parse(output.files['package.json'])
+      const pnpmWorkspace = output.files['pnpm-workspace.yaml']
+
+      expect(packageJSON.pnpm.onlyBuiltDependencies).toEqual(
+        expect.arrayContaining(['@prisma/engines', 'prisma']),
+      )
+      expect(pnpmWorkspace).toContain("'@prisma/engines': true")
+      expect(pnpmWorkspace).toContain('prisma: true')
+
+      if (database === 'sqlite') {
+        expect(packageJSON.pnpm.onlyBuiltDependencies).toContain(
+          'better-sqlite3',
+        )
+        expect(pnpmWorkspace).toContain('better-sqlite3: true')
+      } else {
+        expect(packageJSON.pnpm.onlyBuiltDependencies).not.toContain(
+          'better-sqlite3',
+        )
+        expect(pnpmWorkspace).not.toContain('better-sqlite3: true')
+      }
+    },
+  )
+
+  it('generates a URL-driven, env-aware Prisma MySQL setup', async () => {
+    const output = await generateApp(
+      createReactFrameworkDefinition(),
+      ['prisma'],
+      { prisma: { database: 'mysql' } },
+    )
+    const databaseUrl = output.files['src/database-url.ts']
+    const db = output.files['src/db.ts']
+    const seed = output.files['prisma/seed.ts']
+    const demo = output.files['src/routes/demo/prisma.tsx']
+
+    expect(databaseUrl).toContain('process.env.DATABASE_URL')
+    expect(databaseUrl).toContain("throw new Error('DATABASE_URL is required')")
+    expect(db).toContain('new PrismaMariaDb(getDatabaseUrl())')
+    expect(seed).toContain('new PrismaMariaDb(getDatabaseUrl())')
+    expect(db).not.toContain('host: "localhost"')
+    expect(seed).not.toContain('host: "localhost"')
+    expect(demo).toContain('.validator(')
+    expect(demo).not.toContain('.inputValidator(')
+    expect(demo).toContain('pnpm db:generate')
+    expect(demo).toContain('pnpm db:push')
+    expect(demo).toContain('pnpm db:studio')
+    expect(demo).not.toContain('pnpm dlx prisma')
+  })
 
   it.each([
     ['React', createReactFrameworkDefinition],
