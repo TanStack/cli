@@ -38,6 +38,12 @@ export function createDefaultEnvironment(): Environment {
 
     appendFile: async (path: string, contents: string) => {
       await mkdir(dirname(path), { recursive: true })
+      if (existsSync(path)) {
+        const existing = await readFile(path, 'utf-8')
+        if (existing.length > 0) {
+          await appendFile(path, existing.endsWith('\n') ? '\n' : '\n\n')
+        }
+      }
       return appendFile(path, contents)
     },
     copyFile: async (from: string, to: string) => {
@@ -127,7 +133,13 @@ export function createMemoryEnvironment(returnPathsRelativeTo: string = '') {
 
   environment.appendFile = async (path: string, contents: string) => {
     fs.mkdirSync(dirname(path), { recursive: true })
-    await fs.appendFileSync(path, contents)
+    if (fs.existsSync(path)) {
+      const existing = fs.readFileSync(path, 'utf-8') as string
+      if (existing.length > 0) {
+        fs.appendFileSync(path, existing.endsWith('\n') ? '\n' : '\n\n')
+      }
+    }
+    fs.appendFileSync(path, contents)
   }
   environment.copyFile = async (from: string, to: string) => {
     fs.mkdirSync(dirname(to), { recursive: true })

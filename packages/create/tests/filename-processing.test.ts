@@ -143,7 +143,7 @@ describe('Filename Processing - Prefix Stripping', () => {
 
     // File should be created with prefix stripped and content appended
     expect(output.files['/test/.env']).toBeDefined()
-    expect(output.files['/test/.env']).toEqual('BASE_VAR=value\n\nDATABASE_URL=postgresql://localhost:5432/mydb\n')
+    expect(output.files['/test/.env']).toEqual('BASE_VAR=value\n\n\nDATABASE_URL=postgresql://localhost:5432/mydb\n')
   })
 
   it('should handle files without prefixes normally', async () => {

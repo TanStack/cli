@@ -51,7 +51,7 @@ describe('createTemplateFile', () => {
     await templateFile('test.txt.append', 'Line 2\n')
     environment.finishRun()
 
-    expect(output.files['/test/test.txt']).toEqual('Line 1\nLine 2\n')
+    expect(output.files['/test/test.txt']).toEqual('Line 1\n\nLine 2\n')
   })
 
   it('should handle enabled add-ons', async () => {
