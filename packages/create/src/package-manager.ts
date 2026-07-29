@@ -61,6 +61,22 @@ export function getPackageManagerExecuteCommand(
   }
 }
 
+export const INTENT_PACKAGE = '@tanstack/intent'
+
+// Renders the command a user (or their agent) would type to reach Intent, so the
+// suggestions we print match the package manager the project was created with.
+export function intentCommand(
+  packageManager: PackageManager,
+  args: Array<string>,
+) {
+  const { command, args: commandArgs } = getPackageManagerExecuteCommand(
+    packageManager,
+    INTENT_PACKAGE,
+    args,
+  )
+  return [command, ...commandArgs].join(' ')
+}
+
 export function getPackageManagerInstallCommand(
   packagerManager: PackageManager,
   pkg?: string,
