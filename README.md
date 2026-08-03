@@ -1,5 +1,19 @@
 <div align="center">
-  <h1>TanStack CLI</h1>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://tanstack.com/api/readme/cli.png?theme=dark"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://tanstack.com/api/readme/cli.png"
+    />
+    <img
+      src="https://tanstack.com/api/readme/cli.png"
+      alt="TanStack CLI"
+      width="900"
+    />
+  </picture>
 </div>
 
 <div align="center">
