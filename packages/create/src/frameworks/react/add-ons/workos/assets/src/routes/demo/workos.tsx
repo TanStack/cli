@@ -1,15 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useAuth } from '@workos-inc/authkit-react'
+import { useAuth } from '@workos/authkit-tanstack-react-start/client'
 
 export const Route = createFileRoute('/demo/workos')({
-  ssr: false,
   component: App,
 })
 
 function App() {
-  const { user, isLoading, signIn, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
 
-  if (isLoading) {
+  if (loading) {
     return (
       <main className="demo-page demo-center">
         <section className="demo-panel w-full max-w-md">
@@ -69,7 +68,10 @@ function App() {
               </div>
             </div>
 
-            <button onClick={() => signOut()} className="demo-button w-full">
+            <button
+              onClick={() => void signOut()}
+              className="demo-button w-full"
+            >
               Sign Out
             </button>
           </div>
@@ -86,13 +88,12 @@ function App() {
         <p className="demo-muted text-center mb-6">
           Sign in to view your profile information
         </p>
-        <button
-          onClick={() => signIn()}
-          disabled={isLoading}
+        <a
+          href="/api/auth/sign-in?returnPathname=/demo/workos"
           className="demo-button w-full"
         >
           Sign In with AuthKit
-        </button>
+        </a>
       </section>
     </main>
   )

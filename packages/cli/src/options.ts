@@ -52,6 +52,7 @@ export async function promptForCreateOptions(
   },
 ): Promise<Required<Options> | undefined> {
   const options = {} as Required<Options>
+  const blank = cliOptions.blank === true
 
   if (cliOptions.framework) {
     options.framework = getFrameworkById(cliOptions.framework)!
@@ -106,7 +107,7 @@ export async function promptForCreateOptions(
     }
   }
 
-  if (!routerOnly && !cliOptions.starter) {
+  if (!routerOnly && !blank && !cliOptions.starter) {
     const starterChoices = await listTemplateChoices(options.framework.id)
     const selectedTemplateId = await selectTemplate(
       starterChoices.map((choice) => ({
@@ -120,7 +121,7 @@ export async function promptForCreateOptions(
     }
   }
 
-  const starter = !routerOnly && cliOptions.starter
+  const starter = !routerOnly && !blank && cliOptions.starter
     ? await loadStarter(
         await resolveStarterSpecifier(cliOptions.starter, options.framework.id),
       )
@@ -144,10 +145,10 @@ export async function promptForCreateOptions(
   }
 
   // Toolchain selection
-  const toolchain = await selectToolchain(
-    options.framework,
-    cliOptions.toolchain,
-  )
+  const toolchain =
+    blank && cliOptions.toolchain === undefined
+      ? undefined
+      : await selectToolchain(options.framework, cliOptions.toolchain)
 
   // Deployment selection
   let deployment: string | undefined
@@ -155,6 +156,8 @@ export async function promptForCreateOptions(
     deployment = undefined
   } else if (cliOptions.deployment) {
     deployment = cliOptions.deployment
+  } else if (blank) {
+    deployment = forcedDeployment
   } else if (showDeploymentOptions) {
     deployment = await selectDeployment(
       options.framework,
@@ -169,8 +172,9 @@ export async function promptForCreateOptions(
   const addOns: Set<string> = new Set()
 
   // Examples/demo pages are enabled by default
-  const includeExamples =
-    cliOptions.examples ?? (routerOnly ? false : await selectExamples())
+  const includeExamples = blank
+    ? false
+    : (cliOptions.examples ?? (routerOnly ? false : await selectExamples()))
   ;(options as Required<Options> & { includeExamples?: boolean }).includeExamples =
     includeExamples
 
@@ -197,7 +201,7 @@ export async function promptForCreateOptions(
       }
       addOns.add(addOn)
     }
-  } else if (!routerOnly) {
+  } else if (!routerOnly && !blank) {
     for (const addOn of await selectAddOns(
       options.framework,
       options.mode,
@@ -229,8 +233,9 @@ export async function promptForCreateOptions(
     ? chosenAddOns
     : chosenAddOns.filter((addOn) => addOn.type !== 'example')
 
-  // Tailwind is always enabled
-  options.tailwind = true
+  options.tailwind =
+    !blank || options.chosenAddOns.some((addOn) => addOn.tailwind === true)
+  options.projectPreset = blank ? 'blank' : 'default'
 
   // Prompt for add-on options in interactive mode
   if (Array.isArray(cliOptions.addOns)) {
@@ -256,6 +261,7 @@ export async function promptForCreateOptions(
 
   options.git = cliOptions.git ?? (await selectGit())
   options.install = cliOptions.install ?? (await selectInstall())
+  options.intent = cliOptions.intent ?? !blank
 
   if (starter) {
     options.starter = starter

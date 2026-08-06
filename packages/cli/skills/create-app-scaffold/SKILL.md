@@ -2,12 +2,13 @@
 name: create-app-scaffold
 description: >
   Scaffold a TanStack app with tanstack create using --framework, --template,
-  --toolchain, --deployment, --add-ons, and --router-only. Covers flag
+  --toolchain, --deployment, --add-ons, --blank, and --router-only. Covers flag
   compatibility, non-interactive defaults, and intent-preserving command
   construction.
-type: core
-library: tanstack-cli
-library_version: "0.62.1"
+metadata:
+  type: core
+  library: tanstack-cli
+  library_version: "0.70.0"
 ---
 
 # Create App Scaffold
@@ -34,6 +35,20 @@ npx @tanstack/cli create acme-solid \
   --framework solid \
   --add-ons drizzle,tanstack-query \
   --toolchain eslint \
+  -y
+```
+
+### Start from a minimal production-ready scaffold
+
+Use `--blank` when the task does not need the default starter UI, examples,
+Tailwind, devtools, test tooling, or local Intent setup. Explicit integrations
+remain composable; add `--intent` when the generated project should contain
+skill mappings for later coding-agent work.
+
+```bash
+npx @tanstack/cli create acme-web \
+  --blank \
+  --deployment cloudflare \
   -y
 ```
 
@@ -75,7 +90,7 @@ In non-interactive runs, empty add-on selection can complete with defaults and s
 
 Source: https://github.com/TanStack/cli/issues/234
 
-### HIGH Assume --no-tailwind is still supported
+### HIGH Avoid --no-tailwind; use --blank for a minimal scaffold
 
 Wrong:
 ```bash
@@ -84,12 +99,31 @@ npx @tanstack/cli create my-app --no-tailwind -y
 
 Correct:
 ```bash
-npx @tanstack/cli create my-app -y
+npx @tanstack/cli create my-app --blank -y
 ```
 
-`--no-tailwind` is deprecated and ignored, so output still includes Tailwind and diverges from expected stack constraints.
+`--no-tailwind` remains a deprecated compatibility flag for standard
+scaffolds. `--blank` is the supported preset for a minimal project without
+Tailwind.
 
-Source: packages/cli/src/command-line.ts:369
+Source: packages/cli/src/command-line.ts:386
+
+### HIGH Combine --blank with a template, examples, or --tailwind
+
+Wrong:
+```bash
+npx @tanstack/cli create my-app --blank --template ecommerce -y
+```
+
+Correct:
+```bash
+npx @tanstack/cli create my-app --blank --add-ons drizzle -y
+```
+
+Templates, examples, and `--tailwind` replace the output constraints that
+`--blank` guarantees, so the CLI rejects those combinations. Deployment,
+toolchain, and add-on selections remain supported; a selected styling add-on
+can opt the generated app back into Tailwind when it requires it.
 
 ### CRITICAL Combine router-only with template/deployment/add-ons
 

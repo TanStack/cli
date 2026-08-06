@@ -1,5 +1,31 @@
 # @tanstack/create
 
+## 0.69.1
+
+### Patch Changes
+
+- Fix pnpm 11 build approvals for Prisma and Netlify projects, make generated Prisma MySQL apps use their configured `DATABASE_URL`, and update the Prisma demo to current server-function and package-script APIs. ([#492](https://github.com/TanStack/cli/pull/492))
+
+## 0.69.0
+
+### Minor Changes
+
+- Add a `--blank` project preset that creates a production-ready one-route app ([#488](https://github.com/TanStack/cli/pull/488))
+  without starter UI, Tailwind, devtools, test tooling, Intent setup, or unused
+  public assets. Pass `--intent` to opt local coding-agent skill mappings back in.
+  Also move integration-specific dependencies to their owning add-ons and stop
+  shipping an unused test stack in standard Start projects. Explicit styling and
+  deployment add-ons remain composable with the blank preset, including when
+  added later.
+
+### Patch Changes
+
+- Modernize the Clerk and WorkOS add-ons with their full-stack TanStack Start SDKs, ([#490](https://github.com/TanStack/cli/pull/490))
+  update Railway projects for Railpack, and use safer Sentry defaults. Secret
+  environment values are no longer stored in `.cta.json` or overwritten by
+  `tanstack add`, and pnpm 11 projects receive the build approvals their selected
+  integrations require.
+
 ## 0.68.5
 
 ### Patch Changes

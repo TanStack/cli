@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@tanstack/react-query": "latest",
-    "@tanstack/react-query-devtools": "latest"
+    "@tanstack/react-query-devtools": "latest",
+    "@tanstack/react-router-ssr-query": "latest"
   }
 }

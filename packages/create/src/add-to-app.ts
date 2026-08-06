@@ -23,6 +23,61 @@ import { setupIntent } from './integrations/intent.js'
 import type { Environment, Options } from './types.js'
 import type { PersistedOptions } from './config-file.js'
 
+const ENV_FILE_NAMES = new Set(['.env', '.env.local', '.env.example'])
+const ENV_VARIABLE_PATTERN = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/
+
+function mergeEnvFileContents(existing: string, generated: string) {
+  const declaredVariables = new Set<string>()
+  for (const line of existing.split(/\r?\n/)) {
+    const match = line.match(ENV_VARIABLE_PATTERN)
+    if (match) {
+      declaredVariables.add(match[1])
+    }
+  }
+
+  const additions: Array<string> = []
+  for (const block of generated.split(/\r?\n(?:[ \t]*\r?\n)+/)) {
+    const blockLines = block.split(/\r?\n/)
+    while (blockLines.at(-1) === '') {
+      blockLines.pop()
+    }
+    const lines: Array<string> = []
+    let addedVariableCount = 0
+    for (const line of blockLines) {
+      const match = line.match(ENV_VARIABLE_PATTERN)
+      if (!match) {
+        lines.push(line)
+        continue
+      }
+      if (declaredVariables.has(match[1])) {
+        continue
+      }
+
+      declaredVariables.add(match[1])
+      addedVariableCount++
+      lines.push(line)
+    }
+
+    if (addedVariableCount > 0) {
+      additions.push(lines.join('\n'))
+    }
+  }
+
+  if (additions.length === 0) {
+    return existing
+  }
+
+  const separator = existing.length
+    ? existing.endsWith('\n\n')
+      ? ''
+      : existing.endsWith('\n')
+        ? '\n'
+        : '\n\n'
+    : ''
+  const trailingNewline = generated.endsWith('\n') ? '\n' : ''
+  return `${existing}${separator}${additions.join('\n\n')}${trailingNewline}`
+}
+
 export async function hasPendingGitChanges(
   environment: Environment,
   cwd: string,
@@ -43,16 +98,19 @@ async function createOptions(
   const framework = getFrameworkById(json.framework)
 
   const starter = json.starter ? await loadStarter(json.starter) : undefined
+  const chosenAddOns = await finalizeAddOns(framework!, json.mode!, [
+    ...json.chosenAddOns,
+    ...addOns,
+  ])
 
   return {
     ...json,
     framework,
-    tailwind: true,
+    tailwind:
+      (json.tailwind ?? true) ||
+      chosenAddOns.some((addOn) => addOn.tailwind === true),
     addOns: true,
-    chosenAddOns: await finalizeAddOns(framework!, json.mode!, [
-      ...json.chosenAddOns,
-      ...addOns,
-    ]),
+    chosenAddOns,
     targetDir,
     starter,
     intent: json.intent ?? false,
@@ -131,6 +189,20 @@ export async function writeFiles(
     false,
   )
 
+  for (const [relativeFile, generatedContents] of Object.entries(
+    relativeOutputFiles,
+  )) {
+    if (
+      ENV_FILE_NAMES.has(basename(relativeFile)) &&
+      relativeFile in currentFiles
+    ) {
+      relativeOutputFiles[relativeFile] = mergeEnvFileContents(
+        currentFiles[relativeFile],
+        generatedContents,
+      )
+    }
+  }
+
   const overwrittenFiles: Array<string> = []
   const changedFiles: Array<string> = []
   for (const relativeFile of Object.keys(relativeOutputFiles)) {
@@ -143,10 +215,14 @@ export async function writeFiles(
     }
   }
 
-  if (!forced && overwrittenFiles.length) {
+  const deletedFiles = output.deletedFiles
+    .map(toRelativePath)
+    .filter((file) => environment.exists(resolve(cwd, file)))
+
+  if (!forced && (overwrittenFiles.length || deletedFiles.length)) {
     environment.warn(
-      'The following will be overwritten',
-      [...overwrittenFiles, ...output.deletedFiles].join('\n'),
+      'The following files will be changed or deleted',
+      [...overwrittenFiles, ...deletedFiles].join('\n'),
     )
     const shouldContinue = await environment.confirm('Do you want to continue?')
     if (!shouldContinue) {
@@ -154,11 +230,8 @@ export async function writeFiles(
     }
   }
 
-  for (const filePath of output.deletedFiles) {
-    const relativeFilePath = toRelativePath(filePath)
-    if (environment.exists(resolve(cwd, relativeFilePath))) {
-      await environment.deleteFile(resolve(cwd, relativeFilePath))
-    }
+  for (const relativeFilePath of deletedFiles) {
+    await environment.deleteFile(resolve(cwd, relativeFilePath))
   }
 
   environment.startStep({

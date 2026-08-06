@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/create",
-  "version": "0.68.5",
+  "version": "0.69.1",
   "description": "TanStack Application Builder Engine",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,7 +42,7 @@
   "scripts": {
     "build": "npm run generate-manifest && tsc && npm run copy-assets",
     "generate-manifest": "node ./scripts/generate-manifest.mjs",
-    "copy-assets": "node -e \"const fs=require('fs');const path=require('path');function copyDir(src,dest){if(!fs.existsSync(dest))fs.mkdirSync(dest,{recursive:true});for(const entry of fs.readdirSync(src,{withFileTypes:true})){const srcPath=path.join(src,entry.name);const destPath=path.join(dest,entry.name);if(entry.isDirectory())copyDir(srcPath,destPath);else fs.copyFileSync(srcPath,destPath)}}['react','solid'].forEach(fw=>{['add-ons','toolchains','hosts','examples','project'].forEach(dir=>{const src='src/frameworks/'+fw+'/'+dir;const dest='dist/frameworks/'+fw+'/'+dir;if(fs.existsSync(src))copyDir(src,dest)})})\"",
+    "copy-assets": "node ./scripts/copy-assets.mjs",
     "dev": "npm run generate-manifest && tsc --watch",
     "test": "npm run generate-manifest && eslint ./src && vitest run",
     "test:watch": "npm run generate-manifest && vitest",

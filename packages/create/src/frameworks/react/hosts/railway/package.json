@@ -1,8 +1,0 @@
-{
-  "scripts": {
-    "start": "node .output/server/index.mjs"
-  },
-  "dependencies": {
-    "nitro": "npm:nitro-nightly@latest"
-  }
-}

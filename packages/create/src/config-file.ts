@@ -7,7 +7,12 @@ import type { Environment, Options } from './types.js'
 
 export type PersistedOptions = Omit<
   Partial<Options>,
-  'addOns' | 'chosenAddOns' | 'framework' | 'starter' | 'targetDir'
+  | 'addOns'
+  | 'chosenAddOns'
+  | 'envVarValues'
+  | 'framework'
+  | 'starter'
+  | 'targetDir'
 > & {
   framework: string
   version: number
@@ -17,7 +22,7 @@ export type PersistedOptions = Omit<
 
 function createPersistedOptions(options: Options): PersistedOptions {
   /* eslint-disable unused-imports/no-unused-vars */
-  const { chosenAddOns, framework, targetDir, ...rest } = options
+  const { chosenAddOns, envVarValues, framework, targetDir, ...rest } = options
   /* eslint-enable unused-imports/no-unused-vars */
   return {
     ...rest,
@@ -66,6 +71,8 @@ export async function readConfigFileFromEnvironment(
     if (originalJSON.framework === 'react-cra') {
       originalJSON.framework = 'react'
     }
+
+    delete originalJSON.envVarValues
 
     return originalJSON
   } catch {

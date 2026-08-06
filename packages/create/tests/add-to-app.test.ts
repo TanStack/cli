@@ -61,6 +61,7 @@ beforeEach(() => {
         type: 'add-on',
         phase: 'add-on',
         modes: ['code-router', 'file-router'],
+        tailwind: true,
         command: {
           command: 'echo',
           args: ['baz'],
@@ -284,6 +285,36 @@ describe('writeFiles', () => {
     })
   })
 
+  it.each(['.env', '.env.local', '.env.example'])(
+    'should preserve existing values when updating %s',
+    async (fileName) => {
+      const { environment, output } = createMemoryEnvironment('/foo')
+      environment.startRun()
+      await environment.writeFile(
+        `/foo/${fileName}`,
+        '# Existing configuration\nAPI_SECRET=keep-me\n',
+      )
+
+      await writeFiles(
+        environment,
+        '/foo',
+        {
+          files: {
+            [fileName]:
+              '# Generated configuration\nAPI_SECRET=\nNEW_VALUE=generated\n\n# Another integration\nANOTHER_VALUE=\n',
+          },
+          deletedFiles: [],
+        },
+        true,
+      )
+
+      environment.finishRun()
+      expect(output.files[fileName]).toBe(
+        '# Existing configuration\nAPI_SECRET=keep-me\n\n# Generated configuration\nNEW_VALUE=generated\n\n# Another integration\nANOTHER_VALUE=\n',
+      )
+    },
+  )
+
   it('should delete files', async () => {
     const { environment, output } = createMemoryEnvironment('/foo')
     environment.startRun()
@@ -296,6 +327,25 @@ describe('writeFiles', () => {
     )
     environment.finishRun()
     expect(output.deletedFiles).toEqual(['bloop.txt'])
+  })
+
+  it('should prompt before deleting existing files', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    await environment.writeFile('/foo/nixpacks.toml', '[start]')
+    const confirm = vi.fn(() => Promise.resolve(false))
+    environment.confirm = confirm
+
+    await expect(
+      writeFiles(
+        environment,
+        '/foo',
+        { files: {}, deletedFiles: ['nixpacks.toml'] },
+        false,
+      ),
+    ).rejects.toThrow('User cancelled')
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(environment.exists('/foo/nixpacks.toml')).toBe(true)
   })
 
   it('should normalize windows-style output paths before writing', async () => {
@@ -390,5 +440,35 @@ describe('addToApp', () => {
         2,
       ),
     })
+  })
+
+  it('enables Tailwind when an add-on requires it', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify({ ...fakeCTAJSON, tailwind: false }, null, 2),
+    )
+    environment.writeFile(
+      '/foo/package.json',
+      JSON.stringify(
+        {
+          name: 'test',
+          version: '1.0.0',
+          scripts: {},
+          dependencies: {},
+          devDependencies: {},
+        },
+        null,
+        2,
+      ),
+    )
+
+    await addToApp(environment, ['test'], '/foo', {
+      forced: true,
+    })
+
+    const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
+    expect(persisted.tailwind).toBe(true)
   })
 })

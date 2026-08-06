@@ -10,12 +10,17 @@
       "tailwindcss": "^4.1.18"
     }
   },
+  "devtools": {
+    "dependencies": {
+      "@tanstack/solid-router-devtools": "latest"
+    },
+    "devDependencies": {
+      "@tanstack/devtools-vite": "latest"
+    }
+  },
   "file-router": {
     "devDependencies": {
       "@tanstack/router-cli": "^1.133.21"
-    },
-    "dependencies": {
-      "@tanstack/router-plugin": "^1.133.21"
     }
   }
 }

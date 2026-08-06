@@ -9,6 +9,7 @@ export type TemplateRenderContext = {
   projectName: string | undefined
   typescript: boolean | undefined
   tailwind: boolean | undefined
+  blank: boolean | undefined
   js: string | undefined
   jsx: string | undefined
   fileRouter: boolean | undefined
@@ -92,6 +93,7 @@ function renderWithRenderer(
     projectName: undefined,
     typescript: undefined,
     tailwind: undefined,
+    blank: undefined,
     js: undefined,
     jsx: undefined,
     fileRouter: undefined,

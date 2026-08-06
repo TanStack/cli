@@ -1,0 +1,10 @@
+<% if (packageManager !== 'pnpm') { ignoreFile(); return; } -%>
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+<% if (addOnEnabled.cloudflare || addOnEnabled.netlify) { -%>
+  sharp: true
+<% } -%>
+<% if (addOnEnabled.cloudflare) { -%>
+  workerd: true
+<% } -%>

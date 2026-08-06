@@ -205,6 +205,25 @@ describe('promptForCreateOptions', () => {
     expect(prompts.selectTemplate).not.toHaveBeenCalled()
   })
 
+  it('uses the blank preset without prompting for optional scaffold features', async () => {
+    setBasicSpies()
+
+    const options = await promptForCreateOptions(
+      { ...baseCliOptions, blank: true },
+      {},
+    )
+
+    expect(options?.projectPreset).toBe('blank')
+    expect(options?.includeExamples).toBe(false)
+    expect(options?.tailwind).toBe(false)
+    expect(options?.intent).toBe(false)
+    expect(prompts.selectTemplate).not.toHaveBeenCalled()
+    expect(prompts.selectExamples).not.toHaveBeenCalled()
+    expect(prompts.selectToolchain).not.toHaveBeenCalled()
+    expect(prompts.selectDeployment).not.toHaveBeenCalled()
+    expect(prompts.selectAddOns).not.toHaveBeenCalled()
+  })
+
   //// Package manager
 
   it('uses the package manager from the cli options', async () => {

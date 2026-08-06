@@ -1,5 +1,19 @@
 <div align="center">
-  <h1>TanStack CLI</h1>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://tanstack.com/api/readme/cli.png?theme=dark"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://tanstack.com/api/readme/cli.png"
+    />
+    <img
+      src="https://tanstack.com/api/readme/cli.png"
+      alt="TanStack CLI"
+      width="900"
+    />
+  </picture>
 </div>
 
 <div align="center">
@@ -38,6 +52,9 @@ npx @tanstack/cli create my-app
 ```bash
 # Create TanStack Start app (recommended)
 npx @tanstack/cli create my-app
+
+# Create a minimal one-route Start app without selection prompts
+npx @tanstack/cli create my-app --blank -y
 
 # Create Router-only SPA (no SSR)
 npx @tanstack/cli create my-app --router-only

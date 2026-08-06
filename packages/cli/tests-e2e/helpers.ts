@@ -23,10 +23,13 @@ type CreateAppFixtureOptions = {
   appName: string
   framework?: 'react' | 'solid'
   packageManager?: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'deno'
+  blank?: boolean
+  deployment?: string
   routerOnly?: boolean
   template?: string
   addOns?: Array<string>
   postCreateAddOns?: Array<string>
+  afterCreate?: (appDir: string) => Promise<void>
   skipDevServer?: boolean
   runQualityGatesChecks?: boolean
 }
@@ -349,8 +352,11 @@ export async function createAppFixture(
   const rootDir = await mkdtemp(join(tmpdir(), 'tanstack-cli-e2e-'))
   const {
     appName,
+    blank = false,
+    deployment,
     template,
     addOns,
+    afterCreate,
     postCreateAddOns,
     skipDevServer,
     runQualityGatesChecks = false,
@@ -359,6 +365,9 @@ export async function createAppFixture(
     routerOnly = false,
   } = options
   const appDir = join(rootDir, appName)
+  const cleanup = async () => {
+    await rm(rootDir, { recursive: true, force: true })
+  }
 
   const createArgs = [
     cliDistPath,
@@ -375,6 +384,14 @@ export async function createAppFixture(
     createArgs.push('--router-only')
   }
 
+  if (blank) {
+    createArgs.push('--blank', '--yes', '--no-intent')
+  }
+
+  if (deployment) {
+    createArgs.push('--deployment', deployment)
+  }
+
   if (template) {
     createArgs.push('--template', template)
   }
@@ -383,39 +400,46 @@ export async function createAppFixture(
     createArgs.push('--add-ons', addOns.join(','))
   }
 
-  const createStartedAt = now()
-  await runCommand(
-    'node',
-    createArgs,
-    {
-      cwd: rootDir,
-      env: {
-        CI: '1',
+  try {
+    const createStartedAt = now()
+    await runCommand(
+      'node',
+      createArgs,
+      {
+        cwd: rootDir,
+        env: {
+          CI: '1',
+        },
       },
-    },
-  )
-  mark('create', createStartedAt)
+    )
+    mark('create', createStartedAt)
 
-  await patchViteConfigForE2E(appDir)
-
-  if (postCreateAddOns?.length) {
-    const postAddOnsStartedAt = now()
-    await runCommand('node', [cliDistPath, 'add', ...postCreateAddOns], {
-      cwd: appDir,
-      env: {
-        CI: '1',
-      },
-    })
-
-    mark('post-add-ons', postAddOnsStartedAt)
+    await afterCreate?.(appDir)
 
     await patchViteConfigForE2E(appDir)
-  }
 
-  if (runQualityGatesChecks) {
-    const qualityGatesStartedAt = now()
-    await runQualityGates(appDir, packageManager)
-    mark('quality-gates', qualityGatesStartedAt)
+    if (postCreateAddOns?.length) {
+      const postAddOnsStartedAt = now()
+      await runCommand('node', [cliDistPath, 'add', ...postCreateAddOns], {
+        cwd: appDir,
+        env: {
+          CI: '1',
+        },
+      })
+
+      mark('post-add-ons', postAddOnsStartedAt)
+
+      await patchViteConfigForE2E(appDir)
+    }
+
+    if (runQualityGatesChecks) {
+      const qualityGatesStartedAt = now()
+      await runQualityGates(appDir, packageManager)
+      mark('quality-gates', qualityGatesStartedAt)
+    }
+  } catch (error) {
+    await cleanup().catch(() => undefined)
+    throw error
   }
 
   if (skipDevServer) {
@@ -427,9 +451,7 @@ export async function createAppFixture(
       framework,
       packageManager,
       stop: async () => {},
-      cleanup: async () => {
-        await rm(rootDir, { recursive: true, force: true })
-      },
+      cleanup,
     }
   }
 
@@ -463,6 +485,7 @@ export async function createAppFixture(
     mark('dev-server-ready', devServerStartedAt)
   } catch (error) {
     await stopChild(server)
+    await cleanup().catch(() => undefined)
     throw new Error(
       `Failed to start app server at ${url}\nstdout:\n${serverStdout}\n\nstderr:\n${serverStderr}\n\n${error}`,
     )
@@ -479,9 +502,7 @@ export async function createAppFixture(
     stop: async () => {
       await stopChild(server)
     },
-    cleanup: async () => {
-      await rm(rootDir, { recursive: true, force: true })
-    },
+    cleanup,
   }
 }
 

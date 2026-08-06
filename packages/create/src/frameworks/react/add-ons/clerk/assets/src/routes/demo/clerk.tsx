@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SignIn, SignedIn, SignedOut, useUser } from '@clerk/clerk-react'
+import { Show, SignIn, useUser } from '@clerk/tanstack-react-start'
 
 export const Route = createFileRoute('/demo/clerk')({
   component: ClerkDemo,
@@ -9,7 +9,7 @@ function ClerkDemo() {
   return (
     <main className="demo-page demo-center">
       <section className="demo-panel w-full max-w-md space-y-6">
-        <SignedOut>
+        <Show when="signed-out">
           <div className="space-y-1.5">
             <p className="island-kicker mb-2">Clerk</p>
             <h1 className="demo-title">Sign in to continue</h1>
@@ -33,11 +33,11 @@ function ClerkDemo() {
             </a>
             .
           </p>
-        </SignedOut>
+        </Show>
 
-        <SignedIn>
+        <Show when="signed-in">
           <SignedInGreeting />
-        </SignedIn>
+        </Show>
       </section>
     </main>
   )

@@ -1,6 +1,6 @@
 # Create Flag Compatibility Matrix
 
-Targets `@tanstack/cli` v0.62.1.
+Targets `@tanstack/cli` v0.70.0.
 
 ## Compatibility
 
@@ -12,7 +12,8 @@ Targets `@tanstack/cli` v0.62.1.
 | `--deployment` | yes | no | Ignored in router-only mode. |
 | `--template` / `--starter` | yes | no | Ignored in router-only mode. |
 | `--template-id` | yes | no | Ignored in router-only mode. |
-| `--tailwind` / `--no-tailwind` | deprecated/ignored | deprecated/ignored | Tailwind is always enabled. |
+| `--blank` | yes | yes | Omits starter UI, examples, Tailwind, devtools, and test tooling unless an explicit integration requires them. Cannot be combined with a template, `--examples`, or `--tailwind`. |
+| `--tailwind` / `--no-tailwind` | deprecated/ignored | deprecated/ignored | Standard scaffolds enable Tailwind; use `--blank` for the supported minimal preset. |
 
 Source: `packages/cli/src/command-line.ts:337`
 
@@ -28,6 +29,9 @@ Source: `packages/cli/src/command-line.ts:337`
 ```bash
 # Full scaffold preset
 npx @tanstack/cli create app --framework react --add-ons tanstack-query --deployment netlify -y
+
+# Minimal Start preset
+npx @tanstack/cli create app --blank --framework react --deployment cloudflare -y
 
 # Router-only preset
 npx @tanstack/cli create app --router-only --framework react --toolchain biome -y

@@ -1,5 +1,29 @@
 # @tanstack/cli
 
+## 0.70.1
+
+### Patch Changes
+
+- Updated dependencies [[`4bb1384`](https://github.com/TanStack/cli/commit/4bb13849454f5dbe126f2f67e87b0367be28bcd7)]:
+  - @tanstack/create@0.69.1
+
+## 0.70.0
+
+### Minor Changes
+
+- Add a `--blank` project preset that creates a production-ready one-route app ([#488](https://github.com/TanStack/cli/pull/488))
+  without starter UI, Tailwind, devtools, test tooling, Intent setup, or unused
+  public assets. Pass `--intent` to opt local coding-agent skill mappings back in.
+  Also move integration-specific dependencies to their owning add-ons and stop
+  shipping an unused test stack in standard Start projects. Explicit styling and
+  deployment add-ons remain composable with the blank preset, including when
+  added later.
+
+### Patch Changes
+
+- Updated dependencies [[`75db7e8`](https://github.com/TanStack/cli/commit/75db7e89a0a1125683bc75cca81acb700ef73eff), [`fb59492`](https://github.com/TanStack/cli/commit/fb59492f68aa005fbab9afad0a61aa75e90258bb)]:
+  - @tanstack/create@0.69.0
+
 ## 0.69.6
 
 ### Patch Changes

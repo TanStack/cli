@@ -321,6 +321,31 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
   const warnings: Array<string> = []
   const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
 
+  if (
+    cliOptions.blank &&
+    (cliOptions.starter || cliOptions.template || cliOptions.templateId)
+  ) {
+    return {
+      warnings,
+      error:
+        '--blank cannot be combined with --starter, --template, or --template-id.',
+    }
+  }
+
+  if (cliOptions.blank && cliOptions.examples === true) {
+    return {
+      warnings,
+      error: '--blank cannot be combined with --examples.',
+    }
+  }
+
+  if (cliOptions.blank && cliOptions.tailwind === true) {
+    return {
+      warnings,
+      error: '--blank cannot be combined with --tailwind.',
+    }
+  }
+
   if (cliOptions.starter) {
     warnings.push(
       'The --starter flag is deprecated; prefer --template instead. Backward compatibility remains for now.',
@@ -361,13 +386,13 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
 
   if (cliOptions.tailwind === true) {
     warnings.push(
-      'The --tailwind flag is deprecated and ignored. Tailwind is always enabled in TanStack Start scaffolds.',
+      'The --tailwind flag is deprecated and ignored. Tailwind is enabled in standard TanStack Start scaffolds.',
     )
   }
 
-  if (cliOptions.tailwind === false) {
+  if (cliOptions.tailwind === false && !cliOptions.blank) {
     warnings.push(
-      'The --no-tailwind flag is deprecated and ignored. Tailwind opt-out is intentionally unsupported to keep add-on permutations maintainable; remove Tailwind after scaffolding if needed.',
+      'The --no-tailwind flag is deprecated and ignored for standard scaffolds. Use --blank to create a minimal project without Tailwind.',
     )
   }
 
@@ -428,6 +453,7 @@ export async function normalizeOptions(
   // Mode is always file-router (TanStack Start)
   let mode = 'file-router'
   let routerOnly = !!cliOptions.routerOnly
+  const blank = cliOptions.blank === true
 
   const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
 
@@ -450,15 +476,14 @@ export async function normalizeOptions(
 
   const preferredFramework = (cliOptions.framework || 'react').toLowerCase()
 
-  const starter = !routerOnly && cliOptions.starter
+  const starter = !routerOnly && !blank && cliOptions.starter
     ? await loadStarter(
         await resolveStarterSpecifier(cliOptions.starter, preferredFramework),
       )
     : undefined
 
-  // TypeScript and Tailwind are always enabled with TanStack Start
+  // TypeScript is always enabled with TanStack Start.
   const typescript = true
-  const tailwind = true
 
   if (starter) {
     cliOptions.framework = starter.framework
@@ -512,11 +537,13 @@ export async function normalizeOptions(
     return []
   }
 
-  const includeExamples = cliOptions.examples ?? !routerOnly
+  const includeExamples = blank ? false : (cliOptions.examples ?? !routerOnly)
   const chosenAddOnsRaw = await selectAddOns()
   const chosenAddOns = includeExamples
     ? chosenAddOnsRaw
     : chosenAddOnsRaw.filter((addOn) => addOn.type !== 'example')
+  const tailwind =
+    !blank || chosenAddOns.some((addOn) => addOn.tailwind === true)
 
   // Handle add-on configuration option
   let addOnOptionsFromCLI = {}
@@ -529,7 +556,7 @@ export async function normalizeOptions(
     }
   }
 
-  const normalized = {
+  const normalized: Options = {
     projectName: projectName,
     targetDir,
     framework,
@@ -542,13 +569,14 @@ export async function normalizeOptions(
       DEFAULT_PACKAGE_MANAGER,
     git: cliOptions.git ?? true,
     install: cliOptions.install,
-    intent: cliOptions.intent ?? true,
+    intent: cliOptions.intent ?? !blank,
     chosenAddOns,
     addOnOptions: {
       ...populateAddOnOptionsDefaults(chosenAddOns),
       ...addOnOptionsFromCLI,
     },
     starter: starter,
+    projectPreset: blank ? 'blank' : 'default',
   }
 
   ;(normalized as Options & { includeExamples?: boolean }).includeExamples =

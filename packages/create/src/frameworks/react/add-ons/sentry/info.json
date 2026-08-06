@@ -1,7 +1,7 @@
 {
   "name": "Sentry",
   "phase": "setup",
-  "description": "Add Sentry for error monitoring, tracing, and session replays (requires Start).",
+  "description": "Add Sentry's TanStack Start SDK for server error monitoring and tracing.",
   "link": "https://sentry.com/",
   "modes": ["file-router"],
   "type": "add-on",

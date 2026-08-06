@@ -1,6 +1,11 @@
 import { defineConfig } from "vite";
+<% const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
+<% if (showDevtools) { -%>
 import { devtools } from '@tanstack/devtools-vite'
+<% } -%>
+<% if (tailwind) { -%>
 import tailwindcss from "@tailwindcss/vite"
+<% } -%>
 <% if (routerOnly) { %>
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 <% } else { %>
@@ -12,8 +17,8 @@ import solidPlugin from 'vite-plugin-solid';
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), <% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportCode(integration) %>,<% } %>
-    tailwindcss(),
+  plugins: [<% if (showDevtools) { %>devtools(), <% } %><% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportCode(integration) %>,<% } %>
+    <% if (tailwind) { %>tailwindcss(),<% } %>
     <% if (routerOnly) { %>tanstackRouter({ target: 'solid', autoCodeSplitting: true }),<% } else { %>tanstackStart(),<% } %>
     solidPlugin(<% if (!routerOnly) { %>{ ssr: true }<% } %>),
   ],
