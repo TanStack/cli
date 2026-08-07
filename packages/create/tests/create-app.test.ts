@@ -124,6 +124,48 @@ describe('createApp', () => {
     })
   })
 
+  it('skips intent setup and reports the follow-up when dependency install is skipped', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    let outro = ''
+    environment.outro = (message: string) => {
+      outro = message
+    }
+    await createApp(environment, {
+      ...simpleOptions,
+      intent: true,
+      install: false,
+    })
+
+    expect(output.commands).not.toContainEqual({
+      command: 'pnpm',
+      args: ['dlx', '@tanstack/intent', 'install', '--map'],
+    })
+    expect(outro).not.toContain('was wired up by TanStack Intent')
+    expect(outro).toContain('TanStack Intent was skipped')
+    expect(outro).toContain('pnpm install')
+    expect(outro).toContain('pnpm dlx @tanstack/intent install --map')
+  })
+
+  it('sets up intent and reports the agent config when dependencies are installed', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    let outro = ''
+    environment.outro = (message: string) => {
+      outro = message
+    }
+    await createApp(environment, {
+      ...simpleOptions,
+      intent: true,
+      install: true,
+    })
+
+    expect(output.commands).toContainEqual({
+      command: 'pnpm',
+      args: ['dlx', '@tanstack/intent', 'install', '--map'],
+    })
+    expect(outro).toContain('was wired up by TanStack Intent')
+    expect(outro).not.toContain('TanStack Intent was skipped')
+  })
+
   it('should create an app - with a add-on', async () => {
     const { environment, output } = createMemoryEnvironment()
     await createApp(environment, {

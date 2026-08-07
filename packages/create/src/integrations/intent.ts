@@ -13,6 +13,22 @@ export async function setupIntent(
     return
   }
 
+  if (options.install === false) {
+    const s = environment.spinner()
+    s.start('Skipping TanStack Intent setup...')
+    environment.startStep({
+      id: 'setup-intent',
+      type: 'info',
+      message: 'Skipping TanStack Intent setup...',
+    })
+    environment.finishStep(
+      'setup-intent',
+      'TanStack Intent setup skipped: no dependencies installed yet',
+    )
+    s.stop('TanStack Intent setup skipped: no dependencies installed yet')
+    return
+  }
+
   const s = environment.spinner()
   s.start('Setting up TanStack Intent skill mappings...')
   environment.startStep({

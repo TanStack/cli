@@ -7,6 +7,7 @@ import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { writeConfigFileToEnvironment } from './edge-config-file.js'
 import {
   getPackageManagerExecuteCommand,
+  getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
   packageManagerInstall,
   translateExecuteCommand,
@@ -252,6 +253,19 @@ async function setupIntent(
   options: Options,
 ) {
   if (!options.intent) {
+    return
+  }
+
+  if (options.install === false) {
+    environment.startStep({
+      id: 'setup-intent',
+      type: 'info',
+      message: 'Skipping TanStack Intent setup...',
+    })
+    environment.finishStep(
+      'setup-intent',
+      'TanStack Intent setup skipped: no dependencies installed yet',
+    )
     return
   }
 
@@ -531,9 +545,24 @@ function buildNextSteps(options: Options): string {
     sections.push(`Docs for the integrations you picked:\n${docLines.join('\n')}`)
   }
   if (options.intent) {
-    sections.push(
-      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
-    )
+    if (options.install === false) {
+      const installCommand = formatCommand(
+        getPackageManagerInstallCommand(options.packageManager),
+      )
+      const intentCommand = formatCommand(
+        getPackageManagerExecuteCommand(options.packageManager, '@tanstack/intent', [
+          'install',
+          '--map',
+        ]),
+      )
+      sections.push(
+        `Working with an AI agent? TanStack Intent was skipped because dependency installation was\nskipped, so no agent config (AGENTS.md / CLAUDE.md) was written. After installing dependencies,\nwire it up with:\n  % ${installCommand}\n  % ${intentCommand}`,
+      )
+    } else {
+      sections.push(
+        `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
+      )
+    }
   }
 
   return sections.length > 0 ? `\nNext steps:\n\n${sections.join('\n\n')}\n` : ''
