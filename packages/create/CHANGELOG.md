@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.69.2
+
+### Patch Changes
+
+- Remove `memfs` from the published runtime dependencies by reusing the internal in-memory environment. ([#501](https://github.com/TanStack/cli/pull/501))
+
 ## 0.69.1
 
 ### Patch Changes
