@@ -24,3 +24,14 @@ Set these variables in `.env.local`:
 
 PowerSync setup guidance:
 https://docs.powersync.com/client-sdk-references/js-web
+
+## Sync Stream SQL — Known Footguns
+
+PowerSync evaluates sync-stream SQL server-side in JavaScript and the client runs SQLite. A handful of SQL operators silently disagree across that boundary — bucket keys diverge and rows fail to sync without any error. As of `@powersync/service` versions prior to the fixes listed below, watch out for these in your `sync-rules.yaml`:
+
+- **`JOIN` clauses** are not currently supported in sync streams and silently sync zero rows. Rewrite as a single-table query with a correlated subquery in the `WHERE` clause. See [powersync-ja/powersync-service#662](https://github.com/powersync-ja/powersync-service/pull/662) for a loud error proposal.
+- **`upper()` / `lower()`** apply locale-aware Unicode case folding (length-changing on `ß`, `ﬁ`, Turkish dotted-i) where SQLite is ASCII-only. Avoid as bucket keys over non-ASCII data until [powersync-service#663](https://github.com/powersync-ja/powersync-service/pull/663) lands.
+- **`length()`** returns a UTF-16 code-unit count where SQLite returns code points — diverges 2x on emoji, CJK Extension B-G, ancient scripts. Avoid in bucket-parameter filters until [#664](https://github.com/powersync-ja/powersync-service/pull/664).
+- **`substring()` / `substr()`** indexes by UTF-16 code units and can split surrogate pairs, returning unpaired-surrogate strings. Avoid on user content with non-BMP code points until [#665](https://github.com/powersync-ja/powersync-service/pull/665).
+
+If your starter uses ASCII-only IDs and small integers, you will not hit these. They surface the moment user data includes German `ß`, emoji, CJK Ext-B characters, ligatures, or you reach for `JOIN`. Reference checker: [silentdrop](https://github.com/sravan27/silentdrop).
