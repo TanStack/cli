@@ -1,0 +1,19 @@
+{
+  "name": "Inngest",
+  "description": "Add Inngest for durable workflows, background jobs, and AI agents.",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "add-on",
+  "category": "workflows",
+  "color": "#2C9B63",
+  "priority": 140,
+  "link": "https://www.inngest.com",
+  "routes": [
+    {
+      "url": "/demo/inngest",
+      "name": "Inngest",
+      "path": "src/routes/demo/inngest.tsx",
+      "jsName": "InngestDemo"
+    }
+  ]
+}
