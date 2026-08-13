@@ -1,5 +1,8 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
+<% if (addOnEnabled.paraglide) { %>
+import { deLocalizeUrl, localizeUrl } from './paraglide/runtime'
+<% } %>
 <% if (addOnEnabled['tanstack-query']) { %>
 import type { ReactNode } from 'react'
 import { QueryClient } from '@tanstack/react-query'
@@ -20,6 +23,12 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    <% if (addOnEnabled.paraglide) { %>
+    rewrite: {
+      input: ({ url }) => deLocalizeUrl(url),
+      output: ({ url }) => localizeUrl(url),
+    },
+    <% } %>
     <% if (addOnEnabled.tRPC) { %>
     Wrap: (props: { children: ReactNode }) => {
       return (
