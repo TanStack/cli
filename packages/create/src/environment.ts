@@ -8,24 +8,16 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { existsSync, statSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { execa } from 'execa'
-import { memfs } from 'memfs'
 import { rimraf } from 'rimraf'
 
-import {
-  cleanUpFileArray,
-  cleanUpFiles,
-  getBinaryFile,
-} from './file-helpers.js'
+import { createMemoryEnvironment as createEdgeMemoryEnvironment } from './edge-environment.js'
+import { getBinaryFile } from './file-helpers.js'
 
 import type { Environment } from './types.js'
 
-export interface MemoryEnvironmentOutput {
-  files: Record<string, string>
-  deletedFiles: Array<string>
-  commands: Array<{ command: string; args: Array<string> }>
-}
+export type { MemoryEnvironmentOutput } from './edge-environment.js'
 
 export function createDefaultEnvironment(): Environment {
   let errors: Array<string> = []
@@ -115,79 +107,43 @@ export function createDefaultEnvironment(): Environment {
 }
 
 export function createMemoryEnvironment(returnPathsRelativeTo: string = '') {
-  const environment = createDefaultEnvironment()
+  const { environment, output } =
+    createEdgeMemoryEnvironment(returnPathsRelativeTo)
+  const resolvePath = (path: string) => resolve(process.cwd(), path)
 
-  const output: MemoryEnvironmentOutput = {
-    files: {},
-    commands: [],
-    deletedFiles: [],
-  }
+  const appendFile = environment.appendFile
+  environment.appendFile = (path, contents) =>
+    appendFile(resolvePath(path), contents)
 
-  const { fs, vol } = memfs({})
+  const copyFile = environment.copyFile
+  environment.copyFile = (from, to) =>
+    copyFile(resolvePath(from), resolvePath(to))
 
-  environment.appendFile = async (path: string, contents: string) => {
-    fs.mkdirSync(dirname(path), { recursive: true })
-    await fs.appendFileSync(path, contents)
-  }
-  environment.copyFile = async (from: string, to: string) => {
-    fs.mkdirSync(dirname(to), { recursive: true })
-    fs.copyFileSync(from, to)
-    return Promise.resolve()
-  }
-  environment.execute = async (command: string, args: Array<string>) => {
-    output.commands.push({
-      command,
-      args,
-    })
-    return Promise.resolve({ stdout: '' })
-  }
-  environment.readFile = async (path: string) => {
-    return Promise.resolve(fs.readFileSync(path, 'utf-8').toString())
-  }
-  environment.writeFile = async (path: string, contents: string) => {
-    fs.mkdirSync(dirname(path), { recursive: true })
-    await fs.writeFileSync(path, contents)
-  }
-  environment.writeFileBase64 = async (path: string, contents: string) => {
-    // For the in-memory file system, we are not converting the base64 to binary
-    // because it's not needed.
-    fs.mkdirSync(dirname(path), { recursive: true })
-    await fs.writeFileSync(path, contents)
-  }
-  environment.deleteFile = async (path: string) => {
-    output.deletedFiles.push(path)
-    if (fs.existsSync(path)) {
-      await fs.unlinkSync(path)
-    }
-  }
-  environment.finishRun = () => {
-    output.files = vol.toJSON() as Record<string, string>
-    for (const file of Object.keys(output.files)) {
-      if (fs.statSync(file).isDirectory()) {
-        delete output.files[file]
-      }
-    }
-    if (returnPathsRelativeTo.length) {
-      output.files = cleanUpFiles(output.files, returnPathsRelativeTo)
-      output.deletedFiles = cleanUpFileArray(
-        output.deletedFiles,
-        returnPathsRelativeTo,
-      )
-    }
-  }
-  environment.exists = (path: string) => {
-    return fs.existsSync(path)
-  }
-  environment.isDirectory = (path: string) => {
-    return fs.statSync(path).isDirectory()
-  }
-  environment.readdir = async (path: string) => {
-    return Promise.resolve(fs.readdirSync(path).map((d) => d.toString()))
-  }
-  environment.rimraf = async () => {}
+  const writeFile = environment.writeFile
+  environment.writeFile = (path, contents) =>
+    writeFile(resolvePath(path), contents)
 
-  return {
-    environment,
-    output,
-  }
+  const writeFileBase64 = environment.writeFileBase64
+  environment.writeFileBase64 = (path, contents) =>
+    writeFileBase64(resolvePath(path), contents)
+
+  const deleteFile = environment.deleteFile
+  environment.deleteFile = (path) => deleteFile(resolvePath(path))
+
+  const readFile = environment.readFile
+  environment.readFile = (path) => readFile(resolvePath(path))
+
+  const exists = environment.exists
+  environment.exists = (path) => exists(resolvePath(path))
+
+  const isDirectory = environment.isDirectory
+  environment.isDirectory = (path) => isDirectory(resolvePath(path))
+
+  const readdir = environment.readdir
+  environment.readdir = (path) => readdir(resolvePath(path))
+
+  const rimraf = environment.rimraf
+  environment.rimraf = (path) => rimraf(resolvePath(path))
+
+  return { environment, output }
 }
