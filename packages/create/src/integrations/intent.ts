@@ -1,6 +1,10 @@
 import { resolve } from 'node:path'
 
-import { packageManagerExecute } from '../package-manager.js'
+import {
+  INTENT_PACKAGE,
+  intentCommand,
+  packageManagerExecute,
+} from '../package-manager.js'
 
 import type { Environment, Options } from '../types.js'
 
@@ -14,11 +18,11 @@ export async function setupIntent(
   }
 
   const s = environment.spinner()
-  s.start('Setting up TanStack Intent skill mappings...')
+  s.start('Setting up TanStack Intent skill discovery...')
   environment.startStep({
     id: 'setup-intent',
     type: 'command',
-    message: 'Setting up TanStack Intent skill mappings...',
+    message: 'Setting up TanStack Intent skill discovery...',
   })
 
   try {
@@ -26,8 +30,8 @@ export async function setupIntent(
       environment,
       resolve(targetDir),
       options.packageManager,
-      '@tanstack/intent',
-      ['install', '--map'],
+      INTENT_PACKAGE,
+      ['install'],
     )
     environment.finishStep('setup-intent', 'TanStack Intent configured')
     s.stop('TanStack Intent configured')
@@ -41,7 +45,7 @@ export async function setupIntent(
     s.stop('TanStack Intent setup skipped')
     environment.warn(
       'TanStack Intent setup failed',
-      `Continuing without it. You can run it later with: npx @tanstack/intent install\n\n${message}`,
+      `Continuing without it. You can run it later with: ${intentCommand(options.packageManager, ['install'])}\n\n${message}`,
     )
   }
 }
