@@ -2,8 +2,8 @@ services:
   - type: web
     runtime: node
     name: tanstack-start-app
-    buildCommand: npm install && npm run build
-    startCommand: node .output/server/index.mjs
+    buildCommand: <%= packageManager %> install && <%= getPackageManagerRunScript('build') %>
+    startCommand: <%= getPackageManagerRunScript('start') %>
     envVars:
       - key: NITRO_PRESET
         value: render-com

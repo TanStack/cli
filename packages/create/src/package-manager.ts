@@ -10,6 +10,27 @@ export const SUPPORTED_PACKAGE_MANAGERS = [
 export type PackageManager = (typeof SUPPORTED_PACKAGE_MANAGERS)[number]
 export const DEFAULT_PACKAGE_MANAGER: PackageManager = 'npm'
 
+export function validatePackageManagerSupport(
+  packageManager: PackageManager,
+  addOns: Array<{
+    name: string
+    supportedPackageManagers?: Array<PackageManager>
+  }>,
+) {
+  const unsupported = addOns.find(
+    (addOn) =>
+      addOn.supportedPackageManagers &&
+      !addOn.supportedPackageManagers.includes(packageManager),
+  )
+
+  const supportedPackageManagers = unsupported?.supportedPackageManagers
+  if (!unsupported || !supportedPackageManagers) return
+
+  throw new Error(
+    `${unsupported.name} does not support the ${packageManager} package manager. Choose ${supportedPackageManagers.join(', ')}.`,
+  )
+}
+
 export function getPackageManager(): PackageManager | undefined {
   const userAgent = process.env.npm_config_user_agent
 

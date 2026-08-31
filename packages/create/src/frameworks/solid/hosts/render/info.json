@@ -5,6 +5,7 @@
   "phase": "add-on",
   "modes": ["file-router", "code-router"],
   "type": "deployment",
+  "supportedPackageManagers": ["npm", "yarn", "pnpm", "bun"],
   "category": "deploy",
   "exclusive": ["deploy"],
   "color": "#46E3B7",

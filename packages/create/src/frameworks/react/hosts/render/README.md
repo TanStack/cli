@@ -1,14 +1,12 @@
 ## Deploy to Render
 
-This project includes a `render.yaml` for one-click deployment:
+This project includes a Render Blueprint:
 
-1. Push this repo to GitHub
-2. Visit https://render.com/deploy and select your repo (or click the Deploy to Render button below)
-3. Render reads `render.yaml` and creates the web service automatically
+1. Push this repo to GitHub, GitLab, or Bitbucket
+2. In Render, choose **New > Blueprint** and connect this repo
+3. Render reads `render.yaml` and creates the web service
 4. In the Render Dashboard, add any secrets from `.env.example` under **Environment**
 5. Deploy
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
 The Nitro server handles SSR, server functions, API routes, and static assets.
 Render provides `PORT` automatically; Nitro reads it at runtime.

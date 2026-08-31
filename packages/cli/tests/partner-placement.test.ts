@@ -60,6 +60,8 @@ describe('partner placement', () => {
         addOn('netlify', { id: 'netlify', tier: 'gold' }),
         addOn('cloudflare', { id: 'cloudflare', tier: 'gold' }),
         addOn('railway', { id: 'railway', tier: 'gold' }),
+        addOn('render', { id: 'render', tier: 'gold' }),
+        addOn('vercel', { id: 'vercel', tier: 'gold' }),
       ],
       'deployment',
       'test',
@@ -71,6 +73,6 @@ describe('partner placement', () => {
         .slice(1)
         .map((item) => item.id)
         .sort(),
-    ).toEqual(['netlify', 'railway'])
+    ).toEqual(['netlify', 'railway', 'render', 'vercel'])
   })
 })
