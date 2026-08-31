@@ -3,7 +3,7 @@
   "description": "Deploy to Vercel (Functions, static assets, and Git previews).",
   "link": "https://vercel.com/docs/frameworks/full-stack/tanstack-start",
   "phase": "add-on",
-  "modes": ["file-router", "code-router"],
+  "modes": ["file-router"],
   "type": "deployment",
   "supportedPackageManagers": ["npm", "yarn", "pnpm", "bun"],
   "category": "deploy",

@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { finalizeAddOns, populateAddOnOptionsDefaults } from '../src/add-ons.js'
+import {
+  finalizeAddOns,
+  getAllAddOns,
+  populateAddOnOptionsDefaults,
+} from '../src/add-ons.js'
 import { createApp } from '../src/create-app.js'
 import { createMemoryEnvironment } from '../src/environment.js'
 import { createFrameworkDefinition as createReactFrameworkDefinition } from '../src/frameworks/react/index.js'
@@ -183,6 +187,31 @@ describe('partner add-on scaffolds', () => {
     },
   )
 
+  it.each([
+    ['React', createReactFrameworkDefinition],
+    ['Solid', createSolidFrameworkDefinition],
+  ])(
+    '%s partner deployment hosts only support file-router',
+    (_name, createFrameworkDefinition) => {
+      const definition = createFrameworkDefinition()
+      const framework = frameworkFromDefinition(definition)
+      const fileRouterIds = getAllAddOns(framework, 'file-router').map(
+        (addOn) => addOn.id,
+      )
+      const codeRouterIds = getAllAddOns(framework, 'code-router').map(
+        (addOn) => addOn.id,
+      )
+
+      for (const addOnId of ['render', 'vercel']) {
+        expect(
+          definition.addOns.find((addOn) => addOn.id === addOnId)?.modes,
+        ).toEqual(['file-router'])
+        expect(fileRouterIds).toContain(addOnId)
+        expect(codeRouterIds).not.toContain(addOnId)
+      }
+    },
+  )
+
   it('rejects Deno for Render', async () => {
     await expect(
       generateApp(
@@ -216,8 +245,15 @@ describe('partner add-on scaffolds', () => {
     'generates a Render Blueprint for %s',
     async (_name, createFrameworkDefinition) => {
       const output = await generateApp(createFrameworkDefinition(), ['render'])
+      const bunOutput = await generateApp(
+        createFrameworkDefinition(),
+        ['render'],
+        {},
+        'bun',
+      )
       const packageJSON = JSON.parse(output.files['package.json'])
       const renderYaml = output.files['render.yaml']
+      const bunRenderYaml = bunOutput.files['render.yaml']
       const readme = output.files['README.md']
 
       expect(packageJSON.dependencies).toHaveProperty(
@@ -228,6 +264,9 @@ describe('partner add-on scaffolds', () => {
       expect(renderYaml).toContain('name: tanstack-start-app')
       expect(renderYaml).toContain('buildCommand: pnpm install && pnpm build')
       expect(renderYaml).toContain('startCommand: pnpm start')
+      expect(renderYaml).not.toContain('key: BUN_VERSION')
+      expect(bunRenderYaml).toContain('key: BUN_VERSION')
+      expect(bunRenderYaml).toContain("value: '1.3.14'")
       expect(renderYaml).toContain('value: render-com')
       expect(renderYaml).toContain('value: 0.0.0.0')
       expect(output.files['render.yaml.ejs']).toBeUndefined()
@@ -255,6 +294,12 @@ describe('partner add-on scaffolds', () => {
 
       expect(renderYaml).toContain(`buildCommand: ${buildCommand}`)
       expect(renderYaml).toContain(`startCommand: ${startCommand}`)
+      if (packageManager === 'bun') {
+        expect(renderYaml).toContain('key: BUN_VERSION')
+        expect(renderYaml).toContain("value: '1.3.14'")
+      } else {
+        expect(renderYaml).not.toContain('key: BUN_VERSION')
+      }
     },
   )
 

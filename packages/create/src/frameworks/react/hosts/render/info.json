@@ -3,7 +3,7 @@
   "description": "Deploy to Render (full-stack cloud platform with GitHub integration).",
   "link": "https://render.com/",
   "phase": "add-on",
-  "modes": ["file-router", "code-router"],
+  "modes": ["file-router"],
   "type": "deployment",
   "supportedPackageManagers": ["npm", "yarn", "pnpm", "bun"],
   "category": "deploy",
