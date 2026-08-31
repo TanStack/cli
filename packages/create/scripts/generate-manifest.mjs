@@ -472,7 +472,9 @@ function writeWorkerManifest(manifest) {
 
   writeGeneratedModule(
     join(workerOutputDir, 'catalog.ts'),
-    `export const manifestCatalog = ${JSON.stringify(
+    `import type { ManifestCatalog } from '../../manifest-types.js'
+
+export const manifestCatalog: ManifestCatalog = ${JSON.stringify(
       {
         frameworks: manifest.map(stripFrameworkForCatalog),
       },
@@ -491,16 +493,18 @@ function writeWorkerManifest(manifest) {
 
     writeGeneratedModule(
       join(workerOutputDir, 'frameworks', `${frameworkSegment}.ts`),
-      `${createTemplateRendererSource(
-        createTemplateRenderersForFrameworkBase(framework),
-      )}\n\nexport const framework = ${JSON.stringify(
+      `import type { WorkerFrameworkManifestModule } from '../../../manifest-types.js'
+
+${createTemplateRendererSource(
+  createTemplateRenderersForFrameworkBase(framework),
+)}\n\nexport const framework = ${JSON.stringify(
         {
           id: framework.id,
           base: framework.base,
         },
         null,
         2,
-      )}\n`,
+      )} satisfies WorkerFrameworkManifestModule['framework']\n`,
     )
 
     for (const addOn of framework.addOns) {
@@ -516,9 +520,11 @@ function writeWorkerManifest(manifest) {
           'add-ons',
           `${addOnSegment}.ts`,
         ),
-        `${createTemplateRendererSource(
-          createTemplateRenderersForAddOn(addOn),
-        )}\n\nexport const addOn = ${JSON.stringify(addOn, null, 2)}\n`,
+        `import type { AddOnCompiled } from '../../../../../types.js'
+
+${createTemplateRendererSource(
+  createTemplateRenderersForAddOn(addOn),
+)}\n\nexport const addOn = ${JSON.stringify(addOn, null, 2)} satisfies AddOnCompiled\n`,
       )
     }
   }
