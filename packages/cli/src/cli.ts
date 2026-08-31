@@ -13,11 +13,13 @@ import {
   createApp,
   devAddOn,
   getAllAddOns,
+  getBundlers,
   getFrameworkByName,
   getFrameworks,
   initAddOn,
   initStarter,
   isDemoFilePath,
+  resolveBundler,
 } from '@tanstack/create'
 import {
   LIBRARY_GROUPS,
@@ -167,7 +169,7 @@ function getCreateCommandVariant(options: CliOptions) {
   return 'scaffold'
 }
 
-function getCreateTelemetryProperties(projectName: string, options: CliOptions) {
+export function getCreateTelemetryProperties(projectName: string, options: CliOptions) {
   const addOnIds = Array.isArray(options.addOns)
     ? sanitizeIdList(options.addOns)
     : undefined
@@ -181,6 +183,7 @@ function getCreateTelemetryProperties(projectName: string, options: CliOptions) 
       : undefined,
     command_variant: getCreateCommandVariant(options),
     deployment: options.deployment ? sanitizeId(options.deployment) : undefined,
+    bundler: options.buildTool ? sanitizeId(options.buildTool) : undefined,
     examples: options.examples,
     blank: !!options.blank,
     framework: options.framework ? sanitizeId(options.framework) : undefined,
@@ -200,7 +203,7 @@ function getCreateTelemetryProperties(projectName: string, options: CliOptions) 
   }
 }
 
-function getResolvedCreateTelemetryProperties(
+export function getResolvedCreateTelemetryProperties(
   finalOptions: Options,
   cliOptions: CliOptions,
 ) {
@@ -221,6 +224,7 @@ function getResolvedCreateTelemetryProperties(
     add_on_count: addOnIds.length,
     add_on_ids: addOnIds,
     deployment: deployment ? sanitizeId(deployment.id) : undefined,
+    bundler: sanitizeId(finalOptions.bundler ?? 'vite'),
     examples: includeExamples,
     blank: finalOptions.projectPreset === 'blank',
     framework: sanitizeId(finalOptions.framework.id),
@@ -306,6 +310,9 @@ export function cli({
     lines.push(`  Project:         ${finalOptions.projectName}`)
     lines.push(`  Location:        ${finalOptions.targetDir}`)
     lines.push(`  Framework:       ${finalOptions.framework.name}`)
+    lines.push(
+      `  Build tool:      ${resolveBundler(finalOptions.framework, finalOptions.bundler).name}`,
+    )
     lines.push(`  Mode:            ${finalOptions.mode}`)
     if (finalOptions.projectPreset === 'blank') {
       lines.push(`  Preset:          blank`)
@@ -565,6 +572,13 @@ export function cli({
     }
   }
 
+  const bundlers = new Set<string>()
+  for (const framework of getFrameworks()) {
+    for (const bundler of getBundlers(framework)) {
+      bundlers.add(bundler.id)
+    }
+  }
+
   // Mode is always file-router (TanStack Start)
   const defaultMode = 'file-router'
   const categoryAliases: Record<string, string> = {
@@ -660,6 +674,7 @@ export function cli({
             const addOns = await getAllAddOns(
               getFrameworkByName(options.framework || defaultFramework || 'React')!,
               defaultMode,
+              options.buildTool,
             )
             const visibleAddOns = addOns.filter((a) => !forcedAddOns.includes(a.id))
             telemetry.mergeProperties({
@@ -705,6 +720,7 @@ export function cli({
             const addOns = await getAllAddOns(
               getFrameworkByName(options.framework || defaultFramework || 'React')!,
               defaultMode,
+              options.buildTool,
             )
             const addOn =
               addOns.find((a) => a.id === options.addonDetails) ??
@@ -958,6 +974,23 @@ export function cli({
     }
 
     cmd
+      .option<string>(
+        `--build-tool <${Array.from(bundlers).join('|')}>`,
+        'select the project build tool',
+        (value) => {
+          const buildTool = Array.from(bundlers).find(
+            (item) => item.toLowerCase() === value.toLowerCase(),
+          )
+          if (!buildTool) {
+            throw new InvalidArgumentError(
+              `Invalid build tool: ${value}. The following are allowed: ${Array.from(
+                bundlers,
+              ).join(', ')}`,
+            )
+          }
+          return buildTool
+        },
+      )
       .option(
         '--starter [url-or-id]',
         'DEPRECATED: use --template. Initializes from a template URL or built-in id',

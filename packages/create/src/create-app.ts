@@ -16,6 +16,7 @@ import { installShadcnComponents } from './integrations/shadcn.js'
 import { setupGit } from './integrations/git.js'
 import { setupIntent } from './integrations/intent.js'
 import { runSpecialSteps } from './special-steps/index.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
@@ -475,7 +476,7 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
 }
 
 export async function createApp(environment: Environment, options: Options) {
-  const effectiveOptions = stripExamplesFromOptions(options)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
   await writeFiles(environment, effectiveOptions)

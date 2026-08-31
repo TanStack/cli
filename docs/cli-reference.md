@@ -18,6 +18,7 @@ tanstack create [project-name] [options]
 | `--blank` | Create a minimal one-route Start project without default starter UI, examples, Tailwind, devtools, or a test stack |
 | `--package-manager <pm>` | `npm`, `pnpm`, `yarn`, `bun`, `deno` |
 | `--framework <name>` | `React`, `Solid` |
+| `--build-tool <name>` | `vite` (default), `rsbuild` |
 | `--router-only` | Create file-based Router-only app without TanStack Start (add-ons/deployment/template disabled) |
 | `--toolchain <id>` | Toolchain add-on (use `--list-add-ons` to see options) |
 | `--deployment <id>` | Deployment add-on (use `--list-add-ons` to see options) |
@@ -41,6 +42,8 @@ tanstack create my-app --blank -y
 tanstack create my-app --blank --deployment cloudflare -y
 tanstack create my-app --add-ons clerk,drizzle,tanstack-query
 tanstack create my-app --router-only --toolchain eslint --no-examples
+tanstack create my-app --build-tool rsbuild -y
+tanstack create my-app --framework Solid --build-tool rsbuild --router-only --blank --toolchain biome -y
 tanstack create my-app --template https://example.com/template.json
 tanstack create my-app --template ecommerce
 tanstack create --list-add-ons --framework React --json
@@ -126,6 +129,7 @@ await create.createApp(environment, {
   targetDir: '/app',
   framework: framework!,
   mode: 'file-router',
+  bundler: 'vite',
   typescript: true,
   tailwind: true,
   packageManager: 'pnpm',

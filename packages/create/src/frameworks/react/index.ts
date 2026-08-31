@@ -33,6 +33,19 @@ export function createFrameworkDefinition(): FrameworkDefinition {
     addOns,
     basePackageJSON,
     optionalPackages,
+    bundlers: [
+      {
+        id: 'vite',
+        name: 'Vite',
+        description: 'Build with Vite',
+      },
+      {
+        id: 'rsbuild',
+        name: 'Rsbuild',
+        description: 'Build with Rsbuild',
+      },
+    ],
+    defaultBundler: 'vite',
     supportedModes: {
       'file-router': {
         displayName: 'File Router',

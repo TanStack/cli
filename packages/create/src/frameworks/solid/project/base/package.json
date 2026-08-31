@@ -2,26 +2,12 @@
   "name": "app-ts",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite dev --port 3000",
-    "generate-routes": "tsr generate",
-    "build": "vite build",
-    "start": "node .output/server/index.mjs",
-    "preview": "vite preview"
-  },
+  "scripts": {},
   "dependencies": {
     "@tanstack/solid-router": "latest",
     "@tanstack/solid-start": "latest",
     "solid-js": "^1.9.12"
   },
-  "devDependencies": {
-    "vite-plugin-solid": "^2.11.12",
-    "vite": "^8.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
-  }
+  "devDependencies": {},
+  "pnpm": {}
 }

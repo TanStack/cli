@@ -14,6 +14,15 @@ export {
   loadRemoteAddOn,
   populateAddOnOptionsDefaults,
 } from './edge-add-ons.js'
+export {
+  assertAddOnSupportedByBundler,
+  getBundlers,
+  getDefaultBundler,
+  isAddOnSupportedByBundler,
+  normalizeAndValidateBundlerOptions,
+  resolveBundler,
+  VITE_BUNDLER,
+} from './build-tools.js'
 export { createSerializedOptions } from './options.js'
 export { CONFIG_FILE } from './constants.js'
 export {
@@ -35,6 +44,7 @@ export type {
   FileBundleHandler,
   Framework,
   FrameworkDefinition,
+  BundlerDefinition,
   Options,
   SerializedOptions,
   Starter,

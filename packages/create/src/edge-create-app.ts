@@ -13,6 +13,7 @@ import {
   packageManagerInstall,
   translateExecuteCommand,
 } from './package-manager.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
@@ -591,7 +592,7 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
 }
 
 export async function createApp(environment: Environment, options: Options) {
-  const effectiveOptions = stripExamplesFromOptions(options)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
   await writeFiles(environment, effectiveOptions)
