@@ -7,6 +7,7 @@ Targets `@tanstack/cli` v0.61.0.
 - `cloudflare`
 - `netlify`
 - `railway`
+- `render`
 - `nitro`
 
 ## Usage
