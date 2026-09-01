@@ -12,6 +12,7 @@ import {
   intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
@@ -591,6 +592,7 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
 }
 
 export async function createApp(environment: Environment, options: Options) {
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
   const effectiveOptions = stripExamplesFromOptions(options)
 
   environment.startRun()

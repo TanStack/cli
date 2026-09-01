@@ -8,6 +8,7 @@ import {
   intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
 import { createPackageJSON } from './package-json.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
@@ -475,6 +476,7 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
 }
 
 export async function createApp(environment: Environment, options: Options) {
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
   const effectiveOptions = stripExamplesFromOptions(options)
 
   environment.startRun()

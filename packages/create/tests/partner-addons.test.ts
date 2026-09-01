@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { finalizeAddOns, populateAddOnOptionsDefaults } from '../src/add-ons.js'
+import {
+  finalizeAddOns,
+  getAllAddOns,
+  populateAddOnOptionsDefaults,
+} from '../src/add-ons.js'
 import { createApp } from '../src/create-app.js'
 import { createMemoryEnvironment } from '../src/environment.js'
 import { createFrameworkDefinition as createReactFrameworkDefinition } from '../src/frameworks/react/index.js'
 import { createFrameworkDefinition as createSolidFrameworkDefinition } from '../src/frameworks/solid/index.js'
 
+import type { PackageManager } from '../src/package-manager.js'
 import type { Framework, FrameworkDefinition, Options } from '../src/types.js'
 
 function frameworkFromDefinition(definition: FrameworkDefinition): Framework {
@@ -24,6 +29,7 @@ async function generateApp(
   definition: FrameworkDefinition,
   addOnIds: Array<string>,
   addOnOptions: Options['addOnOptions'] = {},
+  packageManager: PackageManager = 'pnpm',
 ) {
   const framework = frameworkFromDefinition(definition)
   const chosenAddOns = await finalizeAddOns(framework, 'file-router', addOnIds)
@@ -38,7 +44,7 @@ async function generateApp(
     mode: 'file-router',
     typescript: true,
     tailwind: true,
-    packageManager: 'pnpm',
+    packageManager,
     git: false,
     install: false,
     intent: false,
@@ -185,6 +191,160 @@ describe('partner add-on scaffolds', () => {
     ['React', createReactFrameworkDefinition],
     ['Solid', createSolidFrameworkDefinition],
   ])(
+    '%s partner deployment hosts only support file-router',
+    (_name, createFrameworkDefinition) => {
+      const definition = createFrameworkDefinition()
+      const framework = frameworkFromDefinition(definition)
+      const fileRouterIds = getAllAddOns(framework, 'file-router').map(
+        (addOn) => addOn.id,
+      )
+      const codeRouterIds = getAllAddOns(framework, 'code-router').map(
+        (addOn) => addOn.id,
+      )
+
+      for (const addOnId of ['render', 'vercel']) {
+        expect(
+          definition.addOns.find((addOn) => addOn.id === addOnId)?.modes,
+        ).toEqual(['file-router'])
+        expect(fileRouterIds).toContain(addOnId)
+        expect(codeRouterIds).not.toContain(addOnId)
+      }
+    },
+  )
+
+  it('rejects Deno for Render', async () => {
+    await expect(
+      generateApp(
+        createReactFrameworkDefinition(),
+        ['render'],
+        {},
+        'deno',
+      ),
+    ).rejects.toThrow(
+      'Render does not support the deno package manager. Choose npm, yarn, pnpm, bun.',
+    )
+  })
+
+  it('rejects Deno for Vercel', async () => {
+    await expect(
+      generateApp(
+        createReactFrameworkDefinition(),
+        ['vercel'],
+        {},
+        'deno',
+      ),
+    ).rejects.toThrow(
+      'Vercel does not support the deno package manager. Choose npm, yarn, pnpm, bun.',
+    )
+  })
+
+  it.each([
+    ['React', createReactFrameworkDefinition],
+    ['Solid', createSolidFrameworkDefinition],
+  ])(
+    'generates a Render Blueprint for %s',
+    async (_name, createFrameworkDefinition) => {
+      const output = await generateApp(createFrameworkDefinition(), ['render'])
+      const bunOutput = await generateApp(
+        createFrameworkDefinition(),
+        ['render'],
+        {},
+        'bun',
+      )
+      const packageJSON = JSON.parse(output.files['package.json'])
+      const renderYaml = output.files['render.yaml']
+      const bunRenderYaml = bunOutput.files['render.yaml']
+      const readme = output.files['README.md']
+
+      expect(packageJSON.dependencies).toHaveProperty(
+        'nitro',
+        '3.0.260610-beta',
+      )
+      expect(packageJSON.scripts.start).toBe('node .output/server/index.mjs')
+      expect(renderYaml).toContain('name: tanstack-start-app')
+      expect(renderYaml).toContain('buildCommand: pnpm install && pnpm build')
+      expect(renderYaml).toContain('startCommand: pnpm start')
+      expect(renderYaml).not.toContain('key: BUN_VERSION')
+      expect(bunRenderYaml).toContain('key: BUN_VERSION')
+      expect(bunRenderYaml).toContain("value: '1.3.14'")
+      expect(renderYaml).toContain('value: render-com')
+      expect(renderYaml).toContain('value: 0.0.0.0')
+      expect(output.files['render.yaml.ejs']).toBeUndefined()
+      expect(readme).toContain('New > Blueprint')
+      expect(readme).not.toContain('Deploy to Render button')
+      expect(readme).not.toContain('render.com/deploy')
+    },
+  )
+
+  it.each([
+    ['npm', 'npm install && npm run build', 'npm run start'],
+    ['yarn', 'yarn install && yarn run build', 'yarn run start'],
+    ['pnpm', 'pnpm install && pnpm build', 'pnpm start'],
+    ['bun', 'bun install && bun --bun run build', 'bun --bun run start'],
+  ] as const)(
+    'uses %s commands in the Render Blueprint',
+    async (packageManager, buildCommand, startCommand) => {
+      const output = await generateApp(
+        createReactFrameworkDefinition(),
+        ['render'],
+        {},
+        packageManager,
+      )
+      const renderYaml = output.files['render.yaml']
+
+      expect(renderYaml).toContain(`buildCommand: ${buildCommand}`)
+      expect(renderYaml).toContain(`startCommand: ${startCommand}`)
+      if (packageManager === 'bun') {
+        expect(renderYaml).toContain('key: BUN_VERSION')
+        expect(renderYaml).toContain("value: '1.3.14'")
+      } else {
+        expect(renderYaml).not.toContain('key: BUN_VERSION')
+      }
+    },
+  )
+
+  it.each([
+    ['React', createReactFrameworkDefinition],
+    ['Solid', createSolidFrameworkDefinition],
+  ])(
+    'generates a Vercel Build Output API deployment for %s',
+    async (_name, createFrameworkDefinition) => {
+      const definition = createFrameworkDefinition()
+      const vercel = definition.addOns.find((addOn) => addOn.id === 'vercel')
+      const output = await generateApp(definition, ['vercel'])
+      const packageJSON = JSON.parse(output.files['package.json'])
+      const vercelJSON = JSON.parse(output.files['vercel.json'])
+      const viteConfig = output.files['vite.config.ts']
+      const readme = output.files['README.md']
+
+      expect(vercel?.partner).toEqual({ id: 'vercel', tier: 'gold' })
+      expect(vercel?.supportedPackageManagers).toEqual([
+        'npm',
+        'yarn',
+        'pnpm',
+        'bun',
+      ])
+      expect(packageJSON.dependencies).toHaveProperty(
+        'nitro',
+        '3.0.260610-beta',
+      )
+      expect(vercelJSON).toEqual({
+        $schema: 'https://openapi.vercel.sh/vercel.json',
+        framework: 'tanstack-start',
+      })
+      expect(viteConfig).toContain("import { nitro } from 'nitro/vite'")
+      expect(viteConfig).toContain('nitro()')
+      expect(viteConfig).not.toContain('NITRO_PRESET')
+      expect(output.files['src/server.ts']).toBeUndefined()
+      expect(readme).toContain('Add New > Project')
+      expect(readme).not.toContain('vercel.com/new/clone')
+    },
+  )
+
+  it.each([
+    ['React', createReactFrameworkDefinition],
+    ['Solid', createSolidFrameworkDefinition],
+  ])(
     'approves Netlify build dependencies for pnpm in %s projects',
     async (_name, createFrameworkDefinition) => {
       const output = await generateApp(createFrameworkDefinition(), ['netlify'])
@@ -312,6 +472,45 @@ describe('partner add-on scaffolds', () => {
       expect(packageJSON.scripts.start).toContain('.output/server/index.mjs')
       expect(output.files['instrument.server.mjs']).toBeDefined()
       expect(output.files['nixpacks.toml']).toBeUndefined()
+    },
+  )
+
+  it('starts Render through the Sentry-aware package script', async () => {
+    const output = await generateApp(createReactFrameworkDefinition(), [
+      'sentry',
+      'render',
+    ])
+    const packageJSON = JSON.parse(output.files['package.json'])
+
+    expect(packageJSON.scripts.start).toContain(
+      '--import ./.output/server/instrument.server.mjs',
+    )
+    expect(output.files['render.yaml']).toContain('startCommand: pnpm start')
+  })
+
+  it.each([[['sentry', 'vercel']], [['vercel', 'sentry']]])(
+    'composes Sentry with Vercel independent of selection order: %j',
+    async (addOnIds) => {
+      const output = await generateApp(
+        createReactFrameworkDefinition(),
+        addOnIds,
+      )
+      const packageJSON = JSON.parse(output.files['package.json'])
+      const serverEntry = output.files['src/server.ts']
+      const viteConfig = output.files['vite.config.ts']
+
+      expect(packageJSON.scripts.build).toBe('vite build')
+      expect(packageJSON.scripts.build).not.toContain('.output/server')
+      expect(packageJSON.scripts.dev).toBe(
+        'dotenv -e .env.local -- vite dev --port 3000',
+      )
+      expect(packageJSON.scripts.dev).not.toContain('NODE_OPTIONS')
+      expect(packageJSON.scripts.start).toBe('node .output/server/index.mjs')
+      expect(serverEntry).toContain("import '../instrument.server.mjs'")
+      expect(serverEntry).toContain('wrapFetchWithSentry')
+      expect(serverEntry).toContain('createServerEntry')
+      expect(viteConfig).not.toContain('rollupConfig')
+      expect(viteConfig).not.toContain('external:')
     },
   )
 })

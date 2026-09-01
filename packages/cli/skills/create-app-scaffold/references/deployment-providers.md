@@ -7,6 +7,8 @@ Targets `@tanstack/cli` v0.61.0.
 - `cloudflare`
 - `netlify`
 - `railway`
+- `render`
+- `vercel`
 - `nitro`
 
 ## Usage
@@ -14,6 +16,7 @@ Targets `@tanstack/cli` v0.61.0.
 ```bash
 npx @tanstack/cli create app --deployment cloudflare -y
 npx @tanstack/cli create app --deployment netlify -y
+npx @tanstack/cli create app --deployment vercel -y
 ```
 
 Deployment providers are exclusive; choose one per scaffold.
