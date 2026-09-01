@@ -27,6 +27,11 @@ import {
   searchTanStackDocs,
 } from './discovery.js'
 import {
+  searchYouCom,
+  getYouComMCPConfig,
+  installYouComSkills,
+} from './youcom-search.js'
+import {
   getTelemetryStatus,
   setTelemetryEnabled,
 } from './telemetry-config.js'
@@ -1872,6 +1877,153 @@ Remove your node_modules directory and package lock file and re-install.`,
         process.exit(1)
       }
     })
+
+  // === YOU.COM MCP SUBCOMMANDS ===
+  const youComCommand = program.command('youcom')
+  youComCommand.description('You.com MCP server configuration and search')
+
+  youComCommand
+    .command('config')
+    .description('Show You.com MCP server configuration')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .option('--json', 'output JSON for automation', false)
+    .action(async (options: { json: boolean }) => {
+      try {
+        await runWithTelemetry('youcom:config', { json: options.json }, async () => {
+          const config = getYouComMCPConfig()
+          
+          if (options.json) {
+            printJson(config)
+          } else {
+            console.log(chalk.bold('You.com MCP Server Configuration:'))
+            console.log('')
+            
+            Object.entries(config).forEach(([name, server]: [string, any]) => {
+              console.log(chalk.cyan(`${name}:`))
+              console.log(`  URL: ${server.url}`)
+              console.log(`  Description: ${server.description}`)
+              console.log(`  Auth: ${server.auth.type === 'bearer' ? `Bearer token (${server.auth.env_var})` : 'None'}`)
+              console.log(`  Tools: ${server.tools.join(', ')}`)
+              console.log('')
+            })
+            
+            console.log(chalk.yellow('Setup Instructions:'))
+            console.log('1. Set YDC_API_KEY environment variable for authenticated features')
+            console.log('2. Get your API key from: https://you.com/platform/api-keys')
+            console.log('3. Add server URLs to your MCP client configuration')
+          }
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
+    })
+
+  youComCommand
+    .command('install')
+    .description('Install You.com skills and MCP configuration')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .option('--json', 'output JSON for automation', false)
+    .action(async (options: { json: boolean }) => {
+      try {
+        await runWithTelemetry('youcom:install', { json: options.json }, async () => {
+          const result = installYouComSkills()
+          
+          if (options.json) {
+            printJson(result)
+          } else {
+            console.log(chalk.green('✓ You.com MCP servers configured successfully'))
+            console.log('')
+            console.log(chalk.bold('Available servers:'))
+            result.servers.forEach(server => {
+              console.log(`  • ${server}`)
+            })
+            console.log('')
+            console.log(chalk.yellow('Next steps:'))
+            result.setup_instructions.forEach((instruction, i) => {
+              console.log(`${i + 1}. ${instruction}`)
+            })
+          }
+        })
+      } catch (error) {
+        log.error(formatErrorMessage(error))
+        process.exit(1)
+      }
+    })
+
+  youComCommand
+    .command('search')
+    .description('Search You.com for development resources')
+    .addOption(
+      new Option(AGENT_FLAG, 'internal: invocation originated from an agent').hideHelp(),
+    )
+    .argument('<query>', 'search query')
+    .option('--count <n>', 'max results (default: 10)', parsePositiveInteger, 10)
+    .option('--json', 'output JSON for automation', false)
+    .action(
+      async (
+        query: string,
+        options: {
+          count: number
+          json: boolean
+        },
+      ) => {
+        try {
+          await runWithTelemetry(
+            'youcom:search',
+            {
+              json: options.json,
+              properties: {
+                has_query: query.trim().length > 0,
+                json: options.json,
+                count: options.count,
+                query_length_bucket: getLengthBucket(query),
+              },
+            },
+            async (telemetry) => {
+              const payload = await searchYouCom({
+                query,
+                count: options.count,
+              })
+
+              telemetry.mergeProperties({
+                result_count: payload.totalHits,
+              })
+
+              if (options.json) {
+                printJson(payload)
+              } else {
+                console.log(chalk.bold(`You.com Search Results for "${query}"`))
+                console.log('')
+                
+                if (payload.results.length === 0) {
+                  console.log(chalk.yellow('No results found.'))
+                  return
+                }
+
+                payload.results.forEach((result, index) => {
+                  console.log(chalk.cyan(`${index + 1}. ${result.title}`))
+                  console.log(chalk.gray(`   ${result.url}`))
+                  if (result.snippet) {
+                    console.log(`   ${result.snippet}`)
+                  }
+                  console.log('')
+                })
+                
+                console.log(chalk.gray(`Found ${payload.totalHits} results`))
+              }
+            },
+          )
+        } catch (error) {
+          log.error(formatErrorMessage(error))
+          process.exit(1)
+        }
+      },
+    )
 
   // Legacy alias for template command
   const starterCommand = program.command('starter')

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.you.com/skills/v1",
+  "skills": [
+    {
+      "name": "you-web",
+      "description": "Web search, URL content extraction, and research via You.com MCP",
+      "path": "skills/you-web",
+      "category": "web-search",
+      "mcp_server": {
+        "url": "https://api.you.com/mcp",
+        "auth": ["YDC_API_KEY", "OAuth", "x402"],
+        "tools": ["you-search", "you-contents", "you-research"]
+      }
+    },
+    {
+      "name": "you-discover", 
+      "description": "You.com integration planning and resource discovery",
+      "path": "skills/you-discover",
+      "category": "discovery",
+      "mcp_server": {
+        "url": "https://api.you.com/mcp",
+        "auth": ["YDC_API_KEY", "OAuth"],
+        "tools": ["you-discover"]
+      }
+    }
+  ],
+  "mcp_servers": {
+    "you-com": {
+      "url": "https://api.you.com/mcp",
+      "description": "You.com search, content extraction, and research MCP server",
+      "auth": {
+        "type": "bearer",
+        "env_var": "YDC_API_KEY"
+      },
+      "tools": ["you-search", "you-contents", "you-research", "you-discover"]
+    },
+    "you-com-free": {
+      "url": "https://api.you.com/mcp?profile=free", 
+      "description": "You.com keyless basic search MCP server",
+      "auth": {
+        "type": "none"
+      },
+      "tools": ["you-search"]
+    },
+    "you-docs": {
+      "url": "https://you.com/docs/_mcp/server",
+      "description": "You.com documentation search MCP server", 
+      "auth": {
+        "type": "none"
+      },
+      "tools": ["searchDocs"]
+    }
+  }
+}
