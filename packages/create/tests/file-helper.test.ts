@@ -12,6 +12,10 @@ import {
 vi.mock('node:fs', () => fs)
 vi.mock('node:fs/promises', () => fs.promises)
 
+function toPosixPath(path: string) {
+  return path.replace(/\\/g, '/').replace(/^[A-Z]:/i, '')
+}
+
 beforeEach(() => {
   vol.reset()
 })
@@ -138,7 +142,7 @@ describe('findFilesRecursively', () => {
     const files = {}
     findFilesRecursively('/src', files)
 
-    expect(Object.keys(files)).toEqual([
+    expect(Object.keys(files).map(toPosixPath)).toEqual([
       '/src/subdir/subdir2/test.txt',
       '/src/subdir/test.txt',
       '/src/test.txt',
