@@ -1,5 +1,19 @@
 # @tanstack/cli
 
+## 0.71.0
+
+### Minor Changes
+
+- Add Gold partner deployment targets for Render and Vercel to React and Solid ([#507](https://github.com/TanStack/cli/pull/507))
+  scaffolds. Render generates package-manager-aware Blueprint commands, while
+  Vercel generates explicit framework detection and Nitro Build Output API
+  support.
+
+### Patch Changes
+
+- Updated dependencies [[`f537073`](https://github.com/TanStack/cli/commit/f537073fc4ee24b44f3aad545a2ce48b7b48c3cc), [`8863bee`](https://github.com/TanStack/cli/commit/8863bee76fa2e19e14e38fd34278eca01e946c16), [`6f16a8b`](https://github.com/TanStack/cli/commit/6f16a8bb91a7807f3322d3efdb264da1ea82bb18), [`6f16a8b`](https://github.com/TanStack/cli/commit/6f16a8bb91a7807f3322d3efdb264da1ea82bb18)]:
+  - @tanstack/create@0.70.0
+
 ## 0.70.2
 
 ### Patch Changes
