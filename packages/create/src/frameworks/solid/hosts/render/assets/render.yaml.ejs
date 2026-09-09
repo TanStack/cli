@@ -1,0 +1,15 @@
+services:
+  - type: web
+    runtime: node
+    name: tanstack-start-app
+    buildCommand: <%= packageManager %> install && <%= getPackageManagerRunScript('build') %>
+    startCommand: <%= getPackageManagerRunScript('start') %>
+    envVars:
+<% if (packageManager === 'bun') { -%>
+      - key: BUN_VERSION
+        value: '1.3.14'
+<% } -%>
+      - key: NITRO_PRESET
+        value: render-com
+      - key: HOST
+        value: 0.0.0.0

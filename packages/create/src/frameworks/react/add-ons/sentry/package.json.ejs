@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "build": "<%= addOnEnabled.vercel ? 'vite build' : 'vite build && cp instrument.server.mjs .output/server' %>",
+    "dev": "<%= addOnEnabled.vercel ? 'dotenv -e .env.local -- vite dev --port 3000' : 'dotenv -e .env.local -- sh -c \"NODE_OPTIONS=\'--import ./instrument.server.mjs\' vite dev --port 3000\"' %>",
+    "start": "<%= addOnEnabled.vercel ? 'node .output/server/index.mjs' : 'node --import ./.output/server/instrument.server.mjs .output/server/index.mjs' %>"
+  },
+  "dependencies": {
+    "@sentry/tanstackstart-react": "^10.67.0",
+    "dotenv-cli": "^11.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli"
+    ]
+  }
+}

@@ -1,5 +1,43 @@
 # @tanstack/create
 
+## 0.70.0
+
+### Minor Changes
+
+- Add Gold partner deployment targets for Render and Vercel to React and Solid ([#507](https://github.com/TanStack/cli/pull/507))
+  scaffolds. Render generates package-manager-aware Blueprint commands, while
+  Vercel generates explicit framework detection and Nitro Build Output API
+  support.
+
+### Patch Changes
+
+- Wire TanStack Intent up in on-demand discovery mode instead of writing the full ([#497](https://github.com/TanStack/cli/pull/497))
+  skill-to-task mapping table into `AGENTS.md`. Generated projects previously got
+  an `install --map` block listing every skill for every installed package — 99
+  lines in a default app, growing with each add-on — which every agent re-read on
+  every invocation. Plain `install` emits a 10-line pointer telling the agent to
+  run `intent list` and `intent load <package>#<skill>` when a task actually calls
+  for one. The "next steps" output now shows those two commands, rendered for the
+  project's package manager.
+
+- Drop unused React Query imports from the generated React `router.tsx`. The ([#498](https://github.com/TanStack/cli/pull/498))
+  `tanstack-query` branch imported `ReactNode`, `QueryClient` and the
+  `TanstackQueryProvider` default export whenever the add-on was enabled, but
+  `ReactNode` and `TanstackQueryProvider` are only referenced inside the tRPC
+  `Wrap` block and `QueryClient` was never referenced at all. Generated projects
+  set `noUnusedLocals: true`, so a fresh scaffold shipped code that violates its
+  own tsconfig. The two tRPC-only imports are now gated behind
+  `addOnEnabled.tRPC` and the `QueryClient` import is removed.
+
+- Drop two dead imports from the generated tRPC integration. `api.trpc.$.tsx` ([#498](https://github.com/TanStack/cli/pull/498))
+  imported `createServerFileRoute` from `@tanstack/react-start/server`, but the
+  route was already migrated to `createFileRoute(...)({ server: { handlers } })`
+  and that symbol is no longer exported, so the leftover import was both unused
+  and unresolvable. The tRPC branch of `root-provider.tsx` imported
+  `QueryClientProvider`, which it never renders —
+  `setupRouterSsrQueryIntegration` supplies the query client. Generated projects
+  set `noUnusedLocals: true`, so both showed up as errors in a fresh scaffold.
+
 ## 0.69.2
 
 ### Patch Changes

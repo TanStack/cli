@@ -1,0 +1,21 @@
+{
+  "name": "Vercel",
+  "description": "Deploy to Vercel (Functions, static assets, and Git previews).",
+  "link": "https://vercel.com/docs/frameworks/full-stack/tanstack-start",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "deployment",
+  "supportedPackageManagers": ["npm", "yarn", "pnpm", "bun"],
+  "category": "deploy",
+  "exclusive": ["deploy"],
+  "color": "#000000",
+  "priority": 140,
+  "partner": { "id": "vercel", "tier": "gold" },
+  "integrations": [
+    {
+      "type": "vite-plugin",
+      "import": "import { nitro } from 'nitro/vite'",
+      "code": "nitro()"
+    }
+  ]
+}

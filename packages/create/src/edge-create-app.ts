@@ -6,10 +6,13 @@ import { basenamePath, joinPaths, normalizePath } from './edge-path.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { writeConfigFileToEnvironment } from './edge-config-file.js'
 import {
+  INTENT_PACKAGE,
   getPackageManagerExecuteCommand,
   getPackageManagerScriptCommand,
+  intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
 import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
@@ -259,13 +262,13 @@ async function setupIntent(
   environment.startStep({
     id: 'setup-intent',
     type: 'command',
-    message: 'Setting up TanStack Intent skill mappings...',
+    message: 'Setting up TanStack Intent skill discovery...',
   })
 
   const { command, args } = getPackageManagerExecuteCommand(
     options.packageManager,
-    '@tanstack/intent',
-    ['install', '--map'],
+    INTENT_PACKAGE,
+    ['install'],
   )
   await environment.execute(command, args, normalizePath(targetDir))
   environment.finishStep('setup-intent', 'TanStack Intent configured')
@@ -533,7 +536,7 @@ function buildNextSteps(options: Options): string {
   }
   if (options.intent) {
     sections.push(
-      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
+      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  - ${intentCommand(options.packageManager, ['list'])}\n  - ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
     )
   }
 
@@ -590,6 +593,7 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
 }
 
 export async function createApp(environment: Environment, options: Options) {
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
   const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()

@@ -7,6 +7,8 @@ Map deployment intent to one supported target and include it in scaffold command
 - `cloudflare`
 - `netlify`
 - `railway`
+- `render`
+- `vercel`
 - `nitro`
 
 ## Selection pattern
