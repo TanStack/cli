@@ -82,7 +82,7 @@ export function getPackageManagerExecuteCommand(
   }
 }
 
-export const INTENT_PACKAGE = '@tanstack/intent'
+export const INTENT_PACKAGE = '@tanstack/intent@latest'
 
 export function intentCommand(
   packageManager: PackageManager,
