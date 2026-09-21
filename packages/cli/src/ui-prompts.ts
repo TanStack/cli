@@ -53,6 +53,18 @@ export async function selectFramework(
   return framework
 }
 
+export async function selectRouterOnly(): Promise<boolean> {
+  const routerOnly = await confirm({
+    message: 'Use Tanstack Router without Start?',
+    initialValue: false,
+  })
+  if (isCancel(routerOnly)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+  return routerOnly
+}
+
 export async function selectInstall(): Promise<boolean> {
   const install = await confirm({
     message: 'Would you like to install dependencies now?',
