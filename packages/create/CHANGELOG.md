@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.70.1
+
+### Patch Changes
+
+- Use the supported npm response format and resolve current versions for each generated project so long-running builders pick up new releases. ([#517](https://github.com/TanStack/cli/pull/517))
+
 ## 0.70.0
 
 ### Minor Changes
