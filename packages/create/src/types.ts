@@ -60,7 +60,7 @@ export const AddOnBaseSchema = z.object({
     ])
     .optional(),
   exclusive: z
-    .array(z.enum(['orm', 'auth', 'deploy', 'database', 'linter']))
+    .array(z.enum(['orm', 'auth', 'deploy', 'database', 'linter', 'env']))
     .optional(),
   color: z.string().optional(),
   priority: z.number().optional(),

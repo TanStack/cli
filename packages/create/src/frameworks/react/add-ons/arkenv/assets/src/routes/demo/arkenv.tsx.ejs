@@ -1,0 +1,82 @@
+<% if (!includeExamples) { ignoreFile(); return; } %>
+import { useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { env } from '../../env'
+
+const getDatabaseConfig = createServerFn({ method: 'GET' }).handler(() => {
+  // Read the server-only key here. Return a fixed example so the deployed
+  // database endpoint is not sent to the browser.
+  if (!env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is not set')
+  }
+
+  return { host: 'localhost:5432', protocol: 'postgresql:' }
+})
+
+export const Route = createFileRoute('/demo/arkenv')({
+  component: ArkEnvDemo,
+  loader: () => getDatabaseConfig(),
+})
+
+function LeakedSecret() {
+  // Accessing server-only DATABASE_URL directly on the client throws at runtime
+  return <p>Server key leaked: {env.DATABASE_URL}</p>
+}
+
+function ArkEnvDemo() {
+  const dbConfig = Route.useLoaderData()
+  const [attemptLeak, setAttemptLeak] = useState(false)
+
+  return (
+    <div className="p-6 max-w-xl mx-auto space-y-4 font-sans">
+      <h1 className="text-2xl font-bold">ArkEnv Demo</h1>
+      <p className="text-sm text-gray-600">
+        Typesafe environment variables with build-time validation and runtime
+        leak protection.
+      </p>
+
+      <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md space-y-2">
+        <h2 className="font-semibold text-lg">Public Client Variables</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Inlined safely into client bundles:
+        </p>
+        <code className="block p-2 bg-white dark:bg-black rounded border text-xs font-mono">
+          env.VITE_API_URL: {env.VITE_API_URL}
+        </code>
+      </div>
+
+      <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-md space-y-2">
+        <h2 className="font-semibold text-lg">Server-Only Variables</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Accessible inside createServerFn handlers. This page shows an example
+          endpoint, not the deployed database host:
+        </p>
+        <code className="block p-2 bg-white dark:bg-black rounded border text-xs font-mono">
+          Example endpoint: {dbConfig.host} ({dbConfig.protocol})
+        </code>
+      </div>
+
+      <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md space-y-2">
+        <h2 className="font-semibold text-red-800 dark:text-red-300 text-lg">
+          Secret Leak Protection
+        </h2>
+        <p className="text-sm text-red-700 dark:text-red-400">
+          Clicking the button below attempts to access the server secret{' '}
+          <code>env.DATABASE_URL</code> on the client, which ArkEnv blocks:
+        </p>
+        {attemptLeak ? (
+          <LeakedSecret />
+        ) : (
+          <button
+            type="button"
+            className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700 cursor-pointer"
+            onClick={() => setAttemptLeak(true)}
+          >
+            Attempt client access to DATABASE_URL
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}

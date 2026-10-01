@@ -117,10 +117,6 @@ export function createTemplateFile(environment: Environment, options: Options) {
     const localRelativePath = (path: string, stripExtension: boolean = false) =>
       relativePath(file, path, stripExtension)
 
-    const integrationImportContent = (integration: Integration) =>
-      integration.import ||
-      `import ${integration.jsName} from '${localRelativePath(integration.path || '')}'`
-
     const integrationImportCode = (integration: Integration) =>
       integration.code || integration.jsName
 
@@ -150,7 +146,17 @@ export function createTemplateFile(environment: Environment, options: Options) {
       relativePath: (path: string, stripExtension: boolean = false) =>
         relativePath(file, path, stripExtension),
 
-      integrationImportContent,
+      integrationImportContent: (integration: Integration) => {
+        const raw =
+          integration.import ||
+          `import ${integration.jsName} from '${localRelativePath(integration.path || '')}'`
+
+        if (!raw.includes('<%')) {
+          return raw
+        }
+
+        return renderForOptions(options, raw, templateValues)
+      },
       integrationImportCode,
 
       renderTemplate: (templateContent: string) => {

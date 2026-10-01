@@ -1,0 +1,49 @@
+{
+  "id": "arkenv",
+  "name": "ArkEnv",
+  "description": "Typesafe environment variable validation with build-time validation and runtime leak protection.",
+  "type": "add-on",
+  "phase": "add-on",
+  "category": "tooling",
+  "exclusive": ["env"],
+  "color": "#06B6D4",
+  "priority": 28,
+  "link": "https://arkenv.js.org",
+  "modes": ["file-router", "code-router"],
+  "options": {
+    "validator": {
+      "type": "select",
+      "label": "Validator Engine",
+      "default": "arktype",
+      "options": [
+        {
+          "value": "arktype",
+          "label": "ArkType (@arkenv/core) - Recommended"
+        },
+        {
+          "value": "zod",
+          "label": "Zod (@arkenv/standard)"
+        },
+        {
+          "value": "valibot",
+          "label": "Valibot (@arkenv/standard)"
+        }
+      ]
+    }
+  },
+  "routes": [
+    {
+      "url": "/demo/arkenv",
+      "name": "ArkEnv Demo",
+      "path": "src/routes/demo/arkenv.tsx",
+      "jsName": "ArkEnvDemo"
+    }
+  ],
+  "integrations": [
+    {
+      "type": "vite-plugin",
+      "import": "import arkenv from '<%= (addOnOption.arkenv && (addOnOption.arkenv.validator === 'zod' || addOnOption.arkenv.validator === 'valibot')) ? '@arkenv/vite-plugin/standard' : '@arkenv/vite-plugin' %>'",
+      "code": "arkenv()"
+    }
+  ]
+}
