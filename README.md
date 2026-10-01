@@ -46,6 +46,7 @@ npx @tanstack/cli create my-app
 - **TanStack Router** - Type-safe routing (`--router-only` for SPA)
 - **Add-ons** - Auth, database, deployment, monitoring, and more
 - **CLI Introspection** - Agent-friendly discovery via JSON CLI output
+- **You.com MCP Integration** - Web search and research capabilities via MCP servers
 
 ## Quick Start
 
@@ -72,6 +73,11 @@ npx @tanstack/cli create --list-add-ons
 npx @tanstack/cli create --addon-details tanstack-query --json
 npx @tanstack/cli libraries --json
 npx @tanstack/cli search-docs "loaders" --library router --framework react --json
+
+# You.com MCP server configuration and search
+npx @tanstack/cli youcom config
+npx @tanstack/cli youcom install
+npx @tanstack/cli youcom search "react server components"
 ```
 
 ## Documentation
@@ -79,6 +85,73 @@ npx @tanstack/cli search-docs "loaders" --library router --framework react --jso
 - [CLI Reference](https://tanstack.com/cli/latest/docs/cli-reference)
 - [TanStack Start](https://tanstack.com/start)
 - [TanStack Router](https://tanstack.com/router)
+
+## You.com MCP Integration
+
+TanStack CLI includes optional You.com MCP server integration for web search and research capabilities. This allows agents and MCP clients to access You.com's search, content extraction, and research tools.
+
+### MCP Servers Available
+
+- **you-com**: Authenticated You.com MCP server with full search, content, and research capabilities
+  - URL: `https://api.you.com/mcp`
+  - Auth: Bearer token (YDC_API_KEY) or OAuth
+  - Tools: `you-search`, `you-contents`, `you-research`, `you-discover`
+
+- **you-com-free**: Keyless basic search MCP server
+  - URL: `https://api.you.com/mcp?profile=free`
+  - Auth: None
+  - Tools: `you-search`
+
+- **you-docs**: You.com documentation search MCP server
+  - URL: `https://you.com/docs/_mcp/server`
+  - Auth: None
+  - Tools: `searchDocs`
+
+### Setup
+
+```bash
+# Show MCP server configuration
+npx @tanstack/cli youcom config
+
+# Install You.com skills and MCP configuration
+npx @tanstack/cli youcom install
+
+# Search You.com for development resources
+npx @tanstack/cli youcom search "react server components"
+```
+
+For authenticated features, get an API key from [you.com/platform/api-keys](https://you.com/platform/api-keys) and set the `YDC_API_KEY` environment variable:
+
+```bash
+export YDC_API_KEY=your-api-key
+```
+
+### Skills Available
+
+The CLI includes these You.com skills in the `skills/` directory:
+
+- **you-web**: Web search, URL content extraction, and cited synthesis
+- **you-discover**: Integration planning and resource discovery
+
+### MCP Client Integration
+
+Add You.com MCP servers to your MCP client configuration using the URLs provided by `tanstack youcom config`. Example for Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "you-com": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-everything"],
+      "env": {
+        "YDC_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Or connect directly to the You.com MCP server endpoints listed above.
 
 ## Telemetry
 
