@@ -19,6 +19,7 @@ tanstack create [project-name] [options]
 | `--package-manager <pm>` | `npm`, `pnpm`, `yarn`, `bun`, `deno` |
 | `--framework <name>` | `React`, `Solid` |
 | `--router-only` | Create file-based Router-only app without TanStack Start (add-ons/deployment/template disabled) |
+| `--router-and-start` | Use TanStack Start explicitly (skips the interactive router-only prompt) |
 | `--toolchain <id>` | Toolchain add-on (use `--list-add-ons` to see options) |
 | `--deployment <id>` | Deployment add-on (use `--list-add-ons` to see options) |
 | `--examples` / `--no-examples` | Include or exclude demo/example pages |
