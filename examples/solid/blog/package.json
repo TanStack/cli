@@ -11,11 +11,11 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/router-plugin": "^1.133.21",
-    "@tanstack/solid-router": "^1.133.20",
+    "@tanstack/router-plugin": "^1.168.42",
+    "@tanstack/solid-router": "^1.170.38",
     "@tanstack/solid-router-devtools": "^1.133.20",
     "@tanstack/solid-router-ssr-query": "^1.132.25",
-    "@tanstack/solid-start": "^1.133.20",
+    "@tanstack/solid-start": "^1.168.57",
     "solid-js": "^1.9.12",
     "tailwindcss": "^4.1.18"
   },
