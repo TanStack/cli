@@ -6,21 +6,73 @@
   },
   "tailwindcss": {
     "dependencies": {
-      "@tailwindcss/vite": "^4.1.18",
       "tailwindcss": "^4.1.18"
     }
   },
   "devtools": {
     "dependencies": {
       "@tanstack/solid-router-devtools": "latest"
-    },
-    "devDependencies": {
-      "@tanstack/devtools-vite": "latest"
     }
   },
-  "file-router": {
-    "devDependencies": {
-      "@tanstack/router-cli": "^1.133.21"
+  "bundlers": {
+    "vite": {
+      "scripts": {
+        "dev": "vite dev --port 3000",
+        "generate-routes": "tsr generate",
+        "build": "vite build",
+        "start": "node .output/server/index.mjs",
+        "preview": "vite preview"
+      },
+      "devDependencies": {
+        "vite-plugin-solid": "^2.11.12",
+        "vite": "^8.0.0"
+      },
+      "pnpm": {
+        "onlyBuiltDependencies": ["esbuild", "lightningcss"]
+      }
+    },
+    "rsbuild": {
+      "scripts": {
+        "dev": "rsbuild dev --port 3000",
+        "generate-routes": "rsbuild build",
+        "build": "rsbuild build",
+        "start": "srvx --prod -s ../client dist/server/index.js",
+        "preview": "rsbuild preview"
+      },
+      "dependencies": {
+        "srvx": "^0.12.7"
+      },
+      "devDependencies": {
+        "@rsbuild/core": "^2.1.13",
+        "@rsbuild/plugin-babel": "^1.2.1",
+        "@rsbuild/plugin-solid": "^1.2.2"
+      }
+    }
+  },
+  "bundlerTailwindcss": {
+    "vite": {
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.18"
+      }
+    },
+    "rsbuild": {
+      "devDependencies": {
+        "@rsbuild/plugin-tailwindcss": "^2.0.3"
+      }
+    }
+  },
+  "bundlerDevtools": {
+    "vite": {
+      "devDependencies": {
+        "@tanstack/devtools-vite": "latest"
+      }
+    }
+  },
+  "bundlerFileRouter": {
+    "vite": {
+      "devDependencies": {
+        "@tanstack/router-cli": "^1.133.21"
+      }
     }
   }
 }

@@ -7,6 +7,7 @@ export type TemplateRenderContext = {
   [key: string]: unknown
   packageManager: PackageManager | undefined
   projectName: string | undefined
+  bundler: string
   typescript: boolean | undefined
   tailwind: boolean | undefined
   blank: boolean | undefined
@@ -91,6 +92,7 @@ function renderWithRenderer(
   return renderer(template, {
     packageManager: undefined,
     projectName: undefined,
+    bundler: 'vite',
     typescript: undefined,
     tailwind: undefined,
     blank: undefined,

@@ -2,12 +2,14 @@ import { intro } from '@clack/prompts'
 
 import {
   finalizeAddOns,
+  getAllAddOns,
   getFrameworkById,
   getFrameworks,
   getPackageManager,
   loadStarter,
   populateAddOnOptionsDefaults,
   readConfigFile,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
@@ -15,6 +17,7 @@ import {
   promptForAddOnOptions,
   promptForEnvVars,
   selectAddOns,
+  selectBundler,
   selectDeployment,
   selectExamples,
   selectFramework,
@@ -27,6 +30,7 @@ import {
 import {
   listTemplateChoices,
   resolveStarterSpecifier,
+  validateLegacyCreateFlags,
 } from './command-line.js'
 
 import {
@@ -65,6 +69,28 @@ export async function promptForCreateOptions(
         availableFrameworks,
         defaultFrameworkId,
       )
+    }
+  }
+
+  options.bundler = await selectBundler(options.framework, cliOptions.buildTool)
+
+  if (options.bundler === 'rsbuild') {
+    const validation = validateLegacyCreateFlags({
+      ...cliOptions,
+      buildTool: options.bundler,
+      addOns:
+        Array.isArray(cliOptions.addOns) && cliOptions.addOns.length > 0
+          ? cliOptions.addOns
+          : undefined,
+    })
+    if (validation.error) {
+      throw new Error(validation.error)
+    }
+    if (forcedAddOns.length > 0) {
+      throw new Error('Rsbuild does not currently support forced add-ons.')
+    }
+    if (forcedDeployment) {
+      throw new Error('Rsbuild does not currently support deployments.')
     }
   }
 
@@ -107,7 +133,7 @@ export async function promptForCreateOptions(
     }
   }
 
-  if (!routerOnly && !blank && !cliOptions.starter) {
+  if (options.bundler !== 'rsbuild' && !routerOnly && !blank && !cliOptions.starter) {
     const starterChoices = await listTemplateChoices(options.framework.id)
     const selectedTemplateId = await selectTemplate(
       starterChoices.map((choice) => ({
@@ -121,7 +147,7 @@ export async function promptForCreateOptions(
     }
   }
 
-  const starter = !routerOnly && !blank && cliOptions.starter
+  const starter = options.bundler !== 'rsbuild' && !routerOnly && !blank && cliOptions.starter
     ? await loadStarter(
         await resolveStarterSpecifier(cliOptions.starter, options.framework.id),
       )
@@ -146,13 +172,13 @@ export async function promptForCreateOptions(
 
   // Toolchain selection
   const toolchain =
-    blank && cliOptions.toolchain === undefined
+    blank && options.bundler !== 'rsbuild' && cliOptions.toolchain === undefined
       ? undefined
       : await selectToolchain(options.framework, cliOptions.toolchain)
 
   // Deployment selection
   let deployment: string | undefined
-  if (routerOnly) {
+  if (routerOnly || options.bundler === 'rsbuild') {
     deployment = undefined
   } else if (cliOptions.deployment) {
     deployment = cliOptions.deployment
@@ -185,7 +211,7 @@ export async function promptForCreateOptions(
     addOns.add(deployment)
   }
 
-  if (!routerOnly) {
+  if (!routerOnly && options.bundler !== 'rsbuild') {
     for (const addOn of starter?.dependsOn || []) {
       addOns.add(addOn)
     }
@@ -194,14 +220,14 @@ export async function promptForCreateOptions(
     }
   }
 
-  if (!routerOnly && Array.isArray(cliOptions.addOns)) {
+  if (!routerOnly && options.bundler !== 'rsbuild' && Array.isArray(cliOptions.addOns)) {
     for (const addOn of cliOptions.addOns) {
       if (addOn.toLowerCase() === 'start') {
         continue
       }
       addOns.add(addOn)
     }
-  } else if (!routerOnly && !blank) {
+  } else if (!routerOnly && options.bundler !== 'rsbuild' && !blank) {
     for (const addOn of await selectAddOns(
       options.framework,
       options.mode,
@@ -227,7 +253,7 @@ export async function promptForCreateOptions(
   }
 
   const chosenAddOns = Array.from(
-    await finalizeAddOns(options.framework, options.mode, Array.from(addOns)),
+    await finalizeAddOns(options.framework, options.mode, Array.from(addOns), options.bundler),
   )
   options.chosenAddOns = includeExamples
     ? chosenAddOns
@@ -236,6 +262,7 @@ export async function promptForCreateOptions(
   options.tailwind =
     !blank || options.chosenAddOns.some((addOn) => addOn.tailwind === true)
   options.projectPreset = blank ? 'blank' : 'default'
+  options.routerOnly = routerOnly
 
   // Prompt for add-on options in interactive mode
   if (Array.isArray(cliOptions.addOns)) {
@@ -288,6 +315,48 @@ export async function promptForAddOns(): Promise<Array<string>> {
   intro(`Adding new add-ons to '${config.projectName}'`)
 
   const addOns: Set<string> = new Set()
+
+  const bundler = resolveBundler(framework, config.bundler).id
+
+  if (bundler === 'rsbuild') {
+    const toolchains = getAllAddOns(framework, config.mode!, bundler).filter(
+      (addOn) => addOn.type === 'toolchain',
+    )
+    const configuredAddOnIds = new Set(
+      config.chosenAddOns.map((addOn) => addOn.toLowerCase()),
+    )
+    const configuredExclusiveGroups = new Set(
+      toolchains
+        .filter((addOn) => configuredAddOnIds.has(addOn.id.toLowerCase()))
+        .flatMap((addOn) => addOn.exclusive ?? []),
+    )
+    const unavailableToolchains = toolchains
+      .filter(
+        (addOn) =>
+          configuredAddOnIds.has(addOn.id.toLowerCase()) ||
+          addOn.exclusive?.some((exclusive) =>
+            configuredExclusiveGroups.has(exclusive),
+          ),
+      )
+      .map((addOn) => addOn.id)
+
+    if (unavailableToolchains.length === toolchains.length) {
+      return []
+    }
+
+    for (const addOn of await selectAddOns(
+      framework,
+      config.mode!,
+      'toolchain',
+      'Which toolchain would you like to add?',
+      unavailableToolchains,
+      false,
+      bundler,
+    )) {
+      addOns.add(addOn)
+    }
+    return Array.from(addOns)
+  }
 
   for (const addOn of await selectAddOns(
     framework,

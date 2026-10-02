@@ -5,10 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getTelemetryStatus, setTelemetryEnabled } from '../src/telemetry-config.js'
 import {
+  getCreateTelemetryProperties,
+  getResolvedCreateTelemetryProperties,
+} from '../src/cli.js'
+import {
   createTelemetryClient,
   resetTelemetryStateForTests,
 } from '../src/telemetry.js'
 import { createUIEnvironment } from '../src/ui-environment.js'
+
+import type { Framework, Options } from '@tanstack/create'
 
 const TELEMETRY_NUMERIC_PREFIX = 'epn.'
 const TELEMETRY_STRING_PREFIX = 'ep.'
@@ -133,6 +139,27 @@ describe('telemetry', () => {
     expect(completedEvent.properties.duration_ms).toBe(125)
     expect(completedEvent.properties.invoked_by_agent).toBe(1)
     expect(completedEvent.properties.result).toBe('success')
+  })
+
+  it('records raw and resolved bundler selections', () => {
+    expect(
+      getCreateTelemetryProperties('app', { buildTool: 'rsbuild' }).bundler,
+    ).toBe('rsbuild')
+
+    const finalOptions = {
+      framework: { id: 'react' } as Framework,
+      bundler: 'rsbuild',
+      chosenAddOns: [],
+      projectPreset: 'default',
+      git: false,
+      install: false,
+      intent: false,
+      packageManager: 'pnpm',
+    } as Options
+
+    expect(getResolvedCreateTelemetryProperties(finalOptions, {}).bundler).toBe(
+      'rsbuild',
+    )
   })
 
   it('captures failure events with a coarse error code', async () => {

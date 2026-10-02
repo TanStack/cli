@@ -9,7 +9,6 @@
   },
   "tailwindcss": {
     "dependencies": {
-      "@tailwindcss/vite": "^4.1.18",
       "tailwindcss": "^4.1.18"
     }
   },
@@ -17,9 +16,6 @@
     "dependencies": {
       "@tanstack/react-devtools": "latest",
       "@tanstack/react-router-devtools": "latest"
-    },
-    "devDependencies": {
-      "@tanstack/devtools-vite": "latest"
     }
   },
   "examples": {
@@ -27,9 +23,63 @@
       "@tailwindcss/typography": "^0.5.16"
     }
   },
-  "file-router": {
-    "devDependencies": {
-      "@tanstack/router-cli": "^1.132.0"
+  "bundlers": {
+    "vite": {
+      "scripts": {
+        "dev": "vite dev --port 3000",
+        "generate-routes": "tsr generate",
+        "build": "vite build",
+        "preview": "vite preview"
+      },
+      "devDependencies": {
+        "@vitejs/plugin-react": "^6.0.1",
+        "vite": "^8.0.0"
+      },
+      "pnpm": {
+        "onlyBuiltDependencies": ["esbuild", "lightningcss"]
+      }
+    },
+    "rsbuild": {
+      "scripts": {
+        "dev": "rsbuild dev --port 3000",
+        "generate-routes": "rsbuild build",
+        "build": "rsbuild build",
+        "start": "srvx --prod -s ../client dist/server/index.js",
+        "preview": "rsbuild preview"
+      },
+      "dependencies": {
+        "srvx": "^0.12.7"
+      },
+      "devDependencies": {
+        "@rsbuild/core": "^2.1.13",
+        "@rsbuild/plugin-react": "^2.1.0"
+      }
+    }
+  },
+  "bundlerTailwindcss": {
+    "vite": {
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.18"
+      }
+    },
+    "rsbuild": {
+      "devDependencies": {
+        "@rsbuild/plugin-tailwindcss": "^2.0.3"
+      }
+    }
+  },
+  "bundlerDevtools": {
+    "vite": {
+      "devDependencies": {
+        "@tanstack/devtools-vite": "latest"
+      }
+    }
+  },
+  "bundlerFileRouter": {
+    "vite": {
+      "devDependencies": {
+        "@tanstack/router-cli": "^1.132.0"
+      }
     }
   }
 }

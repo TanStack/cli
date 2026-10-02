@@ -66,9 +66,10 @@ export async function createAppOptionsFromPersisted(
   const { version, ...rest } = json
   /* eslint-enable unused-imports/no-unused-vars */
   const framework = getFrameworkById(rest.framework)
+  const bundler = json.bundler ?? 'vite'
   const chosenAddOns = await finalizeAddOns(framework!, json.mode!, [
     ...json.chosenAddOns,
-  ])
+  ], bundler)
   return {
     ...rest,
     mode: json.mode!,
@@ -79,6 +80,7 @@ export async function createAppOptionsFromPersisted(
     packageManager: json.packageManager!,
     targetDir: '',
     framework: framework!,
+    bundler,
     starter: json.starter ? await loadStarter(json.starter) : undefined,
     chosenAddOns,
     addOnOptions: populateAddOnOptionsDefaults(chosenAddOns),
@@ -102,6 +104,7 @@ export function createSerializedOptionsFromPersisted(
     packageManager: json.packageManager!,
     targetDir: '',
     framework: json.framework,
+    bundler: json.bundler ?? 'vite',
     starter: json.starter,
     addOnOptions: {},
     intent: json.intent ?? false,

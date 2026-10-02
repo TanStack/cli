@@ -5,6 +5,7 @@ import * as clack from '@clack/prompts'
 import {
   getProjectName,
   selectAddOns,
+  selectBundler,
   selectGit,
   selectPackageManager,
   selectTemplate,
@@ -87,6 +88,39 @@ describe('selectPackageManager', () => {
     vi.spyOn(clack, 'isCancel').mockImplementation(() => true)
 
     await expect(selectPackageManager()).rejects.toThrowError(/exit/)
+  })
+})
+
+describe('selectBundler', () => {
+  const framework = {
+    name: 'React',
+    bundlers: [
+      { id: 'vite', name: 'Vite', description: 'Build with Vite' },
+      { id: 'rsbuild', name: 'Rsbuild', description: 'Build with Rsbuild' },
+    ],
+    defaultBundler: 'vite',
+  } as Framework
+
+  it('defaults the interactive prompt to Vite', async () => {
+    const selectSpy = vi
+      .spyOn(clack, 'select')
+      .mockImplementation(async () => 'rsbuild')
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    await expect(selectBundler(framework)).resolves.toBe('rsbuild')
+    expect(selectSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Select build tool:',
+        initialValue: 'vite',
+      }),
+    )
+  })
+
+  it('validates an explicitly selected bundler without prompting', async () => {
+    const selectSpy = vi.spyOn(clack, 'select')
+
+    await expect(selectBundler(framework, 'RSBUILD')).resolves.toBe('rsbuild')
+    expect(selectSpy).not.toHaveBeenCalled()
   })
 })
 
