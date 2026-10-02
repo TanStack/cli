@@ -4,7 +4,11 @@ import { resolve } from 'node:path'
 import { createApp } from '../src/create-app.js'
 
 import { createMemoryEnvironment } from '../src/environment.js'
-import type { AddOn, Options } from '../src/types.js'
+import type { AddOn, Options, Starter } from '../src/types.js'
+
+function toPosixPath(path: string) {
+  return path.replace(/\\/g, '/').replace(/^[A-Z]:/i, '')
+}
 
 const simpleOptions = {
   projectName: 'test',
@@ -63,9 +67,16 @@ describe('createApp', () => {
 
     const cwd = process.cwd()
 
-    expect(output.files[resolve(cwd, '/foo/bar/baz/src/test.txt')]).toEqual(
-      'Hello',
+    const normalizedFiles = Object.fromEntries(
+      Object.entries(output.files).map(([path, contents]) => [
+        toPosixPath(path),
+        contents,
+      ]),
     )
+
+    expect(
+      normalizedFiles[toPosixPath(resolve(cwd, '/foo/bar/baz/src/test.txt'))],
+    ).toEqual('Hello')
   })
 
   it('should create an app - with a starter', async () => {
@@ -80,7 +91,7 @@ describe('createApp', () => {
         getFiles: () => ['src/test2.txt'],
         getFileContents: () => 'Hello-2',
         getDeletedFiles: () => [],
-      } as unknown as AddOn,
+      } as unknown as Starter,
     })
 
     expect(output.files['/src/test2.txt']).toEqual('Hello-2')
