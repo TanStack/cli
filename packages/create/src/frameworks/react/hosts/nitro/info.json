@@ -13,7 +13,7 @@
     {
       "type": "vite-plugin",
       "import": "import { nitro } from 'nitro/vite'",
-      "code": "nitro({ rollupConfig: { external: [/^@sentry\\//] } })"
+      "code": "nitro({ config: { rollupConfig: { external: [/^@sentry\\//] } } })"
     }
   ],
   "default": true
