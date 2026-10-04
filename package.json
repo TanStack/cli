@@ -5,7 +5,7 @@
     "type": "git",
     "url": "git+https://github.com/TanStack/cli.git"
   },
-  "packageManager": "pnpm@11.1.0",
+  "packageManager": "pnpm@11.9.0",
   "type": "module",
   "scripts": {
     "cleanNodeModules": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
