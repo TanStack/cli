@@ -1,0 +1,11 @@
+# Inngest
+#
+# In development, uncomment INNGEST_DEV=1 so the SDK connects to the local
+# Inngest Dev Server (npx inngest-cli@latest dev on localhost:8288) instead
+# of defaulting to cloud mode and trying to authenticate with Inngest Cloud.
+# See the add-on README for details.
+# INNGEST_DEV=1
+#
+# Production — set these in your deployment environment, not here.
+# INNGEST_EVENT_KEY=
+# INNGEST_SIGNING_KEY=
