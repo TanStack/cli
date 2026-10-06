@@ -1,0 +1,42 @@
+{
+  "name": "Descope",
+  "description": "Drop-in auth with hosted flows, passwordless, SSO, and social login (managed).",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "add-on",
+  "category": "auth",
+  "exclusive": ["auth"],
+  "color": "#0081B3",
+  "priority": 170,
+  "link": "https://descope.com",
+  "routes": [
+    {
+      "icon": "CircleUserRound",
+      "url": "/demo/descope",
+      "name": "Descope",
+      "path": "src/routes/demo.descope.tsx",
+      "jsName": "DescopeDemo"
+    }
+  ],
+  "integrations": [
+    {
+      "type": "header-user",
+      "jsName": "DescopeHeader",
+      "path": "src/integrations/descope/header-user.tsx"
+    },
+    {
+      "type": "provider",
+      "jsName": "DescopeProvider",
+      "path": "src/integrations/descope/provider.tsx"
+    }
+  ],
+  "envVars": [
+    {
+      "name": "VITE_DESCOPE_PROJECT_ID",
+      "description": "Descope project ID",
+      "required": true,
+      "secret": false,
+      "file": ".env.local"
+    }
+  ]
+}
