@@ -1,5 +1,12 @@
 # @tanstack/create
 
+## 0.71.0
+
+### Minor Changes
+
+- Add first-class Rsbuild build tool support for React and Solid TanStack Start and ([#505](https://github.com/TanStack/cli/pull/505))
+  router-only scaffolds, including Tailwind and ESLint/Biome toolchains.
+
 ## 0.70.1
 
 ### Patch Changes
