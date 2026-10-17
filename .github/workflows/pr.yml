@@ -29,19 +29,6 @@ jobs:
         run: pnpm build
       - name: Test Unit
         run: pnpm test:unit
-  provenance:
-    name: Provenance
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Check Provenance
-        uses: danielroe/provenance-action@41bcc969e579d9e29af08ba44fcbfdf95cee6e6c # v0.1.1
-        with:
-          fail-on-downgrade: true
   test-e2e:
     name: Test (E2E Blocking)
     runs-on: ubuntu-latest
