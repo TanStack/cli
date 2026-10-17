@@ -311,3 +311,88 @@ describe('translateExecuteCommand', () => {
     ).toBe('deno task dev')
   })
 })
+
+describe('allowBuilds', () => {
+  it('should add --allow-build flags before dlx for pnpm', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand(
+          'pnpm',
+          'storybook',
+          ['init', '-y', '--no-dev'],
+          { allowBuilds: ['esbuild'] },
+        ),
+      ),
+    ).toBe('pnpm --allow-build=esbuild dlx storybook init -y --no-dev')
+  })
+  it('should emit one --allow-build flag per package for pnpm', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('pnpm', 'storybook', ['init'], {
+          allowBuilds: ['esbuild', 'sharp'],
+        }),
+      ),
+    ).toBe('pnpm --allow-build=esbuild --allow-build=sharp dlx storybook init')
+  })
+  it('should ignore allowBuilds for non-pnpm package managers', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('npm', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('npx -y storybook init')
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('yarn', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('yarn dlx storybook init')
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('bun', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('bunx --bun storybook init')
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('deno', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('deno run npm:storybook init')
+  })
+  it('should not add flags for pnpm when allowBuilds is empty', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('pnpm', 'storybook', ['init'], {
+          allowBuilds: [],
+        }),
+      ),
+    ).toBe('pnpm dlx storybook init')
+  })
+  it('should forward allowBuilds through translateExecuteCommand for pnpm', () => {
+    expect(
+      formatCommand(
+        translateExecuteCommand('pnpm', {
+          command: 'npx',
+          args: ['storybook', 'init', '-y', '--no-dev'],
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('pnpm --allow-build=esbuild dlx storybook init -y --no-dev')
+  })
+  it('should drop allowBuilds through translateExecuteCommand for npm', () => {
+    expect(
+      formatCommand(
+        translateExecuteCommand('npm', {
+          command: 'npx',
+          args: ['storybook', 'init', '-y', '--no-dev'],
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('npx -y storybook init -y --no-dev')
+  })
+})

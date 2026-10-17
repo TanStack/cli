@@ -355,6 +355,7 @@ async function runCommandsAndInstallDependencies(
       const translated = translateExecuteCommand(options.packageManager, {
         command: addOn.command!.command,
         args: addOn.command!.args || [],
+        allowBuilds: addOn.command!.allowBuilds,
       })
       const cmd = formatCommand(translated)
       environment.startStep({
@@ -382,6 +383,7 @@ async function runCommandsAndInstallDependencies(
     const starterTranslated = translateExecuteCommand(options.packageManager, {
       command: options.starter.command.command,
       args: options.starter.command.args || [],
+      allowBuilds: options.starter.command.allowBuilds,
     })
     const cmd = formatCommand(starterTranslated)
     environment.startStep({

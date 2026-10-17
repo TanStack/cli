@@ -75,6 +75,7 @@ export const AddOnBaseSchema = z.object({
     .object({
       command: z.string(),
       args: z.array(z.string()).optional(),
+      allowBuilds: z.array(z.string()).optional(),
     })
     .optional(),
   routes: z
