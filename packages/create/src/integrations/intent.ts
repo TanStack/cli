@@ -26,6 +26,23 @@ export async function setupIntent(
   })
 
   try {
+    const packageJsonPath = resolve(targetDir, 'package.json')
+    if (environment.exists(packageJsonPath)) {
+      const packageJSON = JSON.parse(
+        await environment.readFile(packageJsonPath),
+      )
+      if (!packageJSON.intent?.skills) {
+        packageJSON.intent = {
+          ...packageJSON.intent,
+          skills: ['@tanstack/*'],
+        }
+        await environment.writeFile(
+          packageJsonPath,
+          JSON.stringify(packageJSON, null, 2),
+        )
+      }
+    }
+
     await packageManagerExecute(
       environment,
       resolve(targetDir),
