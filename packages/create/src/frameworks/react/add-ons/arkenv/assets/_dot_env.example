@@ -1,0 +1,11 @@
+# Port for the dev/preview server
+PORT=3000
+
+# Public API URL (inlined into client bundle)
+VITE_API_URL=https://api.example.com
+
+# Server-only database connection URL (protected from client access)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/db
+
+# Environment mode
+NODE_ENV=development

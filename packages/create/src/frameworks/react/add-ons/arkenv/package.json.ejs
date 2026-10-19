@@ -1,0 +1,18 @@
+<% const validator = (addOnOption.arkenv && addOnOption.arkenv.validator) || 'arktype' -%>
+{
+  "dependencies": {
+<% if (validator === 'zod') { -%>
+    "@arkenv/standard": "^1.0.0-rc.2",
+    "zod": "^4.4.1"
+<% } else if (validator === 'valibot') { -%>
+    "@arkenv/standard": "^1.0.0-rc.2",
+    "valibot": "^1.0.0"
+<% } else { -%>
+    "@arkenv/core": "^1.0.0-rc.2",
+    "arktype": "^2.2.0"
+<% } -%>
+  },
+  "devDependencies": {
+    "@arkenv/vite-plugin": "^1.0.0-rc.2"
+  }
+}
