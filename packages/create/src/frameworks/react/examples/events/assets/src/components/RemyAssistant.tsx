@@ -91,7 +91,7 @@ export default function RemyAssistant({
 
   // Sync with store for header control
   useEffect(() => {
-    return showRemyAssistant.subscribe(() => {
+    showRemyAssistant.subscribe(() => {
       setIsOpen(showRemyAssistant.state)
     })
   }, [])
