@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@descope/react-sdk": "^2.30.3"
+  }
+}

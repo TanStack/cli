@@ -1,0 +1,2 @@
+# Descope configuration, get your Project ID from the [Console](https://app.descope.com/settings/project)
+VITE_DESCOPE_PROJECT_ID=
