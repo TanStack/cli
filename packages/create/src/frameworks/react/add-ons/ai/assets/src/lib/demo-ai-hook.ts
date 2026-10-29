@@ -19,4 +19,5 @@ const chatOptions = createChatClientOptions({
 
 export type ChatMessages = InferChatMessages<typeof chatOptions>
 
-export const useGuitarRecommendationChat = () => useChat(chatOptions)
+export const useGuitarRecommendationChat = () =>
+  useChat({ ...chatOptions, threadId: 'guitar-recommendations' })
