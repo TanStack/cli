@@ -179,6 +179,11 @@ export function createPackageJSON(options: Options) {
           packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
       }
     }
+  } else if (packageJSON.scripts?.['generate-routes'] === 'tsr generate') {
+    // `tsr generate` drops the Register block that the Start Vite plugin
+    // writes into routeTree.gen.ts, so Start apps generate routes with a build.
+    packageJSON.scripts['generate-routes'] = 'vite build'
+    delete packageJSON.devDependencies?.['@tanstack/router-cli']
   }
 
   packageJSON.dependencies = sortObject(
