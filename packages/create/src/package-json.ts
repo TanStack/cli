@@ -97,6 +97,9 @@ export function createPackageJSON(options: Options) {
       ? options.framework.optionalPackages.bundlerTailwindcss?.[bundler]
       : undefined,
     options.mode ? options.framework.optionalPackages[options.mode] : undefined,
+    options.mode === 'file-router'
+      ? options.framework.optionalPackages.bundlerFileRouter?.[bundler]
+      : undefined,
     options.mode === 'file-router' && options.routerOnly
       ? options.framework.optionalPackages.bundlerRouterOnlyFileRouter?.[
           bundler
