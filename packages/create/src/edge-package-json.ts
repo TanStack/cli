@@ -137,8 +137,10 @@ export function createPackageJSON(options: Options) {
       ? options.framework.optionalPackages.bundlerTailwindcss?.[bundler]
       : undefined,
     options.mode ? options.framework.optionalPackages[options.mode] : undefined,
-    options.mode === 'file-router'
-      ? options.framework.optionalPackages.bundlerFileRouter?.[bundler]
+    options.mode === 'file-router' && options.routerOnly
+      ? options.framework.optionalPackages.bundlerRouterOnlyFileRouter?.[
+          bundler
+        ]
       : undefined,
   ]
   for (const addition of additions.filter(
@@ -230,11 +232,6 @@ export function createPackageJSON(options: Options) {
           devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
       }
     }
-  } else if (scripts?.['generate-routes'] === 'tsr generate') {
-    // `tsr generate` drops the Register block that the Start Vite plugin
-    // writes into routeTree.gen.ts, so Start apps generate routes with a build.
-    packageJSON.scripts = { ...scripts, 'generate-routes': 'vite build' }
-    delete devDependencies?.['@tanstack/router-cli']
   }
 
   packageJSON.dependencies = sortObject(
