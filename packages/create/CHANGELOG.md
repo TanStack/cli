@@ -1,5 +1,32 @@
 # @tanstack/create
 
+## 0.71.2
+
+### Patch Changes
+
+- Keep appended add-on files on separate lines when existing content has no final newline, in both Node and edge generation. ([#396](https://github.com/TanStack/cli/pull/396))
+
+## 0.71.1
+
+### Patch Changes
+
+- Generate the route tree of new Start apps on Vite with `vite build` instead of `tsr generate`, which leaves out the Start `Register` block. ([#526](https://github.com/TanStack/cli/pull/526))
+
+- Use the Zod 4 URL validator in the React T3Env add-on, matching the Solid add-on. ([#391](https://github.com/TanStack/cli/pull/391))
+
+## 0.71.0
+
+### Minor Changes
+
+- Add first-class Rsbuild build tool support for React and Solid TanStack Start and ([#505](https://github.com/TanStack/cli/pull/505))
+  router-only scaffolds, including Tailwind and ESLint/Biome toolchains.
+
+## 0.70.1
+
+### Patch Changes
+
+- Use the supported npm response format and resolve current versions for each generated project so long-running builders pick up new releases. ([#517](https://github.com/TanStack/cli/pull/517))
+
 ## 0.70.0
 
 ### Minor Changes

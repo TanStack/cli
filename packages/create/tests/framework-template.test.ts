@@ -21,14 +21,13 @@ describe('framework templates', () => {
   it.each([
     ['React', createReactFrameworkDefinition],
     ['Solid', createSolidFrameworkDefinition],
-  ])('%s includes route generation tooling', (_, createDefinition) => {
+  ])('%s defaults to Vite and offers Rsbuild', (_, createDefinition) => {
     const framework = createDefinition()
 
-    expect(framework.base['package.json']).toContain(
-      '"generate-routes": "tsr generate"',
-    )
-    expect(
-      framework.optionalPackages['file-router'].devDependencies,
-    ).toHaveProperty('@tanstack/router-cli')
+    expect(framework.defaultBundler).toBe('vite')
+    expect(framework.bundlers?.map((bundler) => bundler.id)).toEqual([
+      'vite',
+      'rsbuild',
+    ])
   })
 })

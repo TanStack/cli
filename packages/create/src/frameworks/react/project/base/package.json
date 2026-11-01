@@ -5,26 +5,13 @@
   "imports": {
     "#/*": "./src/*"
   },
-  "scripts": {
-    "dev": "vite dev --port 3000",
-    "generate-routes": "tsr generate",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+  "scripts": {},
   "dependencies": {
     "@tanstack/react-router": "latest",
     "@tanstack/react-start": "latest",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^6.0.1",
-    "vite": "^8.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
-  }
+  "devDependencies": {},
+  "pnpm": {}
 }

@@ -23,6 +23,11 @@ const frameworkMetadata = {
     name: 'React',
     description: 'Templates for React',
     version: '0.1.0',
+    bundlers: [
+      { id: 'vite', name: 'Vite', description: 'Build with Vite' },
+      { id: 'rsbuild', name: 'Rsbuild', description: 'Build with Rsbuild' },
+    ],
+    defaultBundler: 'vite',
     supportedModes: {
       'file-router': {
         displayName: 'File Router',
@@ -36,6 +41,11 @@ const frameworkMetadata = {
     name: 'Solid',
     description: 'Solid templates for Tanstack Router Applications',
     version: '0.1.0',
+    bundlers: [
+      { id: 'vite', name: 'Vite', description: 'Build with Vite' },
+      { id: 'rsbuild', name: 'Rsbuild', description: 'Build with Rsbuild' },
+    ],
+    defaultBundler: 'vite',
     supportedModes: {
       'file-router': {
         displayName: 'File Router',
@@ -264,6 +274,7 @@ function createTemplateRendererSource(renderers = templateRenderers) {
   const {
     packageManager,
     projectName,
+    bundler,
     typescript,
     tailwind,
     blank,
@@ -316,6 +327,7 @@ type TemplateRenderContext = {
   [key: string]: any
   packageManager: any
   projectName: any
+  bundler: any
   typescript: any
   tailwind: any
   blank: any

@@ -1,5 +1,38 @@
 # @tanstack/cli
 
+## 0.72.2
+
+### Patch Changes
+
+- Updated dependencies [[`6e3e869`](https://github.com/TanStack/cli/commit/6e3e869fd33e792b58b243ec369d4d66ec13eaba)]:
+  - @tanstack/create@0.71.2
+
+## 0.72.1
+
+### Patch Changes
+
+- Updated dependencies [[`0db921b`](https://github.com/TanStack/cli/commit/0db921b6b4e9eb9da95dd9310d6a48b0578ba68e), [`d795831`](https://github.com/TanStack/cli/commit/d795831612fdc4bdac659529f0d07e5f09c8ca3a)]:
+  - @tanstack/create@0.71.1
+
+## 0.72.0
+
+### Minor Changes
+
+- Add first-class Rsbuild build tool support for React and Solid TanStack Start and ([#505](https://github.com/TanStack/cli/pull/505))
+  router-only scaffolds, including Tailwind and ESLint/Biome toolchains.
+
+### Patch Changes
+
+- Updated dependencies [[`da2abe2`](https://github.com/TanStack/cli/commit/da2abe21470a0bfdd1be528c35b2c5874e59a4d2)]:
+  - @tanstack/create@0.71.0
+
+## 0.71.1
+
+### Patch Changes
+
+- Updated dependencies [[`1378ada`](https://github.com/TanStack/cli/commit/1378adaea7e45ef9a4f050b87f3616b2c62b1df3)]:
+  - @tanstack/create@0.70.1
+
 ## 0.71.0
 
 ### Minor Changes

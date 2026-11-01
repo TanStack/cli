@@ -36,7 +36,6 @@ const BLANK_DEPENDENCY_ALLOWLIST = [
 ]
 
 const BLANK_DEV_DEPENDENCY_ALLOWLIST = [
-  '@tanstack/router-cli',
   '@types/node',
   '@types/react',
   '@types/react-dom',
@@ -169,7 +168,6 @@ describe('blank project preset', () => {
       'solid-js',
     ])
     expect(Object.keys(packageJSON.devDependencies).sort()).toEqual([
-      '@tanstack/router-cli',
       'typescript',
       'vite',
       'vite-plugin-solid',

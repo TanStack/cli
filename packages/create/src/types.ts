@@ -193,6 +193,12 @@ export type AddOn = AddOnCompiled & FileBundleHandler
 
 export type Starter = StarterCompiled & FileBundleHandler
 
+export type BundlerDefinition = {
+  id: string
+  name: string
+  description: string
+}
+
 export type FrameworkDefinition = {
   id: string
   name: string
@@ -203,6 +209,9 @@ export type FrameworkDefinition = {
   addOns: Array<AddOn>
   basePackageJSON: Record<string, any>
   optionalPackages: Record<string, any>
+
+  bundlers?: Array<BundlerDefinition>
+  defaultBundler?: string
 
   supportedModes: Record<
     string,
@@ -225,6 +234,7 @@ export interface Options {
 
   framework: Framework
   mode: string
+  bundler?: string
 
   typescript: boolean
   tailwind: boolean
