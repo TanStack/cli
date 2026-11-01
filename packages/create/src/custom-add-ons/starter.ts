@@ -12,31 +12,35 @@ import {
   runCreateApp,
 } from './shared.js'
 
-import type { PersistedOptions } from '../config-file'
+import type { PersistedOptions } from '../config-file.js'
 import type {
   Environment,
   Options,
   Starter,
   StarterCompiled,
   StarterInfo,
-} from '../types'
+} from '../types.js'
 
-const INFO_FILE = 'starter-info.json'
-const COMPILED_FILE = 'starter.json'
+const INFO_FILE = 'template-info.json'
+const LEGACY_INFO_FILE = 'starter-info.json'
+const COMPILED_FILE = 'template.json'
+const LEGACY_COMPILED_FILE = 'starter.json'
 
 export async function readOrGenerateStarterInfo(
   options: PersistedOptions,
 ): Promise<StarterInfo> {
   const info = existsSync(INFO_FILE)
     ? JSON.parse((await readFile(INFO_FILE)).toString())
+    : existsSync(LEGACY_INFO_FILE)
+      ? JSON.parse((await readFile(LEGACY_INFO_FILE)).toString())
     : {
-        id: `${options.projectName}-starter`,
-        name: `${options.projectName}-starter`,
+        id: `${options.projectName}-template`,
+        name: `${options.projectName} Template`,
         version: '0.0.1',
-        description: 'Project starter',
+        description: 'Project template',
         author: 'Jane Smith <jane.smith@example.com>',
         license: 'MIT',
-        link: `https://github.com/jane-smith/${options.projectName}-starter`,
+        link: `https://github.com/jane-smith/${options.projectName}-template`,
         shadcnComponents: [],
         framework: options.framework,
         mode: options.mode!,
@@ -75,12 +79,19 @@ async function loadCurrentStarterInfo(environment: Environment) {
 export async function updateStarterInfo(environment: Environment) {
   const { info, output } = await loadCurrentStarterInfo(environment)
 
+  const generatedPackageJson =
+    output.files['./package.json'] ?? output.files['package.json']
+  if (!generatedPackageJson) {
+    throw new Error('Unable to find generated package.json in template output')
+  }
+
   info.packageAdditions = createPackageAdditions(
-    JSON.parse(output.files['./package.json']),
+    JSON.parse(generatedPackageJson),
     JSON.parse((await readFile('package.json')).toString()),
   )
 
   writeFileSync(INFO_FILE, JSON.stringify(info, null, 2))
+  writeFileSync(LEGACY_INFO_FILE, JSON.stringify(info, null, 2))
 }
 
 export async function compileStarter(environment: Environment) {
@@ -104,6 +115,7 @@ export async function compileStarter(environment: Environment) {
   }
 
   writeFileSync(COMPILED_FILE, JSON.stringify(compiledInfo, null, 2))
+  writeFileSync(LEGACY_COMPILED_FILE, JSON.stringify(compiledInfo, null, 2))
 }
 
 export async function initStarter(environment: Environment) {
@@ -112,8 +124,16 @@ export async function initStarter(environment: Environment) {
 }
 
 export async function loadStarter(url: string): Promise<Starter> {
-  const response = await fetch(url)
-  const jsonContent = await response.json()
+  const absoluteLocalPath = resolve(process.cwd(), url)
+  const localPath = existsSync(url)
+    ? url
+    : existsSync(absoluteLocalPath)
+      ? absoluteLocalPath
+      : undefined
+
+  const jsonContent = localPath
+    ? JSON.parse((await readFile(localPath)).toString())
+    : await (await fetch(url)).json()
 
   const checked = StarterCompiledSchema.safeParse(jsonContent)
   if (!checked.success) {
@@ -121,7 +141,7 @@ export async function loadStarter(url: string): Promise<Starter> {
   }
 
   const starter = checked.data
-  starter.id = url
+  starter.id = localPath ?? url
   return {
     ...starter,
     getFiles: () => Promise.resolve(Object.keys(starter.files)),

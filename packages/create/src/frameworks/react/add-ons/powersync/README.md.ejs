@@ -1,0 +1,26 @@
+# PowerSync
+
+This project includes the PowerSync Web SDK and React hooks.
+
+## Environment
+
+Set these variables in `.env.local`:
+
+- `VITE_POWERSYNC_URL`
+- `VITE_POWERSYNC_TOKEN` for local development only
+
+## What The Add-on Includes
+
+- `src/lib/powersync/AppSchema.ts`
+- `src/lib/powersync/BackendConnector.ts`
+- `src/integrations/powersync/provider.tsx`
+- `src/routes/demo/powersync.tsx`
+
+## Next Steps
+
+1. Replace the development token flow in `src/lib/powersync/BackendConnector.ts` with your real auth flow.
+2. Update the sample schema in `src/lib/powersync/AppSchema.ts` to match your synced tables.
+3. Implement the upload logic in `uploadData()` so local mutations are written back to your backend.
+
+PowerSync setup guidance:
+https://docs.powersync.com/client-sdk-references/js-web

@@ -134,25 +134,13 @@ pnpm dlx create-tanstack-app@latest --list-add-ons --framework solid --template 
 
 Will get you a list of all available add-ons for Solid that are compatible with the File Router.
 
-## MCP (Model Context Protocol) Support (experimental)
+## Agent Usage
 
-You can launch the `create-tanstack-app` CLI with the `--mcp` flag to enable MCP support. Use this in your MCP enabled IDE to allow the Agent model to generate TanStack Router applications.
+The CLI no longer includes an MCP server. Use direct CLI introspection commands instead:
 
 ```bash
-pnpm dlx create-tanstack-app@latest --mcp
-```
-
-Here is the JSON configuration for MCP support in many MCP clients.
-
-```json
-{
-  "mcpServers": {
-    "create-tanstack-app": {
-      "command": "pnpm dlx",
-      "args": ["create-tanstack-app@latest", "--mcp"]
-    }
-  }
-}
+pnpm dlx create-tanstack-app@latest --list-add-ons
+pnpm dlx create-tanstack-app@latest --addon-details tanstack-query
 ```
 
 # Contributing

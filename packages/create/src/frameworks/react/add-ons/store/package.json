@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "@tanstack/store": "^0.8.0",
-    "@tanstack/react-store": "^0.8.0"
+    "@tanstack/react-store": "latest",
+    "@tanstack/store": "latest"
   },
   "devDependencies": {
-    "@tanstack/devtools-event-client": "^0.4.0"
+    "@tanstack/devtools-event-client": "latest"
   }
 }

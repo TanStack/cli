@@ -64,10 +64,8 @@ export function Pagination({ pageCount, className = '' }: PaginationProps) {
       <button
         onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
         disabled={currentPage <= 1}
-        className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          currentPage <= 1
-            ? 'text-gray-600 cursor-not-allowed'
-            : 'text-gray-300 hover:bg-slate-700 hover:text-white'
+        className={`demo-button demo-button-secondary ${
+          currentPage <= 1 ? 'cursor-not-allowed opacity-50' : ''
         }`}
       >
         <ChevronLeft className="w-4 h-4" />
@@ -80,7 +78,7 @@ export function Pagination({ pageCount, className = '' }: PaginationProps) {
           page === 'ellipsis' ? (
             <span
               key={`ellipsis-${index}`}
-              className="px-2 py-2 text-gray-500 hidden md:block"
+              className="demo-muted hidden px-2 py-2 md:block"
             >
               ...
             </span>
@@ -88,15 +86,13 @@ export function Pagination({ pageCount, className = '' }: PaginationProps) {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                currentPage === page
-                  ? 'bg-cyan-500 text-white'
-                  : 'text-gray-300 hover:bg-slate-700 hover:text-white'
+              className={`demo-button min-w-[40px] ${
+                currentPage === page ? '' : 'demo-button-secondary'
               }`}
             >
               {page}
             </button>
-          )
+          ),
         )}
       </div>
 
@@ -106,10 +102,8 @@ export function Pagination({ pageCount, className = '' }: PaginationProps) {
           currentPage < pageCount && handlePageChange(currentPage + 1)
         }
         disabled={currentPage >= pageCount}
-        className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          currentPage >= pageCount
-            ? 'text-gray-600 cursor-not-allowed'
-            : 'text-gray-300 hover:bg-slate-700 hover:text-white'
+        className={`demo-button demo-button-secondary ${
+          currentPage >= pageCount ? 'cursor-not-allowed opacity-50' : ''
         }`}
       >
         <span className="hidden sm:inline">Next</span>

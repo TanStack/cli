@@ -1,24 +1,24 @@
-import { createFileRoute } from "@tanstack/solid-router";
-import { createSignal, Show } from "solid-js";
-import { authClient } from "../lib/auth-client";
+import { createFileRoute } from '@tanstack/solid-router'
+import { createSignal, Show } from 'solid-js'
+import { authClient } from '../lib/auth-client'
 
-export const Route = createFileRoute("/demo/better-auth")({
+export const Route = createFileRoute('/demo/better-auth')({
   component: BetterAuthDemo,
-});
+})
 
 function BetterAuthDemo() {
-  const session = authClient.useSession();
-  const [isSignUp, setIsSignUp] = createSignal(false);
-  const [email, setEmail] = createSignal("");
-  const [password, setPassword] = createSignal("");
-  const [name, setName] = createSignal("");
-  const [error, setError] = createSignal("");
-  const [loading, setLoading] = createSignal(false);
+  const session = authClient.useSession()
+  const [isSignUp, setIsSignUp] = createSignal(false)
+  const [email, setEmail] = createSignal('')
+  const [password, setPassword] = createSignal('')
+  const [name, setName] = createSignal('')
+  const [error, setError] = createSignal('')
+  const [loading, setLoading] = createSignal(false)
 
   const handleSubmit = async (e: Event) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
     try {
       if (isSignUp()) {
@@ -26,47 +26,48 @@ function BetterAuthDemo() {
           email: email(),
           password: password(),
           name: name(),
-        });
+        })
         if (result.error) {
-          setError(result.error.message || "Sign up failed");
+          setError(result.error.message || 'Sign up failed')
         }
       } else {
         const result = await authClient.signIn.email({
           email: email(),
           password: password(),
-        });
+        })
         if (result.error) {
-          setError(result.error.message || "Sign in failed");
+          setError(result.error.message || 'Sign in failed')
         }
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError('An unexpected error occurred')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Show
       when={!session().isPending}
       fallback={
-        <div class="flex items-center justify-center py-10">
+        <main class="demo-page demo-center">
           <div class="h-5 w-5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-neutral-800 dark:border-t-neutral-100" />
-        </div>
+        </main>
       }
     >
       <Show
         when={session().data?.user}
         fallback={
-          <div class="flex justify-center py-10 px-4">
-            <div class="w-full max-w-md p-6">
-              <h1 class="text-lg font-semibold leading-none tracking-tight">
-                {isSignUp() ? "Create an account" : "Sign in"}
+          <main class="demo-page demo-center">
+            <section class="demo-panel w-full max-w-md">
+              <p class="island-kicker mb-2">Better Auth</p>
+              <h1 class="demo-title">
+                {isSignUp() ? 'Create an account' : 'Sign in'}
               </h1>
-              <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-2 mb-6">
+              <p class="demo-muted mt-2 mb-6 text-sm">
                 {isSignUp()
-                  ? "Enter your information to create an account"
-                  : "Enter your email below to login to your account"}
+                  ? 'Enter your information to create an account'
+                  : 'Enter your email below to login to your account'}
               </p>
 
               <form onSubmit={handleSubmit} class="grid gap-4">
@@ -80,7 +81,7 @@ function BetterAuthDemo() {
                       type="text"
                       value={name()}
                       onInput={(e) => setName(e.currentTarget.value)}
-                      class="flex h-9 w-full border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 text-sm focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      class="demo-input"
                       required
                     />
                   </div>
@@ -95,7 +96,7 @@ function BetterAuthDemo() {
                     type="email"
                     value={email()}
                     onInput={(e) => setEmail(e.currentTarget.value)}
-                    class="flex h-9 w-full border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 text-sm focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="demo-input"
                     required
                   />
                 </div>
@@ -112,24 +113,22 @@ function BetterAuthDemo() {
                     type="password"
                     value={password()}
                     onInput={(e) => setPassword(e.currentTarget.value)}
-                    class="flex h-9 w-full border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 text-sm focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="demo-input"
                     required
                     minLength={8}
                   />
                 </div>
 
                 <Show when={error()}>
-                  <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
-                    <p class="text-sm text-red-600 dark:text-red-400">
-                      {error()}
-                    </p>
+                  <div class="demo-alert demo-alert-danger">
+                    <p class="text-sm text-red-600">{error()}</p>
                   </div>
                 </Show>
 
                 <button
                   type="submit"
                   disabled={loading()}
-                  class="w-full h-9 px-4 text-sm font-medium text-white bg-neutral-900 hover:bg-neutral-800 dark:bg-neutral-50 dark:text-neutral-900 dark:hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="demo-button w-full"
                 >
                   <Show
                     when={!loading()}
@@ -140,7 +139,7 @@ function BetterAuthDemo() {
                       </span>
                     }
                   >
-                    {isSignUp() ? "Create account" : "Sign in"}
+                    {isSignUp() ? 'Create account' : 'Sign in'}
                   </Show>
                 </button>
               </form>
@@ -149,41 +148,40 @@ function BetterAuthDemo() {
                 <button
                   type="button"
                   onClick={() => {
-                    setIsSignUp(!isSignUp());
-                    setError("");
+                    setIsSignUp(!isSignUp())
+                    setError('')
                   }}
-                  class="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+                  class="demo-muted text-sm transition-colors hover:text-[var(--sea-ink)]"
                 >
                   {isSignUp()
-                    ? "Already have an account? Sign in"
+                    ? 'Already have an account? Sign in'
                     : "Don't have an account? Sign up"}
                 </button>
               </div>
 
-              <p class="mt-6 text-xs text-center text-neutral-400 dark:text-neutral-500">
-                Built with{" "}
+              <p class="demo-muted mt-6 text-center text-xs">
+                Built with{' '}
                 <a
                   href="https://better-auth.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="font-medium hover:text-neutral-600 dark:hover:text-neutral-300"
+                  class="font-medium"
                 >
                   BETTER-AUTH
                 </a>
                 .
               </p>
-            </div>
-          </div>
+            </section>
+          </main>
         }
       >
         {(user) => (
-          <div class="flex justify-center py-10 px-4">
-            <div class="w-full max-w-md p-6 space-y-6">
+          <main class="demo-page demo-center">
+            <section class="demo-panel w-full max-w-md space-y-6">
               <div class="space-y-1.5">
-                <h1 class="text-lg font-semibold leading-none tracking-tight">
-                  Welcome back
-                </h1>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                <p class="island-kicker mb-2">Better Auth</p>
+                <h1 class="demo-title">Welcome back</h1>
+                <p class="demo-muted text-sm">
                   You're signed in as {user().email}
                 </p>
               </div>
@@ -194,7 +192,7 @@ function BetterAuthDemo() {
                   fallback={
                     <div class="h-10 w-10 bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
                       <span class="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                        {user().name?.charAt(0).toUpperCase() || "U"}
+                        {user().name?.charAt(0).toUpperCase() || 'U'}
                       </span>
                     </div>
                   }
@@ -211,29 +209,29 @@ function BetterAuthDemo() {
 
               <button
                 onClick={() => {
-                  void authClient.signOut();
+                  void authClient.signOut()
                 }}
-                class="w-full h-9 px-4 text-sm font-medium border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                class="demo-button demo-button-secondary w-full"
               >
                 Sign out
               </button>
 
-              <p class="text-xs text-center text-neutral-400 dark:text-neutral-500">
-                Built with{" "}
+              <p class="demo-muted text-center text-xs">
+                Built with{' '}
                 <a
                   href="https://better-auth.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="font-medium hover:text-neutral-600 dark:hover:text-neutral-300"
+                  class="font-medium"
                 >
                   BETTER-AUTH
                 </a>
                 .
               </p>
-            </div>
-          </div>
+            </section>
+          </main>
         )}
       </Show>
     </Show>
-  );
+  )
 }

@@ -1,0 +1,50 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { Link, createFileRoute } from '@tanstack/react-router'
+
+import { Money } from '#/components/shop/money'
+import { getOrders } from '#/server/shopify/customer.functions'
+
+export const Route = createFileRoute('/shop/account/orders/')({
+  loader: () => getOrders({ data: { first: 50 } }),
+  component: OrdersRoute,
+})
+
+function OrdersRoute() {
+  const orders = Route.useLoaderData()
+  if (orders.nodes.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[var(--storefront-line)] px-6 py-16 text-center">
+        <p className="text-[var(--storefront-fg-muted)]">No orders yet.</p>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-medium tracking-tight">Orders</h2>
+      <ul className="divide-y divide-[var(--storefront-line)] rounded-2xl border border-[var(--storefront-line)]">
+        {orders.nodes.map((order) => (
+          <li key={order.id} className="flex items-center justify-between gap-4 px-4 py-4">
+            <div>
+              <Link
+                to="/shop/account/orders/$id"
+                params={{ id: encodeURIComponent(order.id) }}
+                className="font-medium underline-offset-4 hover:underline"
+              >
+                {order.name}
+              </Link>
+              <p className="text-xs text-[var(--storefront-fg-muted)]">
+                {new Date(order.processedAt).toLocaleDateString()} ·{' '}
+                {order.fulfillmentStatus ?? 'pending'} ·{' '}
+                {order.financialStatus ?? '—'}
+              </p>
+            </div>
+            <Money
+              amount={order.totalPrice.amount}
+              currencyCode={order.totalPrice.currencyCode}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

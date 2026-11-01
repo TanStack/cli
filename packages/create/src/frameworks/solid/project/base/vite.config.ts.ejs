@@ -1,7 +1,12 @@
+<% if (bundler !== 'vite') { ignoreFile() } -%>
 import { defineConfig } from "vite";
+<% const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
+<% if (showDevtools) { -%>
 import { devtools } from '@tanstack/devtools-vite'
-import viteTsConfigPaths from 'vite-tsconfig-paths'
+<% } -%>
+<% if (tailwind) { -%>
 import tailwindcss from "@tailwindcss/vite"
+<% } -%>
 <% if (routerOnly) { %>
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 <% } else { %>
@@ -10,15 +15,11 @@ import { tanstackStart } from "@tanstack/solid-start/plugin/vite";
 import solidPlugin from 'vite-plugin-solid';
 <% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportContent(integration) %>
 <% } %>
-import lucidePreprocess from "vite-plugin-lucide-preprocess";
 
 export default defineConfig({
-  plugins: [lucidePreprocess(), devtools(), <% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportCode(integration) %>,<% } %>
-    // this is the plugin that enables path aliases
-    viteTsConfigPaths({
-      projects: ['./tsconfig.json'],
-    }),
-    tailwindcss(),
+  resolve: { tsconfigPaths: true },
+  plugins: [<% if (showDevtools) { %>devtools(), <% } %><% for(const integration of integrations.filter(i => i.type === 'vite-plugin')) { %><%- integrationImportCode(integration) %>,<% } %>
+    <% if (tailwind) { %>tailwindcss(),<% } %>
     <% if (routerOnly) { %>tanstackRouter({ target: 'solid', autoCodeSplitting: true }),<% } else { %>tanstackStart(),<% } %>
     solidPlugin(<% if (!routerOnly) { %>{ ssr: true }<% } %>),
   ],

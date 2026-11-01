@@ -1,10 +1,108 @@
 import { describe, expect, it } from 'vitest'
 
+import { createPackageJSON as createEdgePackageJSON } from '../src/edge-package-json.js'
 import { createPackageJSON } from '../src/package-json.js'
 
 import type { Options, Framework } from '../src/types.js'
 
 describe('createPackageJSON', () => {
+  it.each([
+    ['react', '@tanstack/react-start'],
+    ['solid', '@tanstack/solid-start'],
+  ])(
+    'keeps the router plugin scoped to %s router-only projects',
+    (frameworkId, startPackage) => {
+      const framework = {
+        id: frameworkId,
+        basePackageJSON: {
+          dependencies: {
+            [startPackage]: 'latest',
+          },
+        },
+        optionalPackages: {
+          typescript: {},
+          devtools: {},
+          examples: {},
+          tailwindcss: {},
+          'file-router': {
+            devDependencies: {
+              '@tanstack/router-cli': 'latest',
+            },
+          },
+        },
+      } as unknown as Framework
+      const options = {
+        chosenAddOns: [],
+        addOnOptions: {},
+        mode: 'file-router',
+        typescript: true,
+        tailwind: false,
+        projectName: 'test',
+        packageManager: 'pnpm',
+        framework,
+      } as unknown as Options
+
+      const startPackageJSON = createPackageJSON(options)
+      expect(startPackageJSON.dependencies).toHaveProperty(startPackage, 'latest')
+      expect(startPackageJSON.devDependencies).not.toHaveProperty(
+        '@tanstack/router-plugin',
+      )
+
+      const routerOnlyOptions = {
+        ...options,
+        routerOnly: true,
+      }
+      const routerOnlyPackageJSON = createPackageJSON(routerOnlyOptions)
+
+      expect(routerOnlyPackageJSON.dependencies).not.toHaveProperty(startPackage)
+      expect(routerOnlyPackageJSON.devDependencies).toHaveProperty(
+        '@tanstack/router-plugin',
+        'latest',
+      )
+      expect(createEdgePackageJSON(routerOnlyOptions)).toEqual(
+        routerOnlyPackageJSON,
+      )
+    },
+  )
+
+  it.each([false, true])(
+    'applies a custom framework bundlerFileRouter to file-router apps (routerOnly=%s)',
+    (routerOnly) => {
+      const framework = {
+        id: 'custom',
+        basePackageJSON: {},
+        optionalPackages: {
+          bundlerFileRouter: {
+            vite: {
+              scripts: { routes: 'custom-routes' },
+              devDependencies: { 'custom-routes': '^1.0.0' },
+            },
+          },
+        },
+      } as unknown as Framework
+      const options = {
+        chosenAddOns: [],
+        addOnOptions: {},
+        mode: 'file-router',
+        routerOnly,
+        typescript: true,
+        tailwind: false,
+        projectName: 'test',
+        packageManager: 'pnpm',
+        framework,
+      } as unknown as Options
+
+      const packageJSON = createPackageJSON(options)
+
+      expect(packageJSON.scripts).toHaveProperty('routes', 'custom-routes')
+      expect(packageJSON.devDependencies).toHaveProperty(
+        'custom-routes',
+        '^1.0.0',
+      )
+      expect(createEdgePackageJSON(options)).toEqual(packageJSON)
+    },
+  )
+
   it('should create a package.json', () => {
     const packageJSON = createPackageJSON({
       chosenAddOns: [
@@ -89,6 +187,38 @@ describe('createPackageJSON', () => {
 
     expect(packageJSON.pnpm).toEqual({
       onlyBuiltDependencies: ['better-sqlite3'],
+    })
+  })
+
+  it('should merge pnpm onlyBuiltDependencies from base and add-ons', () => {
+    const packageJSON = createPackageJSON({
+      chosenAddOns: [
+        {
+          packageTemplate:
+            '{"pnpm": {"onlyBuiltDependencies": ["better-sqlite3"]}}',
+        },
+      ],
+      addOnOptions: {},
+      mode: 'file-router',
+      typescript: true,
+      tailwind: true,
+      projectName: 'test',
+      framework: {
+        basePackageJSON: {
+          pnpm: {
+            onlyBuiltDependencies: ['esbuild', 'lightningcss'],
+          },
+        },
+        optionalPackages: {
+          typescript: {},
+          tailwindcss: {},
+          'file-router': {},
+        },
+      } as unknown as Framework,
+    } as unknown as Options)
+
+    expect(packageJSON.pnpm).toEqual({
+      onlyBuiltDependencies: ['esbuild', 'lightningcss', 'better-sqlite3'],
     })
   })
 

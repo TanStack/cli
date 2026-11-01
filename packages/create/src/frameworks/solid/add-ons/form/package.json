@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@tanstack/solid-form": "^1.0.0"
+    "@tanstack/solid-form": "latest"
   }
 }

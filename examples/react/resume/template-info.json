@@ -1,0 +1,42 @@
+{
+  "id": "resume",
+  "name": "Resume",
+  "version": "0.0.1",
+  "description": "A polished resume and portfolio template for TanStack Start",
+  "author": "Jane Smith <jane.smith@example.com>",
+  "license": "MIT",
+  "link": "https://github.com/TanStack/cli/tree/main/examples/react/resume",
+  "shadcnComponents": [],
+  "framework": "react",
+  "mode": "file-router",
+  "routes": [],
+  "warning": "",
+  "type": "starter",
+  "packageAdditions": {
+    "scripts": {
+      "dev": "vite --port 3000"
+    },
+    "dependencies": {
+      "@radix-ui/react-checkbox": "^1.2.2",
+      "@radix-ui/react-hover-card": "^1.1.10",
+      "@radix-ui/react-separator": "^1.1.4",
+      "@radix-ui/react-slot": "^1.2.0",
+      "class-variance-authority": "^0.7.1",
+      "clsx": "^2.1.1",
+      "lucide-react": "^0.562.0",
+      "marked": "^15.0.8",
+      "tailwind-merge": "^3.0.2",
+      "tailwindcss-animate": "^1.0.7",
+      "zod": "^3.25.76"
+    },
+    "devDependencies": {
+      "@content-collections/core": "^0.14.0",
+      "@content-collections/vite": "^0.3.0",
+      "web-vitals": "^5.1.0"
+    }
+  },
+  "dependsOn": [],
+  "typescript": true,
+  "tailwind": true,
+  "banner": ".template/banner.png"
+}

@@ -10,6 +10,7 @@ export default [
     ignores: [
       '**/assets/**',
       '**/dist/**',
+      '**/src/generated/**',
     ],
   },
   ...tanstackConfig,

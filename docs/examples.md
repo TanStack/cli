@@ -14,10 +14,9 @@ tanstack create my-app --router-only -y
 
 # Interactive mode to pick add-ons
 tanstack create my-app --interactive
-
-# Visual builder
-tanstack create --ui
 ```
+
+For visual setup, use `https://tanstack.com/builder`.
 
 ## Using Add-ons
 

@@ -1,7 +1,10 @@
+<% const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
 <% if (routerOnly) { %>
 import { Outlet, createRootRoute } from '@tanstack/react-router'
+<% if (showDevtools) { %>
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+<% } %>
 
 import '../styles.css'
 
@@ -13,7 +16,7 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <TanStackDevtools
+      <% if (showDevtools) { %><TanStackDevtools
         config={{
           position: 'bottom-right',
         }}
@@ -23,19 +26,18 @@ function RootComponent() {
             render: <TanStackRouterDevtoolsPanel />,
           },
         ]}
-      />
+      /><% } %>
     </>
   )
 }
-<% } else { %>
+<% } else if (!includeExamples || blank) { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
   HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+<% if (showDevtools) { %>import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools'
-<% if (addOns.length) { %>
-import Header from '../components/Header'
-<% } %><% for(const integration of integrations.filter(i => i.type === 'layout' || i.type === 'provider' || i.type === 'devtools')) { %>
+<% } %>
+<% for(const integration of integrations.filter(i => i.type === 'layout' || i.type === 'provider' || i.type === 'devtools')) { %>
 import <%= integration.jsName %> from '<%= relativePath(integration.path, true) %>'
 <% } %><% if (addOnEnabled.paraglide) { %>
 import { getLocale } from '#/paraglide/runtime'
@@ -96,14 +98,113 @@ export const Route = <% if (hasContext) { %>createRootRouteWithContext<MyRouterC
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <% if (addOnEnabled.paraglide) { %><html lang={getLocale()}><% } else { %><html lang="en"><% } %>
+      <% if (addOnEnabled.paraglide) { %><html lang={getLocale()}><% } else { %><html lang="en"><% } %>
       <head>
         <HeadContent />
       </head>
       <body>
         <% for(const integration of integrations.filter(i => i.type === 'provider')) { %><<%= integration.jsName %>>
-        <% } %><% if (addOns.length) { %><Header />  
         <% } %>{children}
+          <% if (showDevtools) { %><TanStackDevtools
+            config={{
+              position: 'bottom-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              <% for(const integration of integrations.filter(i => i.type === 'devtools')) { %><%= integration.jsName %>,<% } %>
+            ]}
+          /><% } %>
+          <% for(const integration of integrations.filter(i => i.type === 'layout')) { %><<%= integration.jsName %> />
+          <% } %><% for(const integration of integrations.filter(i => i.type === 'provider').reverse()) { %></<%= integration.jsName %>>
+        <% } %><Scripts />
+      </body>
+    </html>
+  )
+}
+<% } else { %>
+<% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
+import {
+  HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import Footer from '../components/Footer'
+import Header from '../components/Header'
+<% for(const integration of integrations.filter(i => i.type === 'layout' || i.type === 'provider' || i.type === 'devtools')) { %>
+import <%= integration.jsName %> from '<%= relativePath(integration.path, true) %>'
+<% } %><% if (addOnEnabled.paraglide) { %>
+import { getLocale } from '#/paraglide/runtime'
+<% } %>
+import appCss from '../styles.css?url'
+<% if (addOnEnabled["apollo-client"]) { %>
+import type { ApolloClientIntegration } from "@apollo/client-integration-tanstack-start";
+<% } %>
+<% if (addOnEnabled["tanstack-query"]) { %>
+import type { QueryClient } from '@tanstack/react-query'
+<% if (addOnEnabled.tRPC) { %>
+import type { TRPCRouter } from '#/integrations/trpc/router'
+import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query'
+<% } %>
+<% } %>
+<% if (hasContext) { %>
+interface MyRouterContext <% if (addOnEnabled["apollo-client"]) {%> extends ApolloClientIntegration.RouterContext <%} %>{
+<% if (addOnEnabled["tanstack-query"]) { %>
+  queryClient: QueryClient
+  <% if (addOnEnabled.tRPC) { %>
+  trpc: TRPCOptionsProxy<TRPCRouter>
+  <% } %>
+<% } %>
+}<% } %>
+
+const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+
+export const Route = <% if (hasContext) { %>createRootRouteWithContext<MyRouterContext>()<% } else { %>createRootRoute<% } %>({
+<% if (addOnEnabled.paraglide) { %>
+  beforeLoad: async () => {
+    // Other redirect strategies are possible; see
+    // https://github.com/TanStack/router/tree/main/examples/react/i18n-paraglide#offline-redirect
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('lang', getLocale())
+    }
+  },
+<% } %>
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1',
+      },
+      {
+        title: 'TanStack Start Starter',
+      },
+    ],
+    links: [
+      {
+        rel: 'stylesheet',
+        href: appCss,
+      },
+    ],
+  }),
+  shellComponent: RootDocument
+})
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+      <% if (addOnEnabled.paraglide) { %><html lang={getLocale()} suppressHydrationWarning><% } else { %><html lang="en" suppressHydrationWarning><% } %>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <HeadContent />
+      </head>
+      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
+        <% for(const integration of integrations.filter(i => i.type === 'provider')) { %><<%= integration.jsName %>>
+        <% } %><Header />
+        {children}
+        <Footer />
           <TanStackDevtools
             config={{
               position: 'bottom-right',

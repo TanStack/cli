@@ -229,13 +229,13 @@ export default function Demo() { return <div>Demo</div> }
 5. Test: `npx serve .add-on -l 9080`
 6. Use: `tanstack create test --add-ons http://localhost:9080/info.json`
 
-## Creating a Starter
+## Creating a Template
 
 1. Create project with desired add-ons
-2. Run `tanstack starter init`
-3. Edit `starter-info.json`
-4. Run `tanstack starter compile`
-5. Use: `tanstack create my-app --starter ./starter.json`
+2. Run `tanstack template init`
+3. Edit `template-info.json`
+4. Run `tanstack template compile`
+5. Use: `tanstack create my-app --template ./template.json`
 
 ## Testing
 
@@ -246,6 +246,9 @@ pnpm dev
 # Create test project
 rm -rf test && node packages/cli/dist/index.js create test --add-ons my-addon
 
-# Dev watch mode
+# Dev mode for built-in templates/add-ons
+node packages/cli/dist/index.js dev test-app --framework React
+
+# Legacy direct watch path mode
 node packages/cli/dist/index.js create --dev-watch ./packages/create/src/frameworks/react test-app
 ```

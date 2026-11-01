@@ -7,7 +7,7 @@ export function mergePackageJSON(
   packageJSON: Record<string, any>,
   overlayPackageJSON?: Record<string, any>,
 ) {
-  return {
+  const mergedPackageJSON: Record<string, any> = {
     ...packageJSON,
     ...(overlayPackageJSON || {}),
     dependencies: {
@@ -23,10 +23,50 @@ export function mergePackageJSON(
       ...(overlayPackageJSON?.scripts || {}),
     },
   }
+
+  const baseOnlyBuiltDependencies = Array.isArray(
+    packageJSON.pnpm?.onlyBuiltDependencies,
+  )
+    ? packageJSON.pnpm.onlyBuiltDependencies
+    : []
+  const overlayOnlyBuiltDependencies = Array.isArray(
+    overlayPackageJSON?.pnpm?.onlyBuiltDependencies,
+  )
+    ? overlayPackageJSON.pnpm.onlyBuiltDependencies
+    : []
+
+  const onlyBuiltDependencies = [
+    ...new Set([
+      ...baseOnlyBuiltDependencies,
+      ...overlayOnlyBuiltDependencies,
+    ]),
+  ]
+
+  if (packageJSON.pnpm || overlayPackageJSON?.pnpm) {
+    mergedPackageJSON.pnpm = {
+      ...packageJSON.pnpm,
+      ...overlayPackageJSON?.pnpm,
+    }
+
+    if (onlyBuiltDependencies.length) {
+      mergedPackageJSON.pnpm.onlyBuiltDependencies = onlyBuiltDependencies
+    }
+  }
+
+  return mergedPackageJSON
 }
 
 export function createPackageJSON(options: Options) {
   const packageManager = options.packageManager
+  const bundler = options.bundler ?? 'vite'
+  const blank = options.projectPreset === 'blank'
+  const includeDevtools =
+    !blank ||
+    options.chosenAddOns.some((addOn) =>
+      addOn.integrations?.some(
+        (integration) => integration.type === 'devtools',
+      ),
+    )
 
   function getPackageManagerExecuteScript(
     pkg: string,
@@ -42,8 +82,29 @@ export function createPackageJSON(options: Options) {
 
   const additions: Array<Record<string, any> | undefined> = [
     options.framework.optionalPackages.typescript,
-    options.framework.optionalPackages.tailwindcss,
+    options.framework.optionalPackages.bundlers?.[bundler],
+    includeDevtools ? options.framework.optionalPackages.devtools : undefined,
+    includeDevtools
+      ? options.framework.optionalPackages.bundlerDevtools?.[bundler]
+      : undefined,
+    !blank && options.includeExamples !== false
+      ? options.framework.optionalPackages.examples
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.tailwindcss
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.bundlerTailwindcss?.[bundler]
+      : undefined,
     options.mode ? options.framework.optionalPackages[options.mode] : undefined,
+    options.mode === 'file-router'
+      ? options.framework.optionalPackages.bundlerFileRouter?.[bundler]
+      : undefined,
+    options.mode === 'file-router' && options.routerOnly
+      ? options.framework.optionalPackages.bundlerRouterOnlyFileRouter?.[
+          bundler
+        ]
+      : undefined,
   ]
   for (const addition of additions.filter(Boolean)) {
     packageJSON = mergePackageJSON(packageJSON, addition)
@@ -57,8 +118,10 @@ export function createPackageJSON(options: Options) {
       const templateValues = {
         packageManager: options.packageManager,
         projectName: options.projectName,
+        bundler,
         typescript: true,
-        tailwind: true,
+        tailwind: options.tailwind,
+        blank,
         js: 'ts',
         jsx: 'tsx',
         fileRouter: options.mode === 'file-router',
@@ -99,24 +162,26 @@ export function createPackageJSON(options: Options) {
   }
 
   if (options.routerOnly) {
-    if (options.framework.id === 'react-cra') {
+    delete packageJSON.dependencies?.srvx
+    delete packageJSON.scripts?.start
+
+    if (options.framework.id === 'react') {
       delete packageJSON.dependencies?.['@tanstack/react-start']
       delete packageJSON.dependencies?.['@tanstack/react-router-ssr-query']
       packageJSON.devDependencies = {
         ...(packageJSON.devDependencies ?? {}),
         '@tanstack/router-plugin':
-          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? '^1.132.0',
+          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
       }
     }
 
     if (options.framework.id === 'solid') {
       delete packageJSON.dependencies?.['@tanstack/solid-start']
       delete packageJSON.dependencies?.['@tanstack/solid-router-ssr-query']
-      delete packageJSON.scripts?.start
       packageJSON.devDependencies = {
         ...(packageJSON.devDependencies ?? {}),
         '@tanstack/router-plugin':
-          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? '^1.133.20',
+          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
       }
     }
   }

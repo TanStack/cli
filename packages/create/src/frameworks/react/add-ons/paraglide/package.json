@@ -1,5 +1,5 @@
 {
   "devDependencies": {
-    "@inlang/paraglide-js": "^2.8.0"
+    "@inlang/paraglide-js": "^2.13.1"
   }
 }

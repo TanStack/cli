@@ -7,7 +7,12 @@ import type { Environment, Options } from './types.js'
 
 export type PersistedOptions = Omit<
   Partial<Options>,
-  'addOns' | 'chosenAddOns' | 'framework' | 'starter' | 'targetDir'
+  | 'addOns'
+  | 'chosenAddOns'
+  | 'envVarValues'
+  | 'framework'
+  | 'starter'
+  | 'targetDir'
 > & {
   framework: string
   version: number
@@ -17,7 +22,7 @@ export type PersistedOptions = Omit<
 
 function createPersistedOptions(options: Options): PersistedOptions {
   /* eslint-disable unused-imports/no-unused-vars */
-  const { chosenAddOns, framework, targetDir, ...rest } = options
+  const { chosenAddOns, envVarValues, framework, targetDir, ...rest } = options
   /* eslint-enable unused-imports/no-unused-vars */
   return {
     ...rest,
@@ -50,8 +55,8 @@ export async function readConfigFileFromEnvironment(
 
     // Look for markers out outdated config files and upgrade the format on the fly (it will be written in the updated version after we add add-ons)
     if (originalJSON.existingAddOns) {
-      if (originalJSON.framework === 'react') {
-        originalJSON.framework = 'react-cra'
+      if (originalJSON.framework === 'react-cra') {
+        originalJSON.framework = 'react'
       }
       originalJSON.chosenAddOns = originalJSON.existingAddOns
       delete originalJSON.existingAddOns
@@ -62,6 +67,14 @@ export async function readConfigFileFromEnvironment(
       delete originalJSON.toolchain
       delete originalJSON.variableValues
     }
+
+    if (originalJSON.framework === 'react-cra') {
+      originalJSON.framework = 'react'
+    }
+
+    originalJSON.bundler ??= 'vite'
+
+    delete originalJSON.envVarValues
 
     return originalJSON
   } catch {

@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "@apollo/client": "^4.0.0",
-    "@apollo/client-integration-tanstack-start": "^0.14.2-rc.0",
+    "@apollo/client": "^4.1.6",
+    "@apollo/client-integration-tanstack-start": "^0.14.4-rc.0",
     "graphql": "^16.10.0",
     "rxjs": "^7.8.2"
   }

@@ -1,0 +1,126 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { createFileRoute, notFound } from '@tanstack/react-router'
+
+import { Money } from '#/components/shop/money'
+import { ShopImage } from '#/components/shop/shop-image'
+import { getOrder } from '#/server/shopify/customer.functions'
+
+export const Route = createFileRoute('/shop/account/orders/$id')({
+  loader: async ({ params }) => {
+    const order = await getOrder({ data: { id: decodeURIComponent(params.id) } })
+    if (!order) throw notFound()
+    return { order }
+  },
+  component: OrderDetailRoute,
+})
+
+function OrderDetailRoute() {
+  const { order } = Route.useLoaderData()
+
+  return (
+    <article className="space-y-8">
+      <header className="space-y-1">
+        <h2 className="text-2xl font-medium tracking-tight">{order.name}</h2>
+        <p className="text-sm text-[var(--storefront-fg-muted)]">
+          Placed {new Date(order.processedAt).toLocaleDateString()} ·{' '}
+          {order.fulfillmentStatus ?? 'pending'}
+        </p>
+      </header>
+
+      <ul className="divide-y divide-[var(--storefront-line)] rounded-2xl border border-[var(--storefront-line)]">
+        {order.lineItems.nodes.map((line) => (
+          <li key={line.id} className="flex items-center gap-4 px-4 py-3">
+            <ShopImage
+              src={line.image?.url}
+              alt={line.image?.altText ?? line.title}
+              width={64}
+              height={80}
+              className="h-20 w-16 rounded-md object-cover"
+            />
+            <div className="flex-1">
+              <p className="font-medium">{line.title}</p>
+              {line.variantTitle && (
+                <p className="text-xs text-[var(--storefront-fg-muted)]">
+                  {line.variantTitle}
+                </p>
+              )}
+              <p className="text-xs text-[var(--storefront-fg-muted)]">
+                Qty {line.quantity}
+              </p>
+            </div>
+            <Money
+              amount={line.price.amount}
+              currencyCode={line.price.currencyCode}
+            />
+          </li>
+        ))}
+      </ul>
+
+      <div className="grid gap-2 rounded-2xl border border-[var(--storefront-line)] p-4 text-sm">
+        {order.subtotal && (
+          <div className="flex justify-between">
+            <span className="text-[var(--storefront-fg-muted)]">Subtotal</span>
+            <Money
+              amount={order.subtotal.amount}
+              currencyCode={order.subtotal.currencyCode}
+            />
+          </div>
+        )}
+        {order.totalShipping && (
+          <div className="flex justify-between">
+            <span className="text-[var(--storefront-fg-muted)]">Shipping</span>
+            <Money
+              amount={order.totalShipping.amount}
+              currencyCode={order.totalShipping.currencyCode}
+            />
+          </div>
+        )}
+        {order.totalTax && (
+          <div className="flex justify-between">
+            <span className="text-[var(--storefront-fg-muted)]">Tax</span>
+            <Money
+              amount={order.totalTax.amount}
+              currencyCode={order.totalTax.currencyCode}
+            />
+          </div>
+        )}
+        <div className="flex justify-between border-t border-[var(--storefront-line)] pt-2 font-medium">
+          <span>Total</span>
+          <Money
+            amount={order.totalPrice.amount}
+            currencyCode={order.totalPrice.currencyCode}
+          />
+        </div>
+      </div>
+
+      {order.shippingAddress && (
+        <div className="space-y-1 text-sm">
+          <h3 className="font-medium">Shipping address</h3>
+          <p className="text-[var(--storefront-fg-muted)]">
+            {[order.shippingAddress.firstName, order.shippingAddress.lastName]
+              .filter(Boolean)
+              .join(' ')}
+            <br />
+            {order.shippingAddress.address1}
+            {order.shippingAddress.address2 && (
+              <>
+                <br />
+                {order.shippingAddress.address2}
+              </>
+            )}
+            <br />
+            {[
+              order.shippingAddress.city,
+              order.shippingAddress.zoneCode,
+              order.shippingAddress.zip,
+            ]
+              .filter(Boolean)
+              .join(', ')}
+            <br />
+            {order.shippingAddress.territoryCode}
+          </p>
+        </div>
+      )}
+    </article>
+  )
+}

@@ -1,0 +1,20 @@
+<% if (packageManager !== 'pnpm') { ignoreFile(); return; } -%>
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+<% if (addOnEnabled.sentry) { -%>
+  '@sentry/cli': true
+<% } -%>
+<% if (addOnEnabled.cloudflare || addOnEnabled.netlify) { -%>
+  sharp: true
+<% } -%>
+<% if (addOnEnabled.cloudflare) { -%>
+  workerd: true
+<% } -%>
+<% if (addOnEnabled.prisma) { -%>
+  '@prisma/engines': true
+  prisma: true
+<% } -%>
+<% if (addOnEnabled.drizzle || (addOnEnabled.prisma && addOnOption.prisma.database === 'sqlite')) { -%>
+  better-sqlite3: true
+<% } -%>

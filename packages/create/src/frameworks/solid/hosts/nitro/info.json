@@ -1,6 +1,6 @@
 {
   "name": "Nitro (agnostic)",
-  "description": "Nitro deployment setup",
+  "description": "Generic Nitro adapter (deploy to any Node-compatible host).",
   "link": "https://v3.nitro.build/",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],

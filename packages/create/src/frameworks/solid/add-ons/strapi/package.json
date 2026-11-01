@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@strapi/client": "^1.5.0"
+    "@strapi/client": "^1.6.1"
   }
 }

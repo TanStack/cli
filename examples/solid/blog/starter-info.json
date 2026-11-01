@@ -1,0 +1,26 @@
+{
+  "id": "blog-template",
+  "name": "blog Template",
+  "version": "0.0.1",
+  "description": "Project template",
+  "author": "Jane Smith <jane.smith@example.com>",
+  "license": "MIT",
+  "link": "https://github.com/jane-smith/blog-template",
+  "shadcnComponents": [],
+  "framework": "solid",
+  "mode": "file-router",
+  "routes": [],
+  "warning": "",
+  "type": "starter",
+  "packageAdditions": {
+    "devDependencies": {
+      "@content-collections/core": "^0.13.1",
+      "@content-collections/markdown": "^0.1.4",
+      "@content-collections/vite": "^0.3.0",
+      "@tailwindcss/typography": "^0.5.16",
+      "zod": "^4.3.5"
+    }
+  },
+  "dependsOn": [],
+  "typescript": true
+}

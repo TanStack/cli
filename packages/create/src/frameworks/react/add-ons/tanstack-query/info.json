@@ -19,11 +19,6 @@
   ],
   "integrations": [
     {
-      "type": "provider",
-      "path": "src/integrations/tanstack-query/root-provider.tsx",
-      "jsName": "TanStackQueryProvider"
-    },
-    {
       "type": "devtools",
       "path": "src/integrations/tanstack-query/devtools.tsx",
       "jsName": "TanStackQueryDevtools"

@@ -10,8 +10,25 @@
   },
   "targetDefaults": {
     "build": {
+      "cache": true,
       "inputs": ["production", "^production"],
+      "outputs": ["{projectRoot}/dist"],
       "dependsOn": ["^build"]
+    },
+    "test:e2e": {
+      "cache": true,
+      "dependsOn": ["^build", "build"],
+      "inputs": ["default", "^production"]
+    },
+    "test:e2e:blocking": {
+      "cache": true,
+      "dependsOn": ["^build", "build"],
+      "inputs": ["default", "^production"]
+    },
+    "test:e2e:matrix": {
+      "cache": true,
+      "dependsOn": ["^build", "build"],
+      "inputs": ["default", "^production"]
     }
   }
 }

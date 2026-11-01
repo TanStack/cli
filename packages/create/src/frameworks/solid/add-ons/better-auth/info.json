@@ -1,6 +1,6 @@
 {
   "name": "Better Auth",
-  "description": "Add Better Auth authentication to your application.",
+  "description": "Self-hosted user accounts and sessions (open source, full control).",
   "phase": "add-on",
   "type": "add-on",
   "category": "auth",

@@ -1,0 +1,34 @@
+{
+  "templates": [
+    {
+      "name": "Ecommerce",
+      "description": "A product-focused ecommerce template for TanStack React",
+      "url": "./ecommerce/template.json",
+      "banner": "./ecommerce/.template/banner.png",
+      "mode": "file-router",
+      "framework": "react"
+    },
+    {
+      "name": "Resume",
+      "description": "A polished resume and portfolio template for TanStack React",
+      "url": "./resume/template.json",
+      "banner": "./resume/.template/banner.png",
+      "mode": "file-router",
+      "framework": "react"
+    },
+    {
+      "name": "Blog",
+      "description": "A content-first blog template for TanStack Start",
+      "url": "./blog/template.json",
+      "mode": "file-router",
+      "framework": "react"
+    },
+    {
+      "name": "Blog",
+      "description": "A content-first blog template for TanStack Start",
+      "url": "../solid/blog/template.json",
+      "mode": "file-router",
+      "framework": "solid"
+    }
+  ]
+}

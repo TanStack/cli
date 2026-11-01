@@ -1,0 +1,11 @@
+{
+  "templates": [
+    {
+      "name": "Blog",
+      "description": "A content-first blog template for TanStack Start",
+      "url": "./blog/template.json",
+      "mode": "file-router",
+      "framework": "solid"
+    }
+  ]
+}

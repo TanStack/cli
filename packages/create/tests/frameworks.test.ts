@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fs, vol } from 'memfs'
 
 import {
+  __testClearFrameworks,
   getFrameworks,
   getFrameworkById,
   getFrameworkByName,
@@ -13,6 +14,7 @@ vi.mock('node:fs/promises', () => fs.promises)
 
 beforeEach(() => {
   vol.reset()
+  __testClearFrameworks()
 })
 
 describe('registerFramework', () => {
@@ -59,5 +61,27 @@ describe('registerFramework', () => {
     expect(getFrameworkByName('Test')).not.toBeUndefined()
     expect(getFrameworkByName('test')).not.toBeUndefined()
     expect(getFrameworks().length).toEqual(1)
+  })
+
+  it('should resolve legacy react-cra framework id', () => {
+    registerFramework({
+      id: 'react',
+      name: 'React',
+      addOns: [],
+      description: 'React',
+      version: '1.0.0',
+      base: {},
+      basePackageJSON: {},
+      optionalPackages: {},
+      supportedModes: {
+        'file-router': {
+          displayName: 'File Router',
+          description: 'File Router',
+          forceTypescript: true,
+        },
+      },
+    })
+
+    expect(getFrameworkById('react-cra')?.id).toBe('react')
   })
 })

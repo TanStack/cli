@@ -1,6 +1,6 @@
 {
   "name": "Convex",
-  "description": "Add the Convex database to your application.",
+  "description": "Reactive document database with real-time queries and serverless functions.",
   "link": "https://convex.dev",
   "phase": "add-on",
   "type": "add-on",

@@ -1,0 +1,46 @@
+---
+title: 'Paper Lantern Cache'
+description: 'How to shape navigation and page structure.'
+pubDate: 'Jul 15 2024'
+heroImage: '/images/lagoon-4.svg'
+---
+
+Use file-based routes in `src/routes` to grow the app.
+
+Keep shared UI in `src/components` and tune visual tokens in `src/styles.css`.
+
+## Route design tips
+
+Treat routes like product domains, not technical buckets.
+
+- `routes/settings.*` for account surfaces
+- `routes/billing.*` for payment and plan logic
+- `routes/api.*` for server handlers that belong to the same domain
+
+When route trees map to business intent, onboarding gets faster and refactors
+hurt less.
+
+```tsx
+// src/routes/billing.index.tsx
+export const Route = createFileRoute('/billing/')({
+  component: BillingPage,
+})
+```
+
+<MdxMetrics
+  items={[
+    { label: 'Route setup', value: '~10 min' },
+    { label: 'Type safety', value: 'end-to-end' },
+    { label: 'Refactor risk', value: 'lowered' },
+  ]}
+/>
+
+### Collaboration pattern
+
+Use this lightweight ownership split:
+
+1. Product owns route naming and URL intent
+2. Design owns shared layout primitives and tokens
+3. Engineering owns loaders, actions, and caching
+
+This pattern keeps URL design, data loading, and UI composition in one place.

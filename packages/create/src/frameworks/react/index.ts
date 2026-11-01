@@ -25,14 +25,27 @@ export function createFrameworkDefinition(): FrameworkDefinition {
   )
 
   return {
-    id: 'react-cra',
+    id: 'react',
     name: 'React',
-    description: 'Templates for React CRA',
+    description: 'Templates for React',
     version: '0.1.0',
     base: files,
     addOns,
     basePackageJSON,
     optionalPackages,
+    bundlers: [
+      {
+        id: 'vite',
+        name: 'Vite',
+        description: 'Build with Vite',
+      },
+      {
+        id: 'rsbuild',
+        name: 'Rsbuild',
+        description: 'Build with Rsbuild',
+      },
+    ],
+    defaultBundler: 'vite',
     supportedModes: {
       'file-router': {
         displayName: 'File Router',

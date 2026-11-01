@@ -94,25 +94,13 @@ This will get you a list of all available add-ons for Solid.
 pnpm create @tanstack/start@latest --list-add-ons --framework solid
 ```
 
-## MCP (Model Context Protocol) Support (experimental)
+## Agent Usage
 
-You can launch the `create-start-app` CLI with the `--mcp` flag to enable MCP support. Use this in your MCP enabled IDE to allow the Agent model to generate TanStack Start applications.
+The CLI no longer includes an MCP server. Use direct CLI introspection commands instead:
 
 ```bash
-pnpm create @tanstack/start@latest --mcp
-```
-
-Here is the JSON configuration for MCP support in many MCP clients.
-
-```json
-{
-  "mcpServers": {
-    "create-start-app": {
-      "command": "pnpm dlx",
-      "args": ["create-start-app@latest", "--mcp"]
-    }
-  }
-}
+pnpm create @tanstack/start@latest --list-add-ons
+pnpm create @tanstack/start@latest --addon-details tanstack-query
 ```
 
 # Contributing

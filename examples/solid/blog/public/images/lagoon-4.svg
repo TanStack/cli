@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Lagoon gradient 4">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="1" y2="0">
+      <stop offset="0%" stop-color="#81d8c9"/>
+      <stop offset="52%" stop-color="#53a9c8"/>
+      <stop offset="100%" stop-color="#2f6a7b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1040" cy="140" r="96" fill="#fff" fill-opacity="0.24"/>
+  <path d="M0 500c180-85 350-85 520 0s350 85 680 0v130H0z" fill="#effaf6" fill-opacity="0.74"/>
+</svg>

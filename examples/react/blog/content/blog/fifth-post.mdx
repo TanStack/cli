@@ -1,0 +1,54 @@
+---
+title: 'Velvet Runtime Notes'
+description: 'Use color tokens to keep light and dark themes aligned.'
+pubDate: 'Aug 05 2024'
+heroImage: '/images/lagoon-5.svg'
+---
+
+Semantic tokens keep your UI stable while the brand evolves.
+
+Instead of hard-coding one-off colors in components, shape a small set of
+variables and map all surfaces to those variables.
+
+## Why this matters
+
+- You can restyle the app in minutes instead of days
+- Light and dark themes stay behaviorally consistent
+- Add-on pages inherit your visual identity by default
+
+<MdxCallout title="MDX Component Demo">
+  This callout is rendered from JSX inside an MDX post. It is useful for
+  release notes, warnings, and migration tips where you want stronger visual
+  emphasis than plain markdown blocks.
+</MdxCallout>
+
+<MdxMetrics
+  items={[
+    { label: 'Token count', value: '12 core vars' },
+    { label: 'Theme modes', value: 'light + dark + auto' },
+    { label: 'Restyle time', value: '< 30 min' },
+  ]}
+/>
+
+### Token-to-component mapping
+
+| Token | Typical usage |
+| --- | --- |
+| `--surface` | Card backgrounds |
+| `--line` | Borders and separators |
+| `--lagoon-deep` | Links and active nav |
+
+Keep the mapping documented and your team will make fewer ad-hoc styling calls.
+
+### Example: deriving UI from semantic tokens
+
+```tsx
+const button = {
+  color: 'var(--sea-ink)',
+  background: 'var(--surface)',
+  borderColor: 'var(--line)',
+}
+```
+
+MDX is useful here because you can interleave narrative, tables, code blocks,
+and custom JSX components in one authoring surface.

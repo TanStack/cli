@@ -48,7 +48,7 @@ export function toCleanPath(absolutePath: string, baseDir: string): string {
   if (normalizedPath.startsWith(normalizedBase)) {
     cleanPath = normalizedPath.slice(normalizedBase.length)
   } else if (hasDrive(normalizedPath) !== hasDrive(normalizedBase)) {
-    // Handle paths that are missing the Windows drive letter (e.g. memfs on Windows)
+    // Handle paths that are missing the Windows drive letter in memory.
     const pathNoDrive = stripDrive(normalizedPath)
     const baseNoDrive = stripDrive(normalizedBase)
     if (pathNoDrive.startsWith(baseNoDrive)) {
@@ -110,6 +110,26 @@ export function relativePath(
 
 export function isDirectory(path: string): boolean {
   return statSync(path).isDirectory()
+}
+
+export function isDemoFilePath(path?: string): boolean {
+  if (!path) return false
+  const normalized = path.replace(/\\/g, '/')
+
+  if (
+    normalized.includes('/routes/demo/') ||
+    normalized.includes('/routes/example/')
+  ) {
+    return true
+  }
+
+  const filename = normalized.split('/').pop() || ''
+  return (
+    filename.startsWith('demo.') ||
+    filename.startsWith('demo-') ||
+    filename.startsWith('example.') ||
+    filename.startsWith('example-')
+  )
 }
 
 export function findFilesRecursively(
@@ -209,6 +229,7 @@ export async function recursivelyGatherFilesFromEnvironment(
 
 export const IGNORE_FILES = [
   '.starter',
+  '.template',
   '.add-on',
   '.cta.json',
   '.git',

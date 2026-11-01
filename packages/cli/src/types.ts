@@ -2,6 +2,7 @@ import type { PackageManager } from '@tanstack/create'
 
 export interface CliOptions {
   framework?: string
+  buildTool?: string
   packageManager?: PackageManager
   toolchain?: string | false
   deployment?: string
@@ -10,17 +11,21 @@ export interface CliOptions {
   addOns?: Array<string> | boolean
   listAddOns?: boolean
   addonDetails?: string
-  mcp?: boolean
-  mcpSse?: boolean
+  json?: boolean
   starter?: string
+  templateId?: string
   targetDir?: string
   interactive?: boolean
-  ui?: boolean
+  nonInteractive?: boolean
+  yes?: boolean
   devWatch?: string
+  runDev?: boolean
   install?: boolean
+  intent?: boolean
   addOnConfig?: string
   force?: boolean
   routerOnly?: boolean
+  blank?: boolean
   template?: string
   tailwind?: boolean
   examples?: boolean

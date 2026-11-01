@@ -17,3 +17,7 @@ my-app
 .content-collections
 
 coverage
+playwright-report
+test-results
+
+packages/create/src/generated/

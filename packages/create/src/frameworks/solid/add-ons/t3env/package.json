@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "zod": "^4.1.11",
-    "@t3-oss/env-core": "^0.13.8"
+    "@t3-oss/env-core": "^0.13.10",
+    "zod": "^4.3.6"
   }
 }

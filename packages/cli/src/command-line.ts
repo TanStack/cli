@@ -6,13 +6,14 @@ import {
   finalizeAddOns,
   getFrameworkById,
   getPackageManager,
+  getRawRegistry,
   loadStarter,
   populateAddOnOptionsDefaults,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
-  getCurrentDirectoryName,
-  sanitizePackageName,
+  resolveProjectLocation,
   validateProjectName,
 } from './utils.js'
 import type { Options } from '@tanstack/create'
@@ -25,15 +26,372 @@ const SUPPORTED_LEGACY_TEMPLATES = new Set([
   'tsx',
 ])
 
+const LEGACY_TEMPLATE_ALIASES = new Set(['javascript', 'js', 'jsx'])
+
+function getLegacyTemplateValue(templateValue?: string) {
+  if (!templateValue) {
+    return undefined
+  }
+
+  const normalized = templateValue.toLowerCase().trim()
+  if (
+    SUPPORTED_LEGACY_TEMPLATES.has(normalized) ||
+    LEGACY_TEMPLATE_ALIASES.has(normalized)
+  ) {
+    return normalized
+  }
+
+  return undefined
+}
+
+function slugifyStarterName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function humanizeStarterId(value: string) {
+  return value
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function isLikelyStarterUrlOrPath(value: string) {
+  return (
+    /^https?:\/\//i.test(value) ||
+    /^file:\/\//i.test(value) ||
+    value.startsWith('./') ||
+    value.startsWith('../') ||
+    value.startsWith('/') ||
+    /^[a-zA-Z]:[\\/]/.test(value)
+  )
+}
+
+function getStarterIdsFromUrl(starterUrl: string) {
+  const ids = new Set<string>()
+
+  try {
+    const pathname = new URL(starterUrl).pathname
+    const parts = pathname.split('/').filter(Boolean)
+    const lastPart = parts.at(-1)?.toLowerCase()
+
+    if (lastPart) {
+      ids.add(lastPart.replace(/\.json$/i, ''))
+    }
+
+    if (
+      (lastPart === 'starter.json' || lastPart === 'template.json') &&
+      parts.length >= 2
+    ) {
+      ids.add(parts.at(-2)!.toLowerCase())
+    }
+  } catch {
+    // Ignore URL parse errors and rely on other id heuristics.
+  }
+
+  return ids
+}
+
+function resolveMonorepoStarterById(
+  starterId: string,
+  preferredFramework?: string,
+) {
+  const normalized = starterId.toLowerCase().trim()
+  const idVariants = Array.from(
+    new Set([
+      normalized,
+      normalized.replace(/-template$/i, ''),
+      normalized.replace(/-starter$/i, ''),
+    ]),
+  ).filter(Boolean)
+
+  const cwd = process.cwd()
+  const rootCandidates = [
+    cwd,
+    resolve(cwd, '..'),
+    resolve(cwd, '../..'),
+    resolve(cwd, '../../..'),
+  ]
+
+  const frameworkOrder = preferredFramework
+    ? [preferredFramework, ...['react', 'solid'].filter((f) => f !== preferredFramework)]
+    : ['react', 'solid']
+
+  for (const root of rootCandidates) {
+    for (const framework of frameworkOrder) {
+      for (const id of idVariants) {
+        const templatePath = resolve(root, 'examples', framework, id, 'template.json')
+        if (fs.existsSync(templatePath)) {
+          return templatePath
+        }
+
+        const starterPath = resolve(root, 'examples', framework, id, 'starter.json')
+        if (fs.existsSync(starterPath)) {
+          return starterPath
+        }
+      }
+    }
+  }
+
+  return undefined
+}
+
+export async function resolveStarterSpecifier(
+  starterSpecifier: string,
+  preferredFramework?: string,
+) {
+  const normalized = starterSpecifier.trim()
+
+  if (!normalized || isLikelyStarterUrlOrPath(normalized)) {
+    return normalized
+  }
+
+  const registry = await getRawRegistry()
+  if (registry && registry.starters?.length) {
+    const lookup = normalized.toLowerCase()
+    const matches = registry.starters.filter((starter) => {
+      const candidateIds = new Set<string>()
+      candidateIds.add(starter.name.toLowerCase())
+      candidateIds.add(slugifyStarterName(starter.name))
+
+      for (const id of getStarterIdsFromUrl(starter.url)) {
+        candidateIds.add(id)
+      }
+
+      return candidateIds.has(lookup)
+    })
+
+    const frameworkMatch = preferredFramework
+      ? matches.find(
+          (starter) => starter.framework.toLowerCase() === preferredFramework,
+        )
+      : undefined
+
+    if (frameworkMatch) {
+      return frameworkMatch.url
+    }
+
+    if (matches.length > 0) {
+      return matches[0].url
+    }
+  }
+
+  const monorepoStarterPath = resolveMonorepoStarterById(
+    normalized,
+    preferredFramework,
+  )
+  if (monorepoStarterPath) {
+    return monorepoStarterPath
+  }
+
+  if (!registry || !registry.starters?.length) {
+    throw new Error(
+      `Could not resolve template id "${normalized}" because no template registry is configured. Pass a template URL (or set CTA_REGISTRY).`,
+    )
+  }
+
+  const availableIds = Array.from(
+    new Set(
+      registry.starters.flatMap((starter) => {
+        const ids = [slugifyStarterName(starter.name)]
+        ids.push(...Array.from(getStarterIdsFromUrl(starter.url)))
+        return ids
+      }),
+    ),
+  )
+    .filter(Boolean)
+    .sort()
+
+  throw new Error(
+    `Unknown template id "${normalized}". Available built-in templates: ${availableIds.join(', ')}`,
+  )
+}
+
+export async function listTemplateChoices(preferredFramework?: string): Promise<
+  Array<{
+    id: string
+    name: string
+    description?: string
+    framework: string
+  }>
+> {
+  const frameworkFilter = preferredFramework?.toLowerCase()
+  const deduped = new Map<
+    string,
+    { id: string; name: string; description?: string; framework: string }
+  >()
+
+  const registry = await getRawRegistry()
+  for (const starter of registry?.starters || []) {
+    const framework = starter.framework.toLowerCase()
+    if (frameworkFilter && framework !== frameworkFilter) {
+      continue
+    }
+
+    const ids = Array.from(getStarterIdsFromUrl(starter.url))
+    const id = ids[0] || slugifyStarterName(starter.name)
+    if (!id) {
+      continue
+    }
+
+    const key = `${framework}:${id}`
+    if (!deduped.has(key)) {
+      deduped.set(key, {
+        id,
+        name: starter.name,
+        description: starter.description,
+        framework,
+      })
+    }
+  }
+
+  const cwd = process.cwd()
+  const rootCandidates = [
+    cwd,
+    resolve(cwd, '..'),
+    resolve(cwd, '../..'),
+    resolve(cwd, '../../..'),
+  ]
+
+  const frameworks = frameworkFilter ? [frameworkFilter] : ['react', 'solid']
+
+  for (const root of rootCandidates) {
+    for (const framework of frameworks) {
+      const frameworkDir = resolve(root, 'examples', framework)
+      if (!fs.existsSync(frameworkDir) || !fs.statSync(frameworkDir).isDirectory()) {
+        continue
+      }
+
+      for (const entry of fs.readdirSync(frameworkDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) {
+          continue
+        }
+
+        const id = entry.name
+        const key = `${framework}:${id}`
+        if (deduped.has(key)) {
+          continue
+        }
+
+        const templatePath = resolve(frameworkDir, id, 'template.json')
+        const starterPath = resolve(frameworkDir, id, 'starter.json')
+        if (!fs.existsSync(templatePath) && !fs.existsSync(starterPath)) {
+          continue
+        }
+
+        let name = humanizeStarterId(id)
+        let description: string | undefined
+
+        const templateInfoPath = resolve(frameworkDir, id, 'template-info.json')
+        if (fs.existsSync(templateInfoPath)) {
+          try {
+            const info = JSON.parse(fs.readFileSync(templateInfoPath, 'utf8')) as {
+              name?: string
+              description?: string
+            }
+            if (info.name) {
+              name = info.name
+            }
+            description = info.description
+          } catch {
+            // Ignore malformed template-info files and use fallback values.
+          }
+        }
+
+        deduped.set(key, {
+          id,
+          name,
+          description,
+          framework,
+        })
+      }
+    }
+  }
+
+  return Array.from(deduped.values()).sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export function validateLegacyCreateFlags(cliOptions: CliOptions): {
   warnings: Array<string>
   error?: string
 } {
   const warnings: Array<string> = []
+  const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
+  const isSupportedLegacyTemplate =
+    legacyTemplate !== undefined &&
+    SUPPORTED_LEGACY_TEMPLATES.has(legacyTemplate)
+
+  if (cliOptions.buildTool?.toLowerCase() === 'rsbuild') {
+    if (
+      cliOptions.starter ||
+      (cliOptions.template && !isSupportedLegacyTemplate) ||
+      cliOptions.templateId
+    ) {
+      return {
+        warnings,
+        error:
+          'Rsbuild does not currently support --starter, --template, or --template-id.',
+      }
+    }
+    if (cliOptions.deployment) {
+      return {
+        warnings,
+        error: 'Rsbuild does not currently support --deployment.',
+      }
+    }
+    if (cliOptions.addOns) {
+      return {
+        warnings,
+        error:
+          'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+      }
+    }
+  }
+
+  if (
+    cliOptions.blank &&
+    (cliOptions.starter || cliOptions.template || cliOptions.templateId)
+  ) {
+    return {
+      warnings,
+      error:
+        '--blank cannot be combined with --starter, --template, or --template-id.',
+    }
+  }
+
+  if (cliOptions.blank && cliOptions.examples === true) {
+    return {
+      warnings,
+      error: '--blank cannot be combined with --examples.',
+    }
+  }
+
+  if (cliOptions.blank && cliOptions.tailwind === true) {
+    return {
+      warnings,
+      error: '--blank cannot be combined with --tailwind.',
+    }
+  }
+
+  if (cliOptions.starter) {
+    warnings.push(
+      'The --starter flag is deprecated; prefer --template instead. Backward compatibility remains for now.',
+    )
+  }
+
+  if (cliOptions.starter && cliOptions.template && !legacyTemplate) {
+    warnings.push(
+      'Both --starter and --template were provided. --template takes precedence.',
+    )
+  }
 
   if (cliOptions.routerOnly) {
     warnings.push(
-      'The --router-only flag enables router-only compatibility mode. Start-dependent add-ons, deployment adapters, and starters are disabled; only the base template and optional toolchain are supported.',
+      'The --router-only flag enables router-only compatibility mode. Start-dependent add-ons, deployment adapters, and templates are disabled; only the base template and optional toolchain are supported.',
     )
   }
 
@@ -50,26 +408,30 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
   }
 
   if (cliOptions.routerOnly && cliOptions.starter) {
-    warnings.push('Ignoring --starter in router-only compatibility mode.')
+    warnings.push('Ignoring --starter/--template in router-only compatibility mode.')
+  }
+
+  if (cliOptions.routerOnly && cliOptions.templateId) {
+    warnings.push('Ignoring --template-id in router-only compatibility mode.')
   }
 
   if (cliOptions.tailwind === true) {
     warnings.push(
-      'The --tailwind flag is deprecated and ignored. Tailwind is always enabled in TanStack Start scaffolds.',
+      'The --tailwind flag is deprecated and ignored. Tailwind is enabled in standard TanStack Start scaffolds.',
     )
   }
 
-  if (cliOptions.tailwind === false) {
+  if (cliOptions.tailwind === false && !cliOptions.blank) {
     warnings.push(
-      'The --no-tailwind flag is deprecated and ignored. Tailwind opt-out is intentionally unsupported to keep add-on permutations maintainable; remove Tailwind after scaffolding if needed.',
+      'The --no-tailwind flag is deprecated and ignored for standard scaffolds. Use --blank to create a minimal project without Tailwind.',
     )
   }
 
-  if (!cliOptions.template) {
+  if (!legacyTemplate) {
     return { warnings }
   }
 
-  const template = cliOptions.template.toLowerCase().trim()
+  const template = legacyTemplate
 
   if (template === 'javascript' || template === 'js' || template === 'jsx') {
     return {
@@ -99,20 +461,17 @@ export async function normalizeOptions(
     forcedDeployment?: string
   },
 ): Promise<Options | undefined> {
-  let projectName = (cliOptions.projectName ?? '').trim()
-  let targetDir: string
+  const projectLocation = resolveProjectLocation({
+    projectName: cliOptions.projectName,
+    targetDir: cliOptions.targetDir,
+  })
 
-  // Handle "." as project name - use current directory
-  if (projectName === '.') {
-    projectName = sanitizePackageName(getCurrentDirectoryName())
-    targetDir = resolve(process.cwd())
-  } else {
-    targetDir = resolve(process.cwd(), projectName)
-  }
-
-  if (!projectName && !opts?.disableNameCheck) {
+  if (!projectLocation && !opts?.disableNameCheck) {
     return undefined
   }
+
+  const projectName = projectLocation?.projectName ?? ''
+  const targetDir = projectLocation?.targetDir ?? resolve(process.cwd())
 
   if (projectName) {
     const { valid, error } = validateProjectName(projectName)
@@ -125,26 +484,75 @@ export async function normalizeOptions(
   // Mode is always file-router (TanStack Start)
   let mode = 'file-router'
   let routerOnly = !!cliOptions.routerOnly
+  const blank = cliOptions.blank === true
 
-  const template = cliOptions.template?.toLowerCase().trim()
+  const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
+  const isSupportedLegacyTemplate =
+    legacyTemplate !== undefined &&
+    SUPPORTED_LEGACY_TEMPLATES.has(legacyTemplate)
+
+  if (!cliOptions.starter) {
+    if (cliOptions.template && !legacyTemplate) {
+      cliOptions.starter = cliOptions.template
+    } else if (cliOptions.templateId) {
+      cliOptions.starter = cliOptions.templateId
+    }
+  }
+
+  const template = legacyTemplate
   if (template && template !== 'file-router') {
     routerOnly = true
   }
 
-  const starter = !routerOnly && cliOptions.starter
-    ? await loadStarter(cliOptions.starter)
+  if (!cliOptions.starter && cliOptions.templateId) {
+    cliOptions.starter = cliOptions.templateId
+  }
+
+  const preferredFramework = (cliOptions.framework || 'react').toLowerCase()
+
+  const initialFramework = getFrameworkById(preferredFramework)
+  let framework = initialFramework!
+  const bundler = initialFramework
+    ? resolveBundler(initialFramework, cliOptions.buildTool).id
+    : (cliOptions.buildTool ?? 'vite')
+
+  if (bundler === 'rsbuild') {
+    if (
+      cliOptions.starter ||
+      (cliOptions.template && !isSupportedLegacyTemplate) ||
+      cliOptions.templateId
+    ) {
+      throw new Error('Rsbuild does not currently support templates.')
+    }
+    if (cliOptions.deployment || opts?.forcedDeployment) {
+      throw new Error('Rsbuild does not currently support deployments.')
+    }
+    if (forcedAddOns?.length || cliOptions.addOns) {
+      throw new Error(
+        'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+      )
+    }
+  }
+
+  const starter = !routerOnly && !blank && cliOptions.starter
+    ? await loadStarter(
+        await resolveStarterSpecifier(cliOptions.starter, preferredFramework),
+      )
     : undefined
 
-  // TypeScript and Tailwind are always enabled with TanStack Start
+  // TypeScript is always enabled with TanStack Start.
   const typescript = true
-  const tailwind = true
 
   if (starter) {
     cliOptions.framework = starter.framework
     mode = starter.mode
   }
 
-  const framework = getFrameworkById(cliOptions.framework || 'react-cra')!
+  const resolvedFramework = getFrameworkById(cliOptions.framework || 'react')
+  if (resolvedFramework) {
+    resolveBundler(resolvedFramework, bundler)
+  }
+  framework = resolvedFramework!
 
   async function selectAddOns() {
     // Edge case for Windows Powershell
@@ -185,17 +593,19 @@ export async function normalizeOptions(
         selectedAddOns.add(opts.forcedDeployment)
       }
 
-      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns))
+      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns), bundler)
     }
 
     return []
   }
 
-  const includeExamples = cliOptions.examples ?? !routerOnly
+  const includeExamples = blank ? false : (cliOptions.examples ?? !routerOnly)
   const chosenAddOnsRaw = await selectAddOns()
   const chosenAddOns = includeExamples
     ? chosenAddOnsRaw
     : chosenAddOnsRaw.filter((addOn) => addOn.type !== 'example')
+  const tailwind =
+    !blank || chosenAddOns.some((addOn) => addOn.tailwind === true)
 
   // Handle add-on configuration option
   let addOnOptionsFromCLI = {}
@@ -208,11 +618,12 @@ export async function normalizeOptions(
     }
   }
 
-  const normalized = {
+  const normalized: Options = {
     projectName: projectName,
     targetDir,
     framework,
     mode,
+    bundler,
     typescript,
     tailwind,
     packageManager:
@@ -221,12 +632,15 @@ export async function normalizeOptions(
       DEFAULT_PACKAGE_MANAGER,
     git: cliOptions.git ?? true,
     install: cliOptions.install,
+    intent: cliOptions.intent ?? !blank,
     chosenAddOns,
     addOnOptions: {
       ...populateAddOnOptionsDefaults(chosenAddOns),
       ...addOnOptionsFromCLI,
     },
     starter: starter,
+    projectPreset: blank ? 'blank' : 'default',
+    routerOnly,
   }
 
   ;(normalized as Options & { includeExamples?: boolean }).includeExamples =

@@ -2,10 +2,14 @@ import { intro } from '@clack/prompts'
 
 import {
   finalizeAddOns,
+  getAllAddOns,
   getFrameworkById,
+  getFrameworks,
   getPackageManager,
+  loadStarter,
   populateAddOnOptionsDefaults,
   readConfigFile,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
@@ -13,16 +17,24 @@ import {
   promptForAddOnOptions,
   promptForEnvVars,
   selectAddOns,
+  selectBundler,
   selectDeployment,
   selectExamples,
+  selectFramework,
   selectGit,
+  selectInstall,
   selectPackageManager,
+  selectTemplate,
   selectToolchain,
 } from './ui-prompts.js'
+import {
+  listTemplateChoices,
+  resolveStarterSpecifier,
+  validateLegacyCreateFlags,
+} from './command-line.js'
 
 import {
-  getCurrentDirectoryName,
-  sanitizePackageName,
+  resolveProjectLocation,
   validateProjectName,
 } from './utils.js'
 import type { Options } from '@tanstack/create'
@@ -33,38 +45,118 @@ export async function promptForCreateOptions(
   cliOptions: CliOptions,
   {
     forcedAddOns = [],
-    showDeploymentOptions = false,
+    forcedDeployment,
+    showDeploymentOptions = true,
+    defaultFrameworkId,
   }: {
     forcedAddOns?: Array<string>
+    forcedDeployment?: string
     showDeploymentOptions?: boolean
+    defaultFrameworkId?: string
   },
 ): Promise<Required<Options> | undefined> {
   const options = {} as Required<Options>
+  const blank = cliOptions.blank === true
 
-  options.framework = getFrameworkById(cliOptions.framework || 'react-cra')!
-
-  // Validate project name
-  if (cliOptions.projectName) {
-    // Handle "." as project name - use sanitized current directory name
-    if (cliOptions.projectName === '.') {
-      options.projectName = sanitizePackageName(getCurrentDirectoryName())
-    } else {
-      options.projectName = cliOptions.projectName
-    }
-    const { valid, error } = validateProjectName(options.projectName)
-    if (!valid) {
-      console.error(error)
-      process.exit(1)
-    }
+  if (cliOptions.framework) {
+    options.framework = getFrameworkById(cliOptions.framework)!
   } else {
-    options.projectName = await getProjectName()
+    const availableFrameworks = getFrameworks()
+    if (defaultFrameworkId || availableFrameworks.length <= 1) {
+      options.framework = getFrameworkById(defaultFrameworkId || 'react')!
+    } else {
+      options.framework = await selectFramework(
+        availableFrameworks,
+        defaultFrameworkId,
+      )
+    }
+  }
+
+  options.bundler = await selectBundler(options.framework, cliOptions.buildTool)
+
+  if (options.bundler === 'rsbuild') {
+    const validation = validateLegacyCreateFlags({
+      ...cliOptions,
+      buildTool: options.bundler,
+      addOns:
+        Array.isArray(cliOptions.addOns) && cliOptions.addOns.length > 0
+          ? cliOptions.addOns
+          : undefined,
+    })
+    if (validation.error) {
+      throw new Error(validation.error)
+    }
+    if (forcedAddOns.length > 0) {
+      throw new Error('Rsbuild does not currently support forced add-ons.')
+    }
+    if (forcedDeployment) {
+      throw new Error('Rsbuild does not currently support deployments.')
+    }
+  }
+
+  const projectLocation = resolveProjectLocation({
+    projectName: cliOptions.projectName ?? (await getProjectName()),
+    targetDir: cliOptions.targetDir,
+    emptyProjectNameIsCurrentDirectory: true,
+  })
+
+  if (!projectLocation) {
+    throw new Error('Project name or target directory is required')
+  }
+
+  options.projectName = projectLocation.projectName
+  options.targetDir = projectLocation.targetDir
+
+  const { valid, error } = validateProjectName(options.projectName)
+  if (!valid) {
+    console.error(error)
+    process.exit(1)
   }
 
   // Mode is always file-router (TanStack Start)
   options.mode = 'file-router'
   const template = cliOptions.template?.toLowerCase().trim()
+  const isLegacyTemplate =
+    template &&
+    ['file-router', 'typescript', 'tsx', 'javascript', 'js', 'jsx'].includes(
+      template,
+    )
   const routerOnly =
-    !!cliOptions.routerOnly || (template ? template !== 'file-router' : false)
+    !!cliOptions.routerOnly ||
+    (isLegacyTemplate ? template !== 'file-router' : false)
+
+  if (!cliOptions.starter) {
+    if (cliOptions.template && !isLegacyTemplate) {
+      cliOptions.starter = cliOptions.template
+    } else if (cliOptions.templateId) {
+      cliOptions.starter = cliOptions.templateId
+    }
+  }
+
+  if (options.bundler !== 'rsbuild' && !routerOnly && !blank && !cliOptions.starter) {
+    const starterChoices = await listTemplateChoices(options.framework.id)
+    const selectedTemplateId = await selectTemplate(
+      starterChoices.map((choice) => ({
+        id: choice.id,
+        name: choice.name,
+        description: choice.description,
+      })),
+    )
+    if (selectedTemplateId) {
+      cliOptions.starter = selectedTemplateId
+    }
+  }
+
+  const starter = options.bundler !== 'rsbuild' && !routerOnly && !blank && cliOptions.starter
+    ? await loadStarter(
+        await resolveStarterSpecifier(cliOptions.starter, options.framework.id),
+      )
+    : undefined
+
+  if (starter) {
+    options.framework = getFrameworkById(starter.framework) || options.framework
+    options.mode = starter.mode
+  }
 
   // TypeScript is always enabled with file-router
   options.typescript = true
@@ -79,24 +171,36 @@ export async function promptForCreateOptions(
   }
 
   // Toolchain selection
-  const toolchain = await selectToolchain(
-    options.framework,
-    cliOptions.toolchain,
-  )
+  const toolchain =
+    blank && options.bundler !== 'rsbuild' && cliOptions.toolchain === undefined
+      ? undefined
+      : await selectToolchain(options.framework, cliOptions.toolchain)
 
   // Deployment selection
-  const deployment = showDeploymentOptions
-    ? routerOnly
-      ? undefined
-      : await selectDeployment(options.framework, cliOptions.deployment)
-    : undefined
+  let deployment: string | undefined
+  if (routerOnly || options.bundler === 'rsbuild') {
+    deployment = undefined
+  } else if (cliOptions.deployment) {
+    deployment = cliOptions.deployment
+  } else if (blank) {
+    deployment = forcedDeployment
+  } else if (showDeploymentOptions) {
+    deployment = await selectDeployment(
+      options.framework,
+      cliOptions.deployment,
+      forcedDeployment,
+    )
+  } else {
+    deployment = forcedDeployment
+  }
 
   // Add-ons selection
   const addOns: Set<string> = new Set()
 
   // Examples/demo pages are enabled by default
-  const includeExamples =
-    cliOptions.examples ?? (routerOnly ? false : await selectExamples())
+  const includeExamples = blank
+    ? false
+    : (cliOptions.examples ?? (routerOnly ? false : await selectExamples()))
   ;(options as Required<Options> & { includeExamples?: boolean }).includeExamples =
     includeExamples
 
@@ -107,20 +211,23 @@ export async function promptForCreateOptions(
     addOns.add(deployment)
   }
 
-  if (!routerOnly) {
+  if (!routerOnly && options.bundler !== 'rsbuild') {
+    for (const addOn of starter?.dependsOn || []) {
+      addOns.add(addOn)
+    }
     for (const addOn of forcedAddOns) {
       addOns.add(addOn)
     }
   }
 
-  if (!routerOnly && Array.isArray(cliOptions.addOns)) {
+  if (!routerOnly && options.bundler !== 'rsbuild' && Array.isArray(cliOptions.addOns)) {
     for (const addOn of cliOptions.addOns) {
       if (addOn.toLowerCase() === 'start') {
         continue
       }
       addOns.add(addOn)
     }
-  } else if (!routerOnly) {
+  } else if (!routerOnly && options.bundler !== 'rsbuild' && !blank) {
     for (const addOn of await selectAddOns(
       options.framework,
       options.mode,
@@ -146,14 +253,16 @@ export async function promptForCreateOptions(
   }
 
   const chosenAddOns = Array.from(
-    await finalizeAddOns(options.framework, options.mode, Array.from(addOns)),
+    await finalizeAddOns(options.framework, options.mode, Array.from(addOns), options.bundler),
   )
   options.chosenAddOns = includeExamples
     ? chosenAddOns
     : chosenAddOns.filter((addOn) => addOn.type !== 'example')
 
-  // Tailwind is always enabled
-  options.tailwind = true
+  options.tailwind =
+    !blank || options.chosenAddOns.some((addOn) => addOn.tailwind === true)
+  options.projectPreset = blank ? 'blank' : 'default'
+  options.routerOnly = routerOnly
 
   // Prompt for add-on options in interactive mode
   if (Array.isArray(cliOptions.addOns)) {
@@ -178,8 +287,11 @@ export async function promptForCreateOptions(
     envVarValues
 
   options.git = cliOptions.git ?? (await selectGit())
-  if (cliOptions.install === false) {
-    options.install = false
+  options.install = cliOptions.install ?? (await selectInstall())
+  options.intent = cliOptions.intent ?? !blank
+
+  if (starter) {
+    options.starter = starter
   }
 
   return options
@@ -203,6 +315,48 @@ export async function promptForAddOns(): Promise<Array<string>> {
   intro(`Adding new add-ons to '${config.projectName}'`)
 
   const addOns: Set<string> = new Set()
+
+  const bundler = resolveBundler(framework, config.bundler).id
+
+  if (bundler === 'rsbuild') {
+    const toolchains = getAllAddOns(framework, config.mode!, bundler).filter(
+      (addOn) => addOn.type === 'toolchain',
+    )
+    const configuredAddOnIds = new Set(
+      config.chosenAddOns.map((addOn) => addOn.toLowerCase()),
+    )
+    const configuredExclusiveGroups = new Set(
+      toolchains
+        .filter((addOn) => configuredAddOnIds.has(addOn.id.toLowerCase()))
+        .flatMap((addOn) => addOn.exclusive ?? []),
+    )
+    const unavailableToolchains = toolchains
+      .filter(
+        (addOn) =>
+          configuredAddOnIds.has(addOn.id.toLowerCase()) ||
+          addOn.exclusive?.some((exclusive) =>
+            configuredExclusiveGroups.has(exclusive),
+          ),
+      )
+      .map((addOn) => addOn.id)
+
+    if (unavailableToolchains.length === toolchains.length) {
+      return []
+    }
+
+    for (const addOn of await selectAddOns(
+      framework,
+      config.mode!,
+      'toolchain',
+      'Which toolchain would you like to add?',
+      unavailableToolchains,
+      false,
+      bundler,
+    )) {
+      addOns.add(addOn)
+    }
+    return Array.from(addOns)
+  }
 
   for (const addOn of await selectAddOns(
     framework,

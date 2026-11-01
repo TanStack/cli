@@ -8,7 +8,7 @@ describe('getAllAddOns', () => {
   it('filter add-ons', () => {
     const addOns = getAllAddOns(
       {
-        id: 'react-cra',
+        id: 'react',
         getAddOns: () => [
           {
             id: 'add-on-1',
@@ -32,7 +32,7 @@ describe('getAllAddOns', () => {
   it('should sort add-ons by priority (higher priority first)', () => {
     const addOns = getAllAddOns(
       {
-        id: 'react-cra',
+        id: 'react',
         getAddOns: () => [
           {
             id: 'low-priority',
@@ -72,7 +72,7 @@ describe('getAllAddOns', () => {
   it('should filter by mode and then sort by priority', () => {
     const addOns = getAllAddOns(
       {
-        id: 'react-cra',
+        id: 'react',
         getAddOns: () => [
           {
             id: 'file-router-low',
@@ -107,7 +107,7 @@ describe('finalizeAddOns', () => {
   it('should finalize add-ons', async () => {
     const addOns = await finalizeAddOns(
       {
-        id: 'react-cra',
+        id: 'react',
         getAddOns: () => [
           {
             id: 'add-on-1',
