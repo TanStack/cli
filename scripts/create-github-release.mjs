@@ -3,6 +3,7 @@ import { execFileSync, execSync } from 'node:child_process'
 import fs, { globSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { findReleaseForCommit } from './release-identity.mjs'
 
 const rootDir = path.join(import.meta.dirname, '..')
 const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
@@ -63,6 +64,29 @@ const releaseLogs = execSync(
 
 const currentRelease = releaseLogs[0] || 'HEAD'
 const previousRelease = releaseLogs[1]
+
+const releaseHead = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+const releases = JSON.parse(execFileSync('gh', [
+  'api', '--paginate', '--slurp', 'repos/TanStack/cli/releases?per_page=100',
+], { encoding: 'utf8' })).flat()
+const existingRelease = await findReleaseForCommit(releases, releaseHead, (tag) => {
+  try {
+    return execFileSync('git', ['rev-parse', '--verify', `${tag}^{commit}`], {
+      encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return execFileSync('gh', [
+      'api', `repos/TanStack/cli/commits/${encodeURIComponent(tag)}`, '--jq', '.sha',
+    ], { encoding: 'utf8' }).trim()
+  }
+})
+if (existingRelease) {
+  if (existingRelease.draft) {
+    throw new Error(`A draft release already exists for ${releaseHead}: ${existingRelease.html_url}`)
+  }
+  console.info(`Release already exists for ${releaseHead}: ${existingRelease.html_url}`)
+  process.exit(0)
+}
 
 const bumpedPackages = []
 for (const workspaceDir of workspaceDirs) {
