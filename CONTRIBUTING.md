@@ -40,42 +40,26 @@ npx serve .add-on -l 9080
 node ../cli/packages/cli/dist/index.js create my-app --add-ons http://localhost:9080/info.json
 ```
 
-### Testing Starters Locally
+### Testing Templates Locally
 
 ```bash
-# In your starter directory
-npx serve .starter -l 9080
+# In your template directory
+npx serve .template -l 9080
 
-# Create app with local starter
-node ../cli/packages/cli/dist/index.js create my-app --starter http://localhost:9080/starter.json
+# Create app with local template
+node ../cli/packages/cli/dist/index.js create my-app --template http://localhost:9080/template.json
 ```
 
-## Dev Watch Mode
+## Dev Mode
 
-Watch framework files and auto-rebuild:
+Create a sandbox app, watch built-in framework templates/add-ons, and run the sandbox dev server:
 
 ```bash
-rm -rf test-app && node packages/cli/dist/index.js create \
-  --dev-watch ./packages/create/src/frameworks/react \
-  test-app --add-ons shadcn
+rm -rf test-app && node packages/cli/dist/index.js dev \
+  test-app --framework React --add-ons shadcn
 ```
 
-## Developing Create UI
-
-The UI requires running three things:
-
-```bash
-# Terminal 1: Watch mode for packages
-pnpm dev
-
-# Terminal 2: API server (from empty directory)
-CTA_DISABLE_UI=true node ../cli/packages/cli/dist/index.js create --ui
-
-# Terminal 3: React dev server
-cd packages/create-ui && pnpm dev:ui
-```
-
-Navigate to `http://localhost:3000` to see the UI connected to the API at `http://localhost:8080`.
+The legacy `create --dev-watch <path>` flow still works for direct watch path control.
 
 ## Submitting Changes
 
@@ -89,7 +73,6 @@ Navigate to `http://localhost:3000` to see the UI connected to the API at `http:
 packages/
 ├── cli/           # @tanstack/cli - CLI commands
 ├── create/        # @tanstack/create - Engine + frameworks
-└── create-ui/     # @tanstack/create-ui - Visual builder
 ```
 
 ## Useful Scripts

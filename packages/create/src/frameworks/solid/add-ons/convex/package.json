@@ -1,7 +1,7 @@
 {
   "dependencies": {
+    "convex": "^1.32.0",
     "convex-solidjs": "^0.0.3",
-    "convex": "^1.27.3",
-    "lucide-solid": "^0.544.0"
+    "lucide-solid": "^0.577.0"
   }
 }

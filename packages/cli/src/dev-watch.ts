@@ -1,13 +1,17 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { spawn } from 'node:child_process'
 
 import chokidar from 'chokidar'
 import chalk from 'chalk'
 import { temporaryDirectory } from 'tempy'
 import {
   createApp,
+  finalizeAddOns,
   getFrameworkById,
   registerFramework,
+  scanAddOnDirectories,
+  scanProjectDirectory,
 } from '@tanstack/create'
 import { FileSyncer } from './file-syncer.js'
 import { createUIEnvironment } from './ui-environment.js'
@@ -25,6 +29,7 @@ export interface DevWatchOptions {
   framework: Framework
   cliOptions: Options
   packageManager: string
+  runDevCommand?: boolean
   environment: Environment
   frameworkDefinitionInitializers?: Array<() => FrameworkDefinition>
 }
@@ -82,6 +87,8 @@ export class DevWatchManager {
   private tempDir: string | null = null
   private isBuilding = false
   private buildCount = 0
+  private appDevProcess: ReturnType<typeof spawn> | null = null
+  private lastSyncedSourceFiles: Set<string> | null = null
 
   constructor(private options: DevWatchOptions) {
     this.syncer = new FileSyncer()
@@ -110,6 +117,9 @@ export class DevWatchManager {
     console.log(chalk.bold('dev-watch'))
     this.log.tree('', `watching: ${chalk.cyan(this.options.watchPath)}`)
     this.log.tree('', `target: ${chalk.cyan(this.options.targetDir)}`)
+    if (this.options.runDevCommand) {
+      this.log.tree('', `app dev server: ${chalk.cyan('enabled')}`)
+    }
     this.log.tree('', 'ready', true)
 
     // Setup signal handlers
@@ -118,6 +128,10 @@ export class DevWatchManager {
 
     // Start watching
     this.startWatcher()
+
+    if (this.options.runDevCommand) {
+      this.startAppDevServer()
+    }
   }
 
   async stop(): Promise<void> {
@@ -196,33 +210,30 @@ export class DevWatchManager {
       this.log.section(`build #${buildId}`)
       const startTime = Date.now()
 
-      if (!this.options.frameworkDefinitionInitializers) {
-        throw new Error(
-          'There must be framework initalizers passed to frameworkDefinitionInitializers to use --dev-watch',
+      let refreshedFramework: FrameworkDefinition | null | undefined =
+        this.createFrameworkDefinitionFromWatchPath()
+
+      if (!refreshedFramework && this.options.frameworkDefinitionInitializers) {
+        const refreshedFrameworks =
+          this.options.frameworkDefinitionInitializers.map(
+            (frameworkInitalizer) => frameworkInitalizer(),
+          )
+
+        refreshedFramework = refreshedFrameworks.find(
+          (f) => f.id === this.options.framework.id,
         )
       }
 
-      const refreshedFrameworks =
-        this.options.frameworkDefinitionInitializers.map(
-          (frameworkInitalizer) => frameworkInitalizer(),
-        )
-
-      const refreshedFramework = refreshedFrameworks.find(
-        (f) => f.id === this.options.framework.id,
-      )
-
       if (!refreshedFramework) {
-        throw new Error('Could not identify the framework')
+        throw new Error(
+          'Could not refresh framework from watch path or framework initializers',
+        )
       }
 
       // Update the chosen addons to use the latest code
       const chosenAddonIds = this.options.cliOptions.chosenAddOns.map(
         (m) => m.id,
       )
-      const updatedChosenAddons = refreshedFramework.addOns.filter((f) =>
-        chosenAddonIds.includes(f.id),
-      )
-
       // Create temp directory for this build using tempy
       this.tempDir = temporaryDirectory()
 
@@ -242,10 +253,18 @@ export class DevWatchManager {
         )
       }
 
-      // Check if package.json was modified
-      const packageJsonModified = Array.from(changes).some(
-        (filePath) => path.basename(filePath) === 'package.json',
+      const updatedChosenAddons = await finalizeAddOns(
+        registeredFramework,
+        this.options.cliOptions.mode,
+        chosenAddonIds,
+        this.options.cliOptions.bundler,
       )
+
+      // Check if package metadata was modified
+      const packageMetadataChanged = Array.from(changes).some((filePath) => {
+        const normalized = filePath.replace(/\\/g, '/')
+        return /(^|\/)package\.json(\.ejs)?$/.test(normalized)
+      })
 
       const updatedOptions: Options = {
         ...this.options.cliOptions,
@@ -253,11 +272,12 @@ export class DevWatchManager {
         framework: registeredFramework,
         targetDir: this.tempDir,
         git: false,
-        install: packageJsonModified,
+        install: packageMetadataChanged,
+        intent: false,
       }
 
       // Show package installation indicator if needed
-      if (packageJsonModified) {
+      if (packageMetadataChanged) {
         this.log.tree('  ', `${chalk.yellow('⟳')} installing packages...`)
       }
 
@@ -269,10 +289,11 @@ export class DevWatchManager {
       await createApp(silentEnvironment, updatedOptions)
 
       // Sync files to target directory
-      const syncResult = await this.syncer.sync(
-        this.tempDir,
-        this.options.targetDir,
-      )
+      const syncResult = await this.syncer.sync(this.tempDir, this.options.targetDir, {
+        deleteRemoved: this.lastSyncedSourceFiles !== null,
+        previousSourceFiles: this.lastSyncedSourceFiles ?? undefined,
+      })
+      this.lastSyncedSourceFiles = new Set(syncResult.sourceFiles)
 
       // Clean up temp directory after sync is complete
       try {
@@ -288,7 +309,7 @@ export class DevWatchManager {
       // Build tree-style summary
       this.log.tree('  ', `duration: ${chalk.cyan(elapsed + 'ms')}`)
 
-      if (packageJsonModified) {
+      if (packageMetadataChanged) {
         this.log.tree('  ', `packages: ${chalk.green('✓ installed')}`)
       }
 
@@ -296,19 +317,29 @@ export class DevWatchManager {
       const noMoreTreeItems =
         syncResult.updated.length === 0 &&
         syncResult.created.length === 0 &&
+        syncResult.deleted.length === 0 &&
         syncResult.errors.length === 0
 
       if (syncResult.updated.length > 0) {
         this.log.tree(
           '  ',
           `updated: ${chalk.green(syncResult.updated.length + ' file' + (syncResult.updated.length > 1 ? 's' : ''))}`,
-          syncResult.created.length === 0 && syncResult.errors.length === 0,
+          syncResult.created.length === 0 &&
+            syncResult.deleted.length === 0 &&
+            syncResult.errors.length === 0,
         )
       }
       if (syncResult.created.length > 0) {
         this.log.tree(
           '  ',
           `created: ${chalk.green(syncResult.created.length + ' file' + (syncResult.created.length > 1 ? 's' : ''))}`,
+          syncResult.deleted.length === 0 && syncResult.errors.length === 0,
+        )
+      }
+      if (syncResult.deleted.length > 0) {
+        this.log.tree(
+          '  ',
+          `deleted: ${chalk.green(syncResult.deleted.length + ' file' + (syncResult.deleted.length > 1 ? 's' : ''))}`,
           syncResult.errors.length === 0,
         )
       }
@@ -368,8 +399,16 @@ export class DevWatchManager {
       // Show created files
       if (syncResult.created.length > 0) {
         syncResult.created.forEach((file, index) => {
-          const isLast = index === syncResult.created.length - 1
+          const isLast =
+            index === syncResult.created.length - 1 && syncResult.deleted.length === 0
           this.log.treeItem('  ', `${chalk.green('+')} ${file}`, isLast)
+        })
+      }
+
+      if (syncResult.deleted.length > 0) {
+        syncResult.deleted.forEach((file, index) => {
+          const isLast = index === syncResult.deleted.length - 1
+          this.log.treeItem('  ', `${chalk.red('-')} ${file}`, isLast)
         })
       }
 
@@ -393,6 +432,48 @@ export class DevWatchManager {
     }
   }
 
+  private createFrameworkDefinitionFromWatchPath(): FrameworkDefinition | null {
+    const frameworkRoot = this.options.watchPath
+    const projectDirectory = path.join(frameworkRoot, 'project')
+    const baseDirectory = path.join(projectDirectory, 'base')
+
+    if (!fs.existsSync(projectDirectory) || !fs.existsSync(baseDirectory)) {
+      return null
+    }
+
+    const addOnDirectoryCandidates = [
+      path.join(frameworkRoot, 'add-ons'),
+      path.join(frameworkRoot, 'toolchains'),
+      path.join(frameworkRoot, 'examples'),
+      path.join(frameworkRoot, 'hosts'),
+    ]
+
+    const addOnDirectories = addOnDirectoryCandidates.filter((dir) =>
+      fs.existsSync(dir),
+    )
+
+    const addOns =
+      addOnDirectories.length > 0 ? scanAddOnDirectories(addOnDirectories) : []
+    const { files, basePackageJSON, optionalPackages } = scanProjectDirectory(
+      projectDirectory,
+      baseDirectory,
+    )
+
+    return {
+      id: this.options.framework.id,
+      name: this.options.framework.name,
+      description: this.options.framework.description,
+      version: this.options.framework.version,
+      base: files,
+      addOns,
+      basePackageJSON,
+      optionalPackages,
+      bundlers: this.options.framework.bundlers,
+      defaultBundler: this.options.framework.defaultBundler,
+      supportedModes: this.options.framework.supportedModes,
+    }
+  }
+
   private cleanup(): void {
     console.log()
     console.log('Cleaning up...')
@@ -408,7 +489,64 @@ export class DevWatchManager {
       }
     }
 
+    if (this.appDevProcess && !this.appDevProcess.killed) {
+      this.appDevProcess.kill('SIGTERM')
+      this.appDevProcess = null
+    }
+
     process.exit(0)
+  }
+
+  private startAppDevServer(): void {
+    if (this.appDevProcess) {
+      return
+    }
+
+    const { command, args } = this.getDevCommandForPackageManager(
+      this.options.packageManager,
+    )
+
+    this.log.section('app dev server')
+    this.log.tree('  ', `starting: ${chalk.cyan([command, ...args].join(' '))}`)
+
+    this.appDevProcess = spawn(command, args, {
+      cwd: this.options.targetDir,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+      env: process.env,
+    })
+
+    this.appDevProcess.on('exit', (code, signal) => {
+      if (signal) {
+        this.log.warning(`app dev server exited via signal ${signal}`)
+      } else if (code && code !== 0) {
+        this.log.warning(`app dev server exited with code ${code}`)
+      }
+      this.appDevProcess = null
+    })
+
+    this.appDevProcess.on('error', (error) => {
+      this.log.error(`Failed to start app dev server: ${error.message}`)
+      this.appDevProcess = null
+    })
+  }
+
+  private getDevCommandForPackageManager(packageManager: string): {
+    command: string
+    args: Array<string>
+  } {
+    switch (packageManager) {
+      case 'npm':
+        return { command: 'npm', args: ['run', 'dev'] }
+      case 'yarn':
+        return { command: 'yarn', args: ['dev'] }
+      case 'bun':
+        return { command: 'bun', args: ['run', 'dev'] }
+      case 'deno':
+        return { command: 'deno', args: ['task', 'dev'] }
+      default:
+        return { command: 'pnpm', args: ['dev'] }
+    }
   }
 
   private log = {

@@ -1,6 +1,6 @@
 {
   "name": "Drizzle",
-  "description": "Add Drizzle ORM to your application.",
+  "description": "Type-safe SQL query builder for Postgres, SQLite, or MySQL.",
   "phase": "add-on",
   "type": "add-on",
   "category": "orm",

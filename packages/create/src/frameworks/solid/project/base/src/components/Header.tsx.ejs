@@ -1,153 +1,69 @@
-<% if (addOns.length === 0 && integrations.length === 0 && routes.length === 0) { ignoreFile() } %>import { Link } from '@tanstack/solid-router'
+<% if (!includeExamples) { ignoreFile(); return; } %>
+import { Link } from '@tanstack/solid-router'
 <% for(const integration of integrations.filter(i => i.type === 'header-user')) { %>
-import <%= integration.jsName %> from "<%= relativePath(integration.path) %>";
-<% } %><%
-const icons = new Set([
-  "Menu",
-  "X",
-  "House",
-  "Home",
-  "Globe",
-  "ChevronDown",
-  "ChevronRight",
-  "Layers",
-])
+import <%= integration.jsName %> from '<%= relativePath(integration.path) %>'
+<% } %>
 
-for(const addOn of addOns) {
-  for(const route of (addOn?.routes||[])?.filter(r => r.url && r.name)) {
-    icons.add( route.icon || "Globe");
+<%
+const demoRoutes = [];
+for (const addOn of addOns) {
+  for (const route of (addOn?.routes || []).filter((r) => r.url && r.name)) {
+    demoRoutes.push({ url: route.url, name: route.name });
+    for (const child of route.children || []) {
+      if (child?.url && child?.name) {
+        demoRoutes.push({ url: child.url, name: child.name });
+      }
+    }
   }
 }
+const userHeaders = integrations.filter((i) => i.type === 'header-user');
 %>
-import { createSignal } from 'solid-js';
-import {
-  <%= Array.from(icons).sort().join(", ") %>
-} from "lucide-solid";
 
 export default function Header() {
-<%
-const menusWithChildren = addOns.filter(a => a.routes?.some(r => r.children));
-const userHeaders = integrations.filter(i => i.type === 'header-user');
-%>
-  const [isOpen, setIsOpen] = createSignal(false);
-  const [groupedExpanded, setGroupedExpanded] = createSignal<Record<string, boolean>>({});
-
   return (
-    <>
-      <header class="p-4 flex items-center bg-gray-800 text-white shadow-lg">
-        <button
-          onClick={() => setIsOpen(true)}
-          class="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-          aria-label="Open menu"
-        >
-          <Menu size={24} />
-        </button>
-        <h1 class="ml-4 text-xl font-semibold">
-          <Link to="/">
-            <img
-              src="/tanstack-word-logo-white.svg"
-              alt="TanStack Logo"
-              class="h-10"
-            />
+    <header class="site-header px-4">
+      <nav class="page-wrap nav-shell">
+        <h2 class="m-0 flex-shrink-0 text-base font-semibold tracking-tight">
+          <Link to="/" class="brand-pill">
+            <span class="brand-dot" />
+            TanStack Start
           </Link>
-        </h1>
-      </header>
+        </h2>
 
-      <aside
-        class={`fixed top-0 left-0 h-full w-80 bg-gray-900 text-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isOpen() ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div class="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 class="text-xl font-bold">Navigation</h2>
-          <button
-            onClick={() => setIsOpen(false)}
-            class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-            aria-label="Close menu"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <nav class="flex-1 p-4 overflow-y-auto">
-          <Link
-            to="/"
-            onClick={() => setIsOpen(false)}
-            class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-            activeProps={{
-              class:
-                "flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
-            }}
-          >
-            <Home size={20} />
-            <span class="font-medium">Home</span>
-          </Link>
-
-          {/* Demo Links Start */}
-          <% for(const addOn of addOns) {
-            for(const route of (addOn?.routes||[])?.filter(r => r.url && r.name)) {
-              if (route.children) { %>
-                <div class="flex flex-row justify-between">
-                  <Link to="<%= route.url %>"
-                    onClick={() => setIsOpen(false)}
-                    class="flex-1 flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-                    activeProps={{
-                      class:
-                        "flex-1 flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
-                    }}
-                  >
-                    <<%= route.icon || "Globe" %> size={20} />
-                    <span class="font-medium"><%= route.name %></span>  
-                  </Link>
-                  <button
-                    class="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                    onClick={() => setGroupedExpanded(prev => ({ ...prev, <%= route.jsName %>: !prev.<%= route.jsName %> }))}>
-                    {groupedExpanded().<%= route.jsName %> ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                  </button>
-                </div>
-                {groupedExpanded().<%= route.jsName %> && (
-                  <div class="flex flex-col ml-4">
-                    <% for(const child of route.children) { %>
-                      <Link
-                        to="<%= child.url %>"
-                        onClick={() => setIsOpen(false)}
-                        class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-                        activeProps={{
-                          class:
-                            "flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
-                        }}
-                      >
-                        <<%= child.icon || "Globe" %> size={20} />
-                        <span class="font-medium"><%= child.name %></span>
-                      </Link>
-                    <% } %>
-                </div>
-                )}
-            <% } else { %>
-              <Link
-                to="<%= route.url %>"
-                onClick={() => setIsOpen(false)}
-                class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-                activeProps={{
-                  class:
-                    "flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2",
-                }}
-              >
-                <<%= route.icon || "Globe" %> size={20} />
-                <span class="font-medium"><%= route.name %></span>
-              </Link>
-          <% } } } %>
-          {/* Demo Links End */}
-        </nav>
-
-        <% if (userHeaders.length > 0) { %>
-        <div class="p-4 border-t border-gray-700 bg-gray-800 flex flex-col gap-2">
-          <% for(const integration of userHeaders) { %>
-            <<%= integration.jsName %> />
+        <div class="ml-auto flex items-center gap-2">
+          <% for (const integration of userHeaders) { %><<%= integration.jsName %> />
           <% } %>
         </div>
-        <% } %>
-      </aside>
-    </>
-  );
+
+        <div class="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
+          <Link to="/" class="nav-link" activeProps={{ class: 'nav-link is-active' }}>
+            Home
+          </Link>
+          <Link to="/about" class="nav-link" activeProps={{ class: 'nav-link is-active' }}>
+            About
+          </Link>
+          <a
+            href="https://tanstack.com/start/latest/docs/framework/solid/overview"
+            target="_blank"
+            rel="noreferrer"
+            class="nav-link"
+          >
+            Docs
+          </a>
+          <% if (demoRoutes.length > 0) { %><details class="relative w-full sm:w-auto">
+            <summary class="nav-link list-none cursor-pointer">Demos</summary>
+            <div class="mt-2 min-w-56 rounded-xl border border-[var(--line)] bg-[var(--header-bg)] p-2 shadow-lg sm:absolute sm:right-0">
+              <% for (const route of demoRoutes) { %><a
+                href="<%= route.url %>"
+                class="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+              >
+                <%= route.name %>
+              </a>
+              <% } %>
+            </div>
+          </details><% } %>
+        </div>
+      </nav>
+    </header>
+  )
 }

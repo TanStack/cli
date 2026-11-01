@@ -5,17 +5,21 @@
     "type": "git",
     "url": "git+https://github.com/TanStack/cli.git"
   },
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@11.1.0",
   "type": "module",
   "scripts": {
     "cleanNodeModules": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
     "build": "nx run-many --target=build --parallel 5",
     "dev": "nx run-many --target=dev --parallel 20",
-    "test": "nx run-many --target=test",
+    "test": "pnpm test:unit && pnpm test:e2e",
+    "test:unit": "nx run-many --target=test",
+    "test:e2e": "nx run @tanstack/cli:test:e2e",
+    "test:e2e:matrix": "nx run @tanstack/cli:test:e2e:matrix",
     "check-outdated": "node scripts/check-outdated-packages.js",
     "update-outdated": "node scripts/check-outdated-packages.js --update",
     "prepare": "husky install",
     "changeset": "changeset",
+    "changeset:generate": "node scripts/generate-semantic-changeset.mjs",
     "changeset:publish": "changeset publish",
     "changeset:version": "changeset version && pnpm install --no-frozen-lockfile"
   },
@@ -29,18 +33,6 @@
     "husky": "^8.0.0",
     "nx": "22.1.3",
     "semver": "^7.6.3",
-    "typescript": "^5.6.3"
-  },
-  "pnpm": {
-    "overrides": {
-      "@tanstack/create-start": "workspace:*",
-      "create-start-app": "workspace:*",
-      "create-tanstack": "workspace:*",
-      "create-tanstack-app": "workspace:*",
-      "create-tsrouter-app": "workspace:*",
-      "@tanstack/cli": "workspace:*",
-      "@tanstack/create": "workspace:*",
-      "@tanstack/create-ui": "workspace:*"
-    }
+    "typescript": "^6.0.2"
   }
 }

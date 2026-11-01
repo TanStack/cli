@@ -1,0 +1,55 @@
+name: E2E Opportunistic Matrix
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-e2e:
+    name: Matrix (${{ matrix.scenario }})
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - react-base-pnpm
+          - react-base-npm
+          - solid-base-npm
+          - react-template-resume
+          - react-template-ecommerce
+          - react-addons-core-pnpm
+          - solid-addons-core-pnpm
+          - react-toolchain-deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Tools
+        uses: tanstack/config/.github/setup@e4b48f16568324f76f467aa4c2aac2f05db632c3 # main
+      - name: Install Playwright Chrome
+        run: pnpm --filter @tanstack/cli exec playwright install --with-deps chrome
+      - name: Run Matrix Scenario
+        env:
+          E2E_MATRIX_SCENARIO: ${{ matrix.scenario }}
+        run: pnpm nx run @tanstack/cli:test:e2e:matrix
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report-${{ matrix.scenario }}
+          path: packages/cli/playwright-report
+          if-no-files-found: ignore

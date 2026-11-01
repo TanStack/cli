@@ -33,14 +33,15 @@ function SimpleForm() {
   })
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 text-white"
-      style={{
-        backgroundImage:
-          'radial-gradient(50% 50% at 5% 40%, #add8e6 0%, #0000ff 70%, #00008b 100%)',
-      }}
-    >
-      <div className="w-full max-w-2xl p-8 rounded-xl backdrop-blur-md bg-black/50 shadow-xl border-8 border-black/10">
+    <main className="demo-page demo-center">
+      <section className="demo-panel w-full max-w-2xl">
+        <div className="mb-6">
+          <p className="island-kicker mb-2">TanStack Form</p>
+          <h1 className="demo-title">Simple Form</h1>
+          <p className="demo-muted mt-2">
+            A small validated form using the generated field helpers.
+          </p>
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -63,8 +64,8 @@ function SimpleForm() {
             </form.AppForm>
           </div>
         </form>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 

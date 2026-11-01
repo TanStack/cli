@@ -2,27 +2,12 @@
   "name": "app-ts",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite dev --port 3000",
-    "build": "vite build",
-    "start": "node .output/server/index.mjs",
-    "preview": "vite preview",
-    "test": "vitest run"
-  },
+  "scripts": {},
   "dependencies": {
-    "@tanstack/solid-router": "^1.133.20",
-    "@tanstack/solid-router-devtools": "^1.133.20",
-    "@tanstack/solid-router-ssr-query": "^1.132.25",
-    "@tanstack/solid-start": "^1.133.20",
-    "lucide-solid": "^0.544.0",
-    "solid-js": "^1.9.9",
-    "vite-tsconfig-paths": "^5.1.4"
+    "@tanstack/solid-router": "latest",
+    "@tanstack/solid-start": "latest",
+    "solid-js": "^1.9.12"
   },
-  "devDependencies": {
-    "@tanstack/devtools-vite": "^0.3.11",
-    "vite-plugin-lucide-preprocess": "^1.4.6",
-    "vite-plugin-solid": "^2.11.10",
-    "typescript": "^5.7.2",
-    "vite": "^7.1.7"
-  }
+  "devDependencies": {},
+  "pnpm": {}
 }

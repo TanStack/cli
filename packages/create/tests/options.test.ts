@@ -7,12 +7,12 @@ describe('createSerializedOptions', () => {
   it('handle no add-ons', () => {
     const options = createSerializedOptions({
       framework: {
-        id: 'react-cra',
+        id: 'react',
       } as Framework,
       chosenAddOns: [],
     } as unknown as Options)
     expect(options).toEqual({
-      framework: 'react-cra',
+      framework: 'react',
       chosenAddOns: [],
     })
   })
@@ -20,7 +20,7 @@ describe('createSerializedOptions', () => {
   it('handle add-ons and a starter', () => {
     const options = createSerializedOptions({
       framework: {
-        id: 'react-cra',
+        id: 'react',
       } as Framework,
       chosenAddOns: [
         {
@@ -34,7 +34,7 @@ describe('createSerializedOptions', () => {
       } as unknown as Starter,
     } as unknown as Options)
     expect(options).toEqual({
-      framework: 'react-cra',
+      framework: 'react',
       chosenAddOns: ['add-on-1'],
       starter: 'starter-1',
     })

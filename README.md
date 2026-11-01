@@ -1,5 +1,19 @@
 <div align="center">
-  <h1>TanStack CLI</h1>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://tanstack.com/api/readme/cli.png?theme=dark"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://tanstack.com/api/readme/cli.png"
+    />
+    <img
+      src="https://tanstack.com/api/readme/cli.png"
+      alt="TanStack CLI"
+      width="900"
+    />
+  </picture>
 </div>
 
 <div align="center">
@@ -30,8 +44,9 @@ npx @tanstack/cli create my-app
 
 - **TanStack Start** - Full-stack SSR framework (default)
 - **TanStack Router** - Type-safe routing (`--router-only` for SPA)
+- **Vite or Rsbuild** - Choose the build tool for React and Solid projects
 - **Add-ons** - Auth, database, deployment, monitoring, and more
-- **MCP Server** - AI-assisted development
+- **CLI Introspection** - Agent-friendly discovery via JSON CLI output
 
 ## Quick Start
 
@@ -39,8 +54,14 @@ npx @tanstack/cli create my-app
 # Create TanStack Start app (recommended)
 npx @tanstack/cli create my-app
 
+# Create a minimal one-route Start app without selection prompts
+npx @tanstack/cli create my-app --blank -y
+
 # Create Router-only SPA (no SSR)
 npx @tanstack/cli create my-app --router-only
+
+# Create with Rsbuild
+npx @tanstack/cli create my-app --build-tool rsbuild -y
 
 # With add-ons
 npx @tanstack/cli create my-app --add-ons clerk,drizzle,tanstack-query
@@ -50,6 +71,11 @@ npx @tanstack/cli add clerk drizzle
 
 # List available add-ons
 npx @tanstack/cli create --list-add-ons
+
+# Agent-friendly introspection
+npx @tanstack/cli create --addon-details tanstack-query --json
+npx @tanstack/cli libraries --json
+npx @tanstack/cli search-docs "loaders" --library router --framework react --json
 ```
 
 ## Documentation
@@ -57,6 +83,22 @@ npx @tanstack/cli create --list-add-ons
 - [CLI Reference](https://tanstack.com/cli/latest/docs/cli-reference)
 - [TanStack Start](https://tanstack.com/start)
 - [TanStack Router](https://tanstack.com/router)
+
+## Telemetry
+
+TanStack CLI sends anonymous usage telemetry by default.
+
+- Sent: command usage, durations, selected framework/build tool/package manager/add-on ids, and coarse result metadata
+- Never sent: project names, file paths, target directories, raw search queries, raw template URLs/paths, add-on config values, env vars, or raw error messages
+- Disabled automatically in `CI`, or when `DO_NOT_TRACK=1` or `TANSTACK_CLI_TELEMETRY_DISABLED=1`
+
+Manage it with:
+
+```bash
+tanstack telemetry status
+tanstack telemetry disable
+tanstack telemetry enable
+```
 
 ## Get Involved
 

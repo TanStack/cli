@@ -1,11 +1,12 @@
 {
   "scripts": {
     "lint": "eslint",
-    "format": "prettier --check .",
-    "check": "prettier --write . && eslint --fix"
+    "format": "prettier --write . && eslint --fix",
+    "check": "prettier --check ."
   },
   "devDependencies": {
-    "@tanstack/eslint-config": "^0.3.0",
-    "prettier": "^3.5.3"
+    "@tanstack/eslint-config": "latest",
+    "eslint": "^9.20.0",
+    "prettier": "^3.8.1"
   }
 }

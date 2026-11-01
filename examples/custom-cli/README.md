@@ -2,7 +2,7 @@
 
 There are three customizing scenarios we should support:
 
-- Augmenting an exsting CTA framework - Take an existing framework like `react-cra` then allow for base template customization, removal of add-ons, and addition of new custom add-ons.
+- Augmenting an exsting CTA framework - Take an existing framework like `react` then allow for base template customization, removal of add-ons, and addition of new custom add-ons.
 - Customized UI - Build up a new UI from components of the base UI.
 - New framework - Build up a new framework from with base and add-ons as well as a new CLI.
 
@@ -17,5 +17,5 @@ There are two types of customers for this work:
 
 | Project                                | Description                                                           |
 | -------------------------------------- | --------------------------------------------------------------------- |
-| [customized-react](./customized-react) | Shows a small customization of the existing `react-cra` framework.    |
+| [customized-react](./customized-react) | Shows a small customization of the existing `react` framework.    |
 | [create-qwik-app](./create-qwik-app)   | Show support for an entire framework (Qwik) with a custom CLI and UI. |

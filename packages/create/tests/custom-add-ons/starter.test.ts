@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fs, vol } from 'memfs'
 
-import { readOrGenerateStarterInfo } from '../../src/custom-add-ons/starter.js'
+import {
+  loadStarter,
+  readOrGenerateStarterInfo,
+} from '../../src/custom-add-ons/starter.js'
 
 vi.mock('node:fs', () => fs)
 vi.mock('node:fs/promises', () => fs.promises)
@@ -23,7 +26,7 @@ describe('readOrGenerateStarterInfo', () => {
       git: true,
       chosenAddOns: [],
     })
-    expect(starterInfo.id).toEqual('test-starter')
+    expect(starterInfo.id).toEqual('test-template')
   })
 
   it('should read the starter info', async () => {
@@ -83,5 +86,34 @@ describe('readOrGenerateStarterInfo', () => {
       git: true,
     })
     expect(starterInfo.version).toEqual('0.0.1')
+  })
+
+  it('should load a local template/starter file path', async () => {
+    fs.mkdirSync(process.cwd(), { recursive: true })
+    fs.writeFileSync(
+      './template.json',
+      JSON.stringify({
+        id: 'template-id',
+        name: 'Template Name',
+        version: '0.0.1',
+        description: 'template description',
+        author: 'Test Author',
+        license: 'MIT',
+        link: 'https://example.com/template',
+        type: 'starter',
+        framework: 'react',
+        mode: 'file-router',
+        typescript: true,
+        files: {
+          './package.json': '{}',
+        },
+        deletedFiles: [],
+      }),
+    )
+
+    const starter = await loadStarter('./template.json')
+
+    expect(starter.id).toEqual('./template.json')
+    await expect(starter.getFiles()).resolves.toEqual(['./package.json'])
   })
 })

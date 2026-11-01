@@ -130,13 +130,17 @@ export function createTemplateFile(environment: Environment, options: Options) {
     const templateValues = {
       packageManager: options.packageManager,
       projectName: options.projectName,
+      bundler: options.bundler ?? 'vite',
       typescript: true,
-      tailwind: true,
+      tailwind: options.tailwind,
+      blank: options.projectPreset === 'blank',
       js: 'ts',
       jsx: 'tsx',
       fileRouter: options.mode === 'file-router',
       codeRouter: options.mode === 'code-router',
       routerOnly: options.routerOnly === true,
+      includeExamples:
+        options.projectPreset !== 'blank' && options.includeExamples !== false,
       addOnEnabled,
       addOnOption: options.addOnOptions,
       addOns: options.chosenAddOns,

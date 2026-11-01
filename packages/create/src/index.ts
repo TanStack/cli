@@ -15,6 +15,16 @@ export {
   populateAddOnOptionsDefaults,
 } from './add-ons.js'
 
+export {
+  assertAddOnSupportedByBundler,
+  getBundlers,
+  getDefaultBundler,
+  isAddOnSupportedByBundler,
+  normalizeAndValidateBundlerOptions,
+  resolveBundler,
+  VITE_BUNDLER,
+} from './build-tools.js'
+
 export { loadRemoteAddOn } from './custom-add-ons/add-on.js'
 export { loadStarter } from './custom-add-ons/starter.js'
 
@@ -51,6 +61,7 @@ export {
 export {
   cleanUpFiles,
   cleanUpFileArray,
+  isDemoFilePath,
   readFileHelper,
   getBinaryFile,
   recursivelyGatherFiles,
@@ -96,6 +107,7 @@ export type {
   FileBundleHandler,
   Framework,
   FrameworkDefinition,
+  BundlerDefinition,
   Options,
   SerializedOptions,
   Starter,

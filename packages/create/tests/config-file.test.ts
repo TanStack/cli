@@ -22,7 +22,7 @@ describe('writeConfigFile', () => {
     const targetDir = 'test-dir'
     const options = {
       framework: {
-        id: 'react-cra',
+        id: 'react',
         getAddOns: () => [],
       } as unknown as Framework,
       chosenAddOns: [
@@ -33,6 +33,9 @@ describe('writeConfigFile', () => {
         } as AddOn,
       ],
       targetDir,
+      envVarValues: {
+        API_SECRET: 'do-not-persist',
+      },
     } as unknown as Options
     const persistedOptions = {
       version: 1,
@@ -54,7 +57,7 @@ describe('readConfigFileFromEnvironment', () => {
     const targetDir = 'test-dir'
     const persistedOptions = {
       version: 1,
-      framework: 'react-cra',
+      framework: 'react',
       chosenAddOns: ['add-on-1'],
     }
     const { environment } = createMemoryEnvironment()
@@ -63,7 +66,7 @@ describe('readConfigFileFromEnvironment', () => {
       JSON.stringify(persistedOptions, null, 2),
     )
     const config = await readConfigFileFromEnvironment(environment, targetDir)
-    expect(config).toEqual(persistedOptions)
+    expect(config).toEqual({ ...persistedOptions, bundler: 'vite' })
   })
 
   it('should upgrade old config files', async () => {
@@ -78,6 +81,9 @@ describe('readConfigFileFromEnvironment', () => {
       mode: 'code-router',
       git: true,
       variableValues: {},
+      envVarValues: {
+        API_SECRET: 'legacy-secret',
+      },
       version: 1,
       existingAddOns: [],
     }
@@ -91,7 +97,8 @@ describe('readConfigFileFromEnvironment', () => {
     environment.finishRun()
 
     expect(config).toEqual({
-      framework: 'react-cra',
+      framework: 'react',
+      bundler: 'vite',
       projectName: 'foo',
       typescript: false,
       tailwind: false,

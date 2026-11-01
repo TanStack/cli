@@ -1,6 +1,6 @@
 {
   "name": "Clerk",
-  "description": "Add Clerk authentication to your application.",
+  "description": "Hosted user accounts with prebuilt sign-in UI and social providers (managed).",
   "phase": "add-on",
   "modes": ["file-router"],
   "type": "add-on",
@@ -8,6 +8,7 @@
   "exclusive": ["auth"],
   "color": "#6C47FF",
   "priority": 150,
+  "partner": { "id": "clerk", "tier": "silver" },
   "link": "https://clerk.com",
   "routes": [
     {
@@ -35,6 +36,13 @@
       "description": "Clerk publishable key",
       "required": true,
       "secret": false,
+      "file": ".env.local"
+    },
+    {
+      "name": "CLERK_SECRET_KEY",
+      "description": "Clerk secret key",
+      "required": true,
+      "secret": true,
       "file": ".env.local"
     }
   ]

@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "highlight.js": "^11.11.1",
-    "markdown-it": "^14.1.0",
-    "lucide-solid": "^0.544.0"
+    "lucide-solid": "^0.577.0",
+    "markdown-it": "^14.1.0"
   }
 }

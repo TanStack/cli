@@ -3,9 +3,12 @@
     "deploy": "<%= packageManager %> run build && wrangler deploy"
   },
   "dependencies": {
-    "@cloudflare/vite-plugin": "^1.13.8"
+    "@cloudflare/vite-plugin": "^1.26.0"
   },
   "devDependencies": {
-    "wrangler": "^4.40.3"
+    "wrangler": "^4.70.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["sharp", "workerd"]
   }
 }

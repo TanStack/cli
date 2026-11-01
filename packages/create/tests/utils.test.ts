@@ -31,10 +31,10 @@ describe('handleSpecialURL', () => {
   it('should handle special URLs', () => {
     expect(
       handleSpecialURL(
-        'https://github.com/TanStack/create-tsrouter-app/blob/main/examples/react-cra/registry.json',
+        'https://github.com/TanStack/create-tsrouter-app/blob/main/examples/react/registry.json',
       ),
     ).toEqual(
-      'https://raw.githubusercontent.com/TanStack/create-tsrouter-app/refs/heads/main/examples/react-cra/registry.json',
+      'https://raw.githubusercontent.com/TanStack/create-tsrouter-app/refs/heads/main/examples/react/registry.json',
     )
 
     expect(

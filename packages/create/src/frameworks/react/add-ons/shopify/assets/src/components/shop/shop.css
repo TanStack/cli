@@ -1,0 +1,58 @@
+/*
+ * Shop theme tokens. Override these six variables in your own CSS to re-theme
+ * the storefront without touching components.
+ */
+:root {
+  --storefront-bg: #ffffff;
+  --storefront-fg: #0a0a0a;
+  --storefront-fg-muted: #525252;
+  --storefront-line: #e5e5e5;
+  --storefront-accent: #0a0a0a;
+  --storefront-accent-fg: #ffffff;
+  --storefront-radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --storefront-bg: #0a0a0a;
+    --storefront-fg: #fafafa;
+    --storefront-fg-muted: #a3a3a3;
+    --storefront-line: #262626;
+    --storefront-accent: #fafafa;
+    --storefront-accent-fg: #0a0a0a;
+  }
+}
+
+:root[data-theme='dark'] {
+  --storefront-bg: #0a0a0a;
+  --storefront-fg: #fafafa;
+  --storefront-fg-muted: #a3a3a3;
+  --storefront-line: #262626;
+  --storefront-accent: #fafafa;
+  --storefront-accent-fg: #0a0a0a;
+}
+
+.shop-root {
+  background: var(--storefront-bg);
+  color: var(--storefront-fg);
+}
+
+.shop-prose {
+  max-width: 65ch;
+  line-height: 1.7;
+}
+.shop-prose h1,
+.shop-prose h2,
+.shop-prose h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 1.5em;
+}
+.shop-prose p {
+  margin: 0.75em 0;
+}
+.shop-prose a {
+  color: var(--storefront-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

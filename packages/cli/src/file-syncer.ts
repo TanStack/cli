@@ -12,15 +12,28 @@ export interface SyncResult {
   updated: Array<FileUpdate>
   skipped: Array<string>
   created: Array<string>
+  deleted: Array<string>
+  sourceFiles: Array<string>
   errors: Array<string>
 }
 
+export interface SyncOptions {
+  deleteRemoved?: boolean
+  previousSourceFiles?: Set<string>
+}
+
 export class FileSyncer {
-  async sync(sourceDir: string, targetDir: string): Promise<SyncResult> {
+  async sync(
+    sourceDir: string,
+    targetDir: string,
+    options?: SyncOptions,
+  ): Promise<SyncResult> {
     const result: SyncResult = {
       updated: [],
       skipped: [],
       created: [],
+      deleted: [],
+      sourceFiles: [],
       errors: [],
     }
 
@@ -34,6 +47,16 @@ export class FileSyncer {
 
     // Walk through source directory and sync files
     await this.syncDirectory(sourceDir, targetDir, sourceDir, result)
+
+    if (options?.deleteRemoved && options.previousSourceFiles) {
+      const currentSourceFileSet = new Set(result.sourceFiles)
+      await this.deleteRemovedFiles(
+        targetDir,
+        options.previousSourceFiles,
+        currentSourceFileSet,
+        result,
+      )
+    }
 
     return result
   }
@@ -71,6 +94,8 @@ export class FileSyncer {
         if (this.shouldSkipFile(entry.name)) {
           continue
         }
+
+        result.sourceFiles.push(relativePath)
 
         try {
           const shouldUpdate = await this.shouldUpdateFile(
@@ -201,5 +226,38 @@ export class FileSyncer {
 
     const ext = path.extname(name).toLowerCase()
     return skipExtensions.includes(ext)
+  }
+
+  private async deleteRemovedFiles(
+    targetDir: string,
+    previousSourceFiles: Set<string>,
+    currentSourceFiles: Set<string>,
+    result: SyncResult,
+  ): Promise<void> {
+    for (const relativePath of previousSourceFiles) {
+      if (currentSourceFiles.has(relativePath)) {
+        continue
+      }
+
+      const targetPath = path.join(targetDir, relativePath)
+
+      try {
+        if (!fs.existsSync(targetPath)) {
+          continue
+        }
+
+        const stats = await fs.promises.stat(targetPath)
+        if (!stats.isFile()) {
+          continue
+        }
+
+        await fs.promises.unlink(targetPath)
+        result.deleted.push(relativePath)
+      } catch (error) {
+        result.errors.push(
+          `${relativePath}: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      }
+    }
   }
 }

@@ -13,23 +13,105 @@ import {
   DEFAULT_PACKAGE_MANAGER,
   SUPPORTED_PACKAGE_MANAGERS,
   getAllAddOns,
+  getBundlers,
+  getDefaultBundler,
+  resolveBundler,
 } from '@tanstack/create'
 
-import { validateProjectName } from './utils.js'
+import {
+  isCurrentDirectoryProjectNameInput,
+  validateProjectName,
+} from './utils.js'
+import { orderAddOnsForPartnerPlacement } from './partner-placement.js'
 import type { AddOn, PackageManager } from '@tanstack/create'
 
 import type { Framework } from '@tanstack/create/dist/types/types.js'
 
+export async function selectBundler(
+  framework: Framework,
+  bundlerId?: string,
+): Promise<string> {
+  if (bundlerId) {
+    return resolveBundler(framework, bundlerId).id
+  }
+
+  const bundlers = getBundlers(framework)
+  if (bundlers.length === 1) {
+    return bundlers[0].id
+  }
+
+  const selected = await select({
+    message: 'Select build tool:',
+    options: bundlers.map((bundler) => ({
+      value: bundler.id,
+      label: bundler.name,
+      hint: bundler.description,
+    })),
+    initialValue: getDefaultBundler(framework).id,
+  })
+
+  if (isCancel(selected)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+
+  return resolveBundler(framework, selected).id
+}
+
+export async function selectFramework(
+  frameworks: Array<Framework>,
+  defaultFrameworkId?: string,
+): Promise<Framework> {
+  const initialValue =
+    (defaultFrameworkId &&
+      frameworks.find(
+        (f) => f.id.toLowerCase() === defaultFrameworkId.toLowerCase(),
+      )?.id) ||
+    frameworks[0].id
+
+  const selected = await select({
+    message: 'Select framework:',
+    options: frameworks.map((f) => ({ value: f.id, label: f.name })),
+    initialValue,
+  })
+
+  if (isCancel(selected)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+
+  const framework = frameworks.find((f) => f.id === selected)
+  if (!framework) {
+    throw new Error(`Unknown framework: ${selected}`)
+  }
+  return framework
+}
+
+export async function selectInstall(): Promise<boolean> {
+  const install = await confirm({
+    message: 'Would you like to install dependencies now?',
+    initialValue: true,
+  })
+  if (isCancel(install)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+  return install
+}
+
 export async function getProjectName(): Promise<string> {
   const value = await text({
-    message: 'What would you like to name your project?',
-    defaultValue: 'my-app',
+    message: 'Project name (leave empty to use current directory)',
+    // Clack prints `undefined` on blank submit when placeholder is omitted.
+    placeholder: '',
     validate(value) {
-      if (!value) {
-        return 'Please enter a name'
+      const projectName = value ?? ''
+
+      if (isCurrentDirectoryProjectNameInput(projectName)) {
+        return
       }
 
-      const { valid, error } = validateProjectName(value)
+      const { valid, error } = validateProjectName(projectName)
       if (!valid) {
         return error
       }
@@ -41,7 +123,7 @@ export async function getProjectName(): Promise<string> {
     process.exit(0)
   }
 
-  return value
+  return (value ?? '').trim()
 }
 
 export async function selectPackageManager(): Promise<PackageManager> {
@@ -60,8 +142,37 @@ export async function selectPackageManager(): Promise<PackageManager> {
   return packageManager
 }
 
-// Track if we've shown the multiselect help text
-let hasShownMultiselectHelp = false
+export async function selectTemplate(
+  templates: Array<{ id: string; name: string; description?: string }>,
+): Promise<string | undefined> {
+  if (templates.length === 0) {
+    return undefined
+  }
+
+  const selected = await select({
+    message: 'Would you like to start from a template?',
+    options: [
+      {
+        value: undefined,
+        label: 'None (base starter)',
+        hint: 'Two-page baseline (Home + About)',
+      },
+      ...templates.map((template) => ({
+        value: template.id,
+        label: template.name,
+        hint: template.description,
+      })),
+    ],
+    initialValue: undefined,
+  })
+
+  if (isCancel(selected)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+
+  return selected
+}
 
 export async function selectAddOns(
   framework: Framework,
@@ -70,38 +181,36 @@ export async function selectAddOns(
   message: string,
   forcedAddOns: Array<string> = [],
   allowMultiple: boolean = true,
+  bundlerId?: string,
 ): Promise<Array<string>> {
-  const allAddOns = await getAllAddOns(framework, mode)
+  const allAddOns = await getAllAddOns(framework, mode, bundlerId)
   const addOns = allAddOns.filter((addOn) => addOn.type === type)
   if (addOns.length === 0) {
     return []
   }
 
-  // Show help text only once
-  if (!hasShownMultiselectHelp) {
-    note(
-      'Use ↑/↓ to navigate • Space to select/deselect • Enter to confirm',
-      'Keyboard Shortcuts',
-    )
-    hasShownMultiselectHelp = true
-  }
-
   if (allowMultiple) {
-    const selectableAddOns = addOns.filter(
-      (addOn) => !forcedAddOns.includes(addOn.id),
+    const selectableAddOns = orderAddOnsForPartnerPlacement(
+      addOns.filter((addOn) => !forcedAddOns.includes(addOn.id)),
+      'add-ons',
     )
 
     if (selectableAddOns.length === 0) {
       return []
     }
 
+    note(
+      'Use ↑/↓ to navigate • Space to select/deselect • Enter to confirm',
+      'Keyboard Shortcuts',
+    )
+
     const value = await multiselect({
-      message,
+      message: `${message} (Space to toggle, Enter to confirm)`,
       options: selectableAddOns.map((addOn) => ({
-          value: addOn.id,
-          label: addOn.name,
-          hint: addOn.description,
-        })),
+        value: addOn.id,
+        label: addOn.name,
+        hint: addOn.description,
+      })),
       maxItems: selectableAddOns.length,
       required: false,
     })
@@ -218,34 +327,21 @@ export async function promptForAddOnOptions(
     addOnOptions[addOnId] = {}
 
     for (const [optionName, option] of Object.entries(addOn.options)) {
-      if (option && typeof option === 'object' && 'type' in option) {
-        if (option.type === 'select') {
-          const selectOption = option as {
-            type: 'select'
-            label: string
-            description?: string
-            default: string
-            options: Array<{ value: string; label: string }>
-          }
+      const value = await select({
+        message: `${addOn.name}: ${option.label}`,
+        options: option.options.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+        })),
+        initialValue: option.default,
+      })
 
-          const value = await select({
-            message: `${addOn.name}: ${selectOption.label}`,
-            options: selectOption.options.map((opt) => ({
-              value: opt.value,
-              label: opt.label,
-            })),
-            initialValue: selectOption.default,
-          })
-
-          if (isCancel(value)) {
-            cancel('Operation cancelled.')
-            process.exit(0)
-          }
-
-          addOnOptions[addOnId][optionName] = value
-        }
-        // Future option types can be added here
+      if (isCancel(value)) {
+        cancel('Operation cancelled.')
+        process.exit(0)
       }
+
+      addOnOptions[addOnId][optionName] = value
     }
   }
 
@@ -318,32 +414,42 @@ export async function promptForEnvVars(
 export async function selectDeployment(
   framework: Framework,
   deployment?: string,
+  forcedDeployment?: string,
 ): Promise<string | undefined> {
   const deployments = new Set<AddOn>()
   let initialValue: string | undefined = undefined
-  for (const addOn of framework
-    .getAddOns()
-    .sort((a, b) => a.name.localeCompare(b.name))) {
-    if (addOn.type === 'deployment') {
-      deployments.add(addOn)
-      if (deployment && addOn.id === deployment) {
-        return deployment
-      }
-      if (addOn.default) {
-        initialValue = addOn.id
-      }
+  for (const addOn of orderAddOnsForPartnerPlacement(
+    framework
+      .getAddOns()
+      .filter((addOn) => addOn.type === 'deployment')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    'deployment',
+  )) {
+    deployments.add(addOn)
+    if (deployment && addOn.id === deployment) {
+      return deployment
+    }
+    if (forcedDeployment && addOn.id === forcedDeployment) {
+      initialValue = addOn.id
+    } else if (!initialValue && addOn.default) {
+      initialValue = addOn.id
     }
   }
 
+  if (deployments.size === 0) {
+    return undefined
+  }
+
   const dp = await select({
-    message: 'Select deployment adapter',
+    message: 'Select deployment adapter:',
     options: [
+      { value: undefined, label: 'None' },
       ...Array.from(deployments).map((d) => ({
         value: d.id,
         label: d.name,
       })),
     ],
-    initialValue: initialValue,
+    initialValue,
   })
 
   if (isCancel(dp)) {

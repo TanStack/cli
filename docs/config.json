@@ -54,25 +54,12 @@
       ]
     },
     {
-      "label": "MCP Server",
-      "children": [
-        {
-          "label": "Overview",
-          "to": "mcp/overview"
-        },
-        {
-          "label": "Connecting",
-          "to": "mcp/connecting"
-        },
-        {
-          "label": "Tools Reference",
-          "to": "mcp/tools"
-        }
-      ]
-    },
-    {
       "label": "Help",
       "children": [
+        {
+          "label": "MCP Migration",
+          "to": "mcp-migration"
+        },
         {
           "label": "Troubleshooting",
           "to": "troubleshooting"

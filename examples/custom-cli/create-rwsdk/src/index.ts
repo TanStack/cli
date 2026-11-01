@@ -45,8 +45,4 @@ cli({
   name: 'create-rwsdk-app',
   appName: 'Redwood SDK',
   defaultFramework: 'Redwood SDK',
-  webBase: join(
-    dirname(dirname(fileURLToPath(import.meta.url))),
-    'customized-ui/dist',
-  ),
 })

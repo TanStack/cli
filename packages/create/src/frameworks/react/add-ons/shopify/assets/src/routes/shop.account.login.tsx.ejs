@@ -1,0 +1,59 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { useEffect, useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import * as v from 'valibot'
+
+import { isCustomerAccountConfigured } from '#/server/shopify/env'
+import { startLogin } from '#/server/shopify/customer.functions'
+
+const LoginSearch = v.object({ redirect: v.optional(v.string(), '/shop/account') })
+
+export const Route = createFileRoute('/shop/account/login')({
+  validateSearch: (search) => v.parse(LoginSearch, search),
+  loader: () => ({ configured: isCustomerAccountConfigured() }),
+  component: LoginRoute,
+})
+
+function LoginRoute() {
+  const { redirect } = Route.useSearch()
+  const { configured } = Route.useLoaderData()
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!configured) return
+    startLogin({ data: { redirectAfter: redirect } })
+      .then(({ authorizationUrl }) => {
+        window.location.assign(authorizationUrl)
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+  }, [configured, redirect])
+
+  if (!configured) {
+    return (
+      <div className="mx-auto max-w-xl space-y-3 rounded-2xl border border-[var(--storefront-line)] p-8 text-center">
+        <h2 className="text-xl font-medium">Customer accounts not configured</h2>
+        <p className="text-sm text-[var(--storefront-fg-muted)]">
+          Set <code>SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID</code>,{' '}
+          <code>SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID</code>, and{' '}
+          <code>SHOPIFY_SESSION_SECRET</code> in <code>.env.local</code>, then
+          register the redirect URI in your Shopify admin.
+        </p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-xl space-y-3 rounded-2xl border border-red-500/40 p-8 text-center">
+        <h2 className="text-xl font-medium">Couldn't start sign-in</h2>
+        <p className="text-sm text-[var(--storefront-fg-muted)]">{error}</p>
+      </div>
+    )
+  }
+
+  return (
+    <p className="py-16 text-center text-[var(--storefront-fg-muted)]">
+      Redirecting to Shopify…
+    </p>
+  )
+}

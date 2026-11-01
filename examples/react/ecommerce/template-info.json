@@ -1,0 +1,43 @@
+{
+  "id": "ecommerce",
+  "name": "Ecommerce",
+  "version": "0.0.1",
+  "description": "A product-focused ecommerce template for TanStack Start",
+  "author": "Jane Smith <jane.smith@example.com>",
+  "license": "MIT",
+  "link": "https://github.com/TanStack/cli/tree/main/examples/react/ecommerce",
+  "shadcnComponents": [],
+  "framework": "react",
+  "mode": "file-router",
+  "routes": [],
+  "warning": "",
+  "type": "starter",
+  "packageAdditions": {
+    "dependencies": {
+      "@tailwindcss/vite": "^4.0.6",
+      "@tanstack/ai": "latest",
+      "@tanstack/ai-anthropic": "latest",
+      "@tanstack/ai-client": "latest",
+      "@tanstack/ai-react": "latest",
+      "@tanstack/react-ai-devtools": "latest",
+      "@tanstack/react-router": "^1.145.11",
+      "@tanstack/react-router-devtools": "^1.145.11",
+      "@tanstack/react-store": "^0.7.0",
+      "@tanstack/router-plugin": "^1.145.11",
+      "@tanstack/store": "^0.7.0",
+      "highlight.js": "^11.11.1",
+      "lucide-react": "^0.562.0",
+      "streamdown": "^1.6.5",
+      "tailwindcss": "^4.0.6",
+      "zod": "^3.25.0"
+    },
+    "devDependencies": {
+      "vite": "^8.0.10",
+      "web-vitals": "^5.1.0"
+    }
+  },
+  "dependsOn": [],
+  "typescript": true,
+  "tailwind": true,
+  "banner": ".template/banner.png"
+}

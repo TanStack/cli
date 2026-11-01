@@ -5,8 +5,10 @@ import * as clack from '@clack/prompts'
 import {
   getProjectName,
   selectAddOns,
+  selectBundler,
   selectGit,
   selectPackageManager,
+  selectTemplate,
   selectToolchain,
 } from '../src/ui-prompts'
 
@@ -25,6 +27,41 @@ describe('getProjectName', () => {
 
     const projectName = await getProjectName()
     expect(projectName).toBe('my-app')
+  })
+
+  it('should allow blank and "." project names for current directory creation', async () => {
+    const textSpy = vi.spyOn(clack, 'text').mockImplementation(async () => '')
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    const projectName = await getProjectName()
+    const textOptions = textSpy.mock.calls[0]![0] as {
+      message?: string
+      placeholder?: string
+      validate?: (value: string) => string | undefined
+    }
+
+    expect(projectName).toBe('')
+    expect(textOptions.message).toBe(
+      'Project name (leave empty to use current directory)',
+    )
+    expect(textOptions.placeholder).toBe('')
+    expect(textOptions.validate?.('')).toBeUndefined()
+    expect(textOptions.validate?.('.')).toBeUndefined()
+  })
+
+  it('should handle undefined project name values as current directory creation', async () => {
+    const textSpy = vi
+      .spyOn(clack, 'text')
+      .mockImplementation(async () => undefined as unknown as string)
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    const projectName = await getProjectName()
+    const textOptions = textSpy.mock.calls[0]![0] as {
+      validate?: (value?: string) => string | undefined
+    }
+
+    expect(projectName).toBe('')
+    expect(textOptions.validate?.(undefined)).toBeUndefined()
   })
 
   it('should exit on cancel', async () => {
@@ -51,6 +88,66 @@ describe('selectPackageManager', () => {
     vi.spyOn(clack, 'isCancel').mockImplementation(() => true)
 
     await expect(selectPackageManager()).rejects.toThrowError(/exit/)
+  })
+})
+
+describe('selectBundler', () => {
+  const framework = {
+    name: 'React',
+    bundlers: [
+      { id: 'vite', name: 'Vite', description: 'Build with Vite' },
+      { id: 'rsbuild', name: 'Rsbuild', description: 'Build with Rsbuild' },
+    ],
+    defaultBundler: 'vite',
+  } as Framework
+
+  it('defaults the interactive prompt to Vite', async () => {
+    const selectSpy = vi
+      .spyOn(clack, 'select')
+      .mockImplementation(async () => 'rsbuild')
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    await expect(selectBundler(framework)).resolves.toBe('rsbuild')
+    expect(selectSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Select build tool:',
+        initialValue: 'vite',
+      }),
+    )
+  })
+
+  it('validates an explicitly selected bundler without prompting', async () => {
+    const selectSpy = vi.spyOn(clack, 'select')
+
+    await expect(selectBundler(framework, 'RSBUILD')).resolves.toBe('rsbuild')
+    expect(selectSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('selectTemplate', () => {
+  it('should select a template id', async () => {
+    vi.spyOn(clack, 'select').mockImplementation(async () => 'blog')
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => false)
+
+    const selectedTemplate = await selectTemplate([
+      { id: 'blog', name: 'Blog', description: 'A blog template' },
+    ])
+
+    expect(selectedTemplate).toBe('blog')
+  })
+
+  it('should return undefined when no templates are available', async () => {
+    const selectedTemplate = await selectTemplate([])
+    expect(selectedTemplate).toBeUndefined()
+  })
+
+  it('should exit on cancel', async () => {
+    vi.spyOn(clack, 'select').mockImplementation(async () => Symbol.for('cancel'))
+    vi.spyOn(clack, 'isCancel').mockImplementation(() => true)
+
+    await expect(
+      selectTemplate([{ id: 'blog', name: 'Blog' }]),
+    ).rejects.toThrowError(/exit/)
   })
 })
 

@@ -2,47 +2,86 @@ name: Release
 
 on:
   push:
-    branches: [main, alpha, beta, rc]
+    branches: [main, alpha, beta, rc, 'v[0-9]', '*-pre', '*-maint']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
 
 permissions:
-  contents: write
-  id-token: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release:
     name: Release
-    if: github.repository_owner == 'TanStack'
+    if: ${{ github.repository_owner == 'TanStack' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: true # changesets/action pushes version PR commits
       - name: Setup Tools
-        uses: tanstack/config/.github/setup@main
+        uses: tanstack/config/.github/setup@e4b48f16568324f76f467aa4c2aac2f05db632c3 # main
       - name: Build
         run: pnpm build
-      - name: Test
-        run: pnpm test
-      - name: Run Changesets (version or publish)
-        uses: changesets/action@v1.5.3
+      - name: Test Unit
+        run: pnpm test:unit
+      - name: Install Playwright Chrome
+        run: pnpm --filter @tanstack/cli exec playwright install --with-deps chrome
+      - name: E2E Blocking
+        run: pnpm --filter @tanstack/cli test:e2e
+
+      - name: Enter Pre-Release Mode
+        if: "(contains(github.ref_name, '-pre') || github.ref_name == 'alpha' || github.ref_name == 'beta' || github.ref_name == 'rc') && !hashFiles('.changeset/pre.json')"
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          if [[ "$BRANCH" == "alpha" || "$BRANCH" == "beta" || "$BRANCH" == "rc" ]]; then
+            pnpm changeset pre enter "$BRANCH"
+          else
+            pnpm changeset pre enter pre
+          fi
+      - name: Determine dist-tag
+        id: dist-tag
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          if [[ "$BRANCH" == "alpha" || "$BRANCH" == "beta" || "$BRANCH" == "rc" ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$BRANCH" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" == *-pre ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "tag=pre" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" == *-maint ]]; then
+            echo "tag=maint" >> "$GITHUB_OUTPUT"
+          elif [[ "$BRANCH" =~ ^v[0-9]+$ ]]; then
+            echo "tag=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
         with:
           version: pnpm run changeset:version
-          publish: pnpm run changeset:publish
-          commit: "ci: Version Packages"
-          title: "ci: Version Packages"
+          publish: pnpm run changeset:publish ${{ steps.dist-tag.outputs.tag && format('--tag {0}', steps.dist-tag.outputs.tag) }}
+          title: 'ci: Version Packages'
+          commit: 'ci: changeset release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Comment on PRs about release
+      - name: Create GitHub Release
         if: steps.changesets.outputs.published == 'true'
-        uses: tanstack/config/.github/comment-on-release@main
-        with:
-          published-packages: ${{ steps.changesets.outputs.publishedPackages }}
+        run: node scripts/create-github-release.mjs ${PRERELEASE_FLAG} ${LATEST_FLAG}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE_FLAG: ${{ steps.dist-tag.outputs.prerelease == 'true' && '--prerelease' }}
+          LATEST_FLAG: ${{ steps.dist-tag.outputs.latest == 'true' && '--latest' }}

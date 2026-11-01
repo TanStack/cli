@@ -6,15 +6,20 @@ export const Route = createFileRoute('/demo/sentry/bad-event-handler')({
 
 function RouteComponent() {
   return (
-    <div className="p-4">
-      <button
-        type="button"
-        onClick={() => {
-          throw new Error('Sentry Frontend Error')
-        }}
-      >
-        Throw error
-      </button>
-    </div>
+    <main class="demo-page demo-center">
+      <section class="demo-panel w-full max-w-md text-center">
+        <p class="island-kicker mb-2">Sentry</p>
+        <h1 class="demo-title mb-6">Error Handler Demo</h1>
+        <button
+          type="button"
+          onClick={() => {
+            throw new Error('Sentry Frontend Error')
+          }}
+          class="demo-button"
+        >
+          Throw error
+        </button>
+      </section>
+    </main>
   )
 }

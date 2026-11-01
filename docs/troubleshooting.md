@@ -75,34 +75,21 @@ pnpm dev  # Restart
 
 Check `.tanstack.json` has `"tailwind": true` and `styles.css` imports `@import 'tailwindcss'`.
 
-## MCP Server
+## MCP Server Removal
 
-### Claude Desktop not connecting
-
-1. Config location:
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-2. Config format:
-   ```json
-   {
-     "mcpServers": {
-       "tanstack": {
-         "command": "npx",
-         "args": ["@tanstack/cli", "mcp"]
-       }
-     }
-   }
-   ```
-
-3. Restart Claude Desktop completely
-
-### SSE mode
+`tanstack mcp` has been removed from the CLI. Use the CLI introspection commands instead:
 
 ```bash
-tanstack mcp --sse
-# Connects at http://localhost:8080/sse
+tanstack create --list-add-ons --json
+tanstack create --addon-details clerk --json
+tanstack libraries --json
+tanstack search-docs "server functions" --library start --json
+tanstack ecosystem --category database --json
 ```
+
+If you need MCP in your generated app, keep using the `mcp` add-on during app creation.
+
+See [MCP Migration](./mcp-migration.md) for command-by-command replacements.
 
 ## Getting Help
 

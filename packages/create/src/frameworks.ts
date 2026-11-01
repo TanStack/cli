@@ -155,6 +155,10 @@ export function registerFramework(framework: FrameworkDefinition) {
 }
 
 export function getFrameworkById(id: string) {
+  if (id === 'react-cra') {
+    return frameworks.find((framework) => framework.id === 'react')
+  }
+
   return frameworks.find((framework) => framework.id === id)
 }
 

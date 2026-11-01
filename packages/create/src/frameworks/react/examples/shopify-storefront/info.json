@@ -1,0 +1,18 @@
+{
+  "name": "Shopify Storefront",
+  "description": "A polished Shopify storefront starter — TanStack Start + Shopify Storefront API + optional customer accounts. Hosted checkout, deploy anywhere.",
+  "phase": "example",
+  "modes": ["file-router"],
+  "type": "example",
+  "category": "other",
+  "color": "#5A31F4",
+  "priority": 5,
+  "link": "https://shopify.dev/docs/storefronts/headless",
+  "dependsOn": ["shopify"],
+  "default": true,
+  "routes": [
+    { "url": "/", "path": "src/routes/index.tsx", "jsName": "ShopHome" }
+  ],
+  "integrations": [],
+  "variables": []
+}

@@ -1,63 +1,58 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { strapiApi } from "@/data/loaders";
-import { StrapiImage } from "@/components/strapi-image";
-import { BlockRenderer } from "@/components/blocks";
-import type { TArticle } from "@/types/strapi";
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { strapiApi } from '@/data/loaders'
+import { StrapiImage } from '@/components/strapi-image'
+import { BlockRenderer } from '@/components/blocks'
+import type { TArticle } from '@/types/strapi'
 
-export const Route = createFileRoute("/demo/strapi/$articleId")({
+export const Route = createFileRoute('/demo/strapi/$articleId')({
   component: RouteComponent,
   errorComponent: ErrorComponent,
   loader: async ({ params }) => {
     try {
       const response = await strapiApi.articles.getArticleByIdData({
         data: params.articleId,
-      });
-      return { success: true, article: response.data };
+      })
+      return { success: true, article: response.data }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to load article",
+        error:
+          error instanceof Error ? error.message : 'Failed to load article',
         article: null,
-      };
+      }
     }
   },
-});
+})
 
 function ErrorComponent({ error }: { error: Error }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
-      <div className="max-w-4xl mx-auto">
-        <Link
-          to="/demo/strapi"
-          className="inline-flex items-center text-cyan-400 hover:text-cyan-300 mb-6 transition-colors"
-        >
+    <main className="demo-page">
+      <div className="mx-auto max-w-4xl">
+        <Link to="/demo/strapi" className="mb-6 inline-flex items-center">
           ← Back to Articles
         </Link>
-        <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-8 text-center">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">Error Loading Article</h1>
-          <p className="text-gray-300">{error.message}</p>
+        <div className="demo-alert demo-alert-danger text-center">
+          <h1 className="text-2xl font-bold mb-4">Error Loading Article</h1>
+          <p className="demo-muted">{error.message}</p>
         </div>
       </div>
-    </div>
-  );
+    </main>
+  )
 }
 
 function RouteComponent() {
   const { success, article, error } = Route.useLoaderData() as {
-    success: boolean;
-    article: TArticle | null;
-    error?: string;
-  };
+    success: boolean
+    article: TArticle | null
+    error?: string
+  }
 
   // Show error state
   if (!success || !article) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
-        <div className="max-w-4xl mx-auto">
-          <Link
-            to="/demo/strapi"
-            className="inline-flex items-center text-cyan-400 hover:text-cyan-300 mb-6 transition-colors"
-          >
+      <main className="demo-page">
+        <div className="mx-auto max-w-4xl">
+          <Link to="/demo/strapi" className="mb-6 inline-flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5 mr-2"
@@ -73,31 +68,27 @@ function RouteComponent() {
             Back to Articles
           </Link>
 
-          <div className="bg-amber-900/20 border border-amber-500/50 rounded-xl p-8">
+          <div className="demo-alert">
             <div className="flex items-start gap-4">
-              <div className="text-amber-400 text-2xl">⚠️</div>
               <div>
-                <h2 className="text-xl font-semibold text-amber-400 mb-2">
-                  {error || "Article Not Found"}
+                <h2 className="text-xl font-semibold mb-2">
+                  {error || 'Article Not Found'}
                 </h2>
-                <p className="text-gray-300">
+                <p className="demo-muted">
                   Make sure the Strapi server is running and the article exists.
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      </main>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
-      <div className="max-w-4xl mx-auto">
-        <Link
-          to="/demo/strapi"
-          className="inline-flex items-center text-cyan-400 hover:text-cyan-300 mb-6 transition-colors"
-        >
+    <main className="demo-page">
+      <div className="mx-auto max-w-4xl">
+        <Link to="/demo/strapi" className="mb-6 inline-flex items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5 mr-2"
@@ -113,7 +104,7 @@ function RouteComponent() {
           Back to Articles
         </Link>
 
-        <article className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl overflow-hidden">
+        <article className="demo-panel overflow-hidden p-0">
           <StrapiImage
             src={article.cover?.url}
             alt={article.cover?.alternativeText || article.title}
@@ -121,23 +112,23 @@ function RouteComponent() {
           />
 
           <div className="p-8">
-            <h1 className="text-4xl font-bold text-white mb-4">
-              {article.title || "Untitled"}
-            </h1>
+            <h1 className="demo-title mb-4">{article.title || 'Untitled'}</h1>
 
             <div className="flex items-center gap-4 mb-6">
               {article.author?.name && (
-                <span className="text-gray-400">
-                  By{" "}
-                  <span className="text-cyan-400">{article.author.name}</span>
+                <span className="demo-muted">
+                  By{' '}
+                  <span className="text-[var(--sea-ink)]">
+                    {article.author.name}
+                  </span>
                 </span>
               )}
               {article.createdAt && (
-                <span className="text-sm text-cyan-400/70">
-                  {new Date(article.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
+                <span className="demo-muted text-sm">
+                  {new Date(article.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
                   })}
                 </span>
               )}
@@ -145,15 +136,13 @@ function RouteComponent() {
 
             {article.category?.name && (
               <div className="mb-6">
-                <span className="text-xs px-3 py-1 bg-slate-700 text-cyan-400 rounded-full">
-                  {article.category.name}
-                </span>
+                <span className="demo-pill">{article.category.name}</span>
               </div>
             )}
 
             {article.description && (
               <div className="mb-8">
-                <p className="text-xl text-gray-300 leading-relaxed">
+                <p className="demo-muted text-xl leading-relaxed">
                   {article.description}
                 </p>
               </div>
@@ -165,6 +154,6 @@ function RouteComponent() {
           </div>
         </article>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "better-auth": "^1.4.12"
+    "better-auth": "^1.5.3"
   }
 }

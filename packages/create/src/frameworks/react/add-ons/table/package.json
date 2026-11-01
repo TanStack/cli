@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "@faker-js/faker": "^10.0.0",
-    "@tanstack/match-sorter-utils": "^8.19.4",
-    "@tanstack/react-table": "^8.21.2"
+    "@faker-js/faker": "^10.3.0",
+    "@tanstack/match-sorter-utils": "latest",
+    "@tanstack/react-table": "latest"
   }
 }

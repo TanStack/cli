@@ -1,21 +1,38 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
-<% if (addOnEnabled['tanstack-query']) { %>
-import { getContext } from './integrations/tanstack-query/root-provider'
+<% if (addOnEnabled['tanstack-query']) { %><% if (addOnEnabled.tRPC) { %>
+import type { ReactNode } from 'react'<% } %>
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+import <% if (addOnEnabled.tRPC) { %>TanstackQueryProvider, <% } %>{ getContext } from './integrations/tanstack-query/root-provider'
 <% } %>
 
 export function getRouter() {
+  <% if (addOnEnabled['tanstack-query']) { %>
+  const context = getContext();
+  <% } %>
+  
   const router = createTanStackRouter({
-    routeTree,
-<% if (addOnEnabled['tanstack-query']) { %>
-    context: getContext(),
-<% } else if (addOnEnabled['apollo-client']) { %>
+    routeTree,<% if (addOnEnabled['tanstack-query']) { %>
+    context,<% } else if (addOnEnabled['apollo-client']) { %>
     context: {} as any,
 <% } %>
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    <% if (addOnEnabled.tRPC) { %>
+    Wrap: (props: { children: ReactNode }) => {
+      return (
+        <TanstackQueryProvider context={context}>
+            {props.children}
+        </TanstackQueryProvider>
+        );
+      },
+    <% } %>
   })
+
+<% if (addOnEnabled['tanstack-query']) { %>
+  setupRouterSsrQueryIntegration({ router, queryClient: context.queryClient })
+<% } %>
 
   return router
 }

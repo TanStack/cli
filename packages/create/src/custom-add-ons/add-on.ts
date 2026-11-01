@@ -12,14 +12,14 @@ import {
   runCreateApp,
 } from './shared.js'
 
-import type { PersistedOptions } from '../config-file'
+import type { PersistedOptions } from '../config-file.js'
 import type {
   AddOn,
   AddOnCompiled,
   AddOnInfo,
   Environment,
   Options,
-} from '../types'
+} from '../types.js'
 
 const ADD_ON_DIR = '.add-on'
 
