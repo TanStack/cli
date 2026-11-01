@@ -206,7 +206,11 @@ describe('bundler project generation', () => {
       expect(packageJSON.scripts.build).toBe(`${bundler} build`)
       expect(packageJSON.scripts.preview).toBe(`${bundler} preview`)
       expect(packageJSON.scripts['generate-routes']).toBe(
-        bundler === 'vite' ? 'tsr generate' : 'rsbuild build',
+        bundler === 'rsbuild'
+          ? 'rsbuild build'
+          : routerOnly
+            ? 'tsr generate'
+            : 'vite build',
       )
 
       if (bundler === 'vite') {
@@ -251,8 +255,16 @@ describe('bundler project generation', () => {
         expect(packageJSON.scripts).not.toHaveProperty('start')
         expect(packageJSON.dependencies).not.toHaveProperty('srvx')
         expect(files[configFile]).toContain('@tanstack/router-plugin')
+        if (bundler === 'vite') {
+          expect(packageJSON.devDependencies).toHaveProperty(
+            '@tanstack/router-cli',
+          )
+        }
       } else {
         expect(packageJSON.dependencies).toHaveProperty(startPackage)
+        expect(packageJSON.devDependencies).not.toHaveProperty(
+          '@tanstack/router-cli',
+        )
         if (bundler === 'rsbuild') {
           expect(packageJSON.scripts.start).toContain('srvx')
           expect(packageJSON.dependencies).toHaveProperty('srvx')
