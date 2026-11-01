@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.2
+
+### Patch Changes
+
+- Keep appended add-on files on separate lines when existing content has no final newline, in both Node and edge generation. ([#396](https://github.com/TanStack/cli/pull/396))
+
 ## 0.71.1
 
 ### Patch Changes
