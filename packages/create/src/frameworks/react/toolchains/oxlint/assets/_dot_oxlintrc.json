@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/incompatible-library": "warn",
+    "react/unsupported-syntax": "warn",
+    "react/purity": "off",
+    "react/set-state-in-effect": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["src/routeTree.gen.ts"]
+}

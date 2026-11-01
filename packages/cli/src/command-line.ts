@@ -347,7 +347,7 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
       return {
         warnings,
         error:
-          'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+          'Rsbuild currently supports toolchains only. Use --toolchain eslint, --toolchain biome, or --toolchain oxlint.',
       }
     }
   }
@@ -529,7 +529,7 @@ export async function normalizeOptions(
     }
     if (forcedAddOns?.length || cliOptions.addOns) {
       throw new Error(
-        'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+        'Rsbuild currently supports toolchains only. Use --toolchain eslint, --toolchain biome, or --toolchain oxlint.',
       )
     }
   }

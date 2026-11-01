@@ -51,6 +51,15 @@ If you prefer not to use Tailwind CSS:
 2. Replace the Tailwind import in `src/styles.css` with your own styles
 3. Remove `<%= bundler === 'vite' ? 'tailwindcss()' : 'pluginTailwindcss()' %>` from the plugins array in `<%= bundler %>.config.ts`
 4. Remove `<%= bundler === 'vite' ? '@tailwindcss/vite' : '@rsbuild/plugin-tailwindcss' %>` and `tailwindcss` from `package.json`
+<% if (addOnEnabled.oxlint) { %>
+## Linting
+
+This project uses [Oxlint](https://oxc.rs/docs/guide/usage/linter) for linting. The following script is available:
+
+```bash
+<%= getPackageManagerRunScript('lint') %>
+```
+<% } %>
 <% if (addOnEnabled.biome || addOnEnabled.eslint) { %>
 ## Linting & Formatting
 <% if (addOnEnabled.biome) { %>

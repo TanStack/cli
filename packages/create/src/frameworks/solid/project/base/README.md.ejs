@@ -143,6 +143,15 @@ Loaders simplify your data fetching logic dramatically. Check out more informati
 Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
 <% } %>
 
+<% if (addOnEnabled.oxlint) { %>
+## Linting
+
+This project uses [Oxlint](https://oxc.rs/docs/guide/usage/linter) for linting. The following script is available:
+
+```bash
+<%= getPackageManagerRunScript('lint') %>
+```
+<% } %>
 <% if (addOnEnabled.biome || addOnEnabled.eslint) { %>
 ## Linting & Formatting
 <% if (addOnEnabled.biome) { %>

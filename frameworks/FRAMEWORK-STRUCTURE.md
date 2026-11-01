@@ -12,7 +12,7 @@ packages/create/src/frameworks/
 │   │   ├── base/             # Base project template
 │   │   └── packages.json     # Conditional dependencies
 │   ├── add-ons/              # Feature add-ons
-│   ├── toolchains/           # eslint, biome
+│   ├── toolchains/           # eslint, biome, oxlint
 │   ├── hosts/                # Deployment adapters
 │   └── examples/             # Demo projects
 └── solid/
