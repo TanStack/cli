@@ -65,6 +65,44 @@ describe('createPackageJSON', () => {
     },
   )
 
+  it.each([false, true])(
+    'applies a custom framework bundlerFileRouter to file-router apps (routerOnly=%s)',
+    (routerOnly) => {
+      const framework = {
+        id: 'custom',
+        basePackageJSON: {},
+        optionalPackages: {
+          bundlerFileRouter: {
+            vite: {
+              scripts: { routes: 'custom-routes' },
+              devDependencies: { 'custom-routes': '^1.0.0' },
+            },
+          },
+        },
+      } as unknown as Framework
+      const options = {
+        chosenAddOns: [],
+        addOnOptions: {},
+        mode: 'file-router',
+        routerOnly,
+        typescript: true,
+        tailwind: false,
+        projectName: 'test',
+        packageManager: 'pnpm',
+        framework,
+      } as unknown as Options
+
+      const packageJSON = createPackageJSON(options)
+
+      expect(packageJSON.scripts).toHaveProperty('routes', 'custom-routes')
+      expect(packageJSON.devDependencies).toHaveProperty(
+        'custom-routes',
+        '^1.0.0',
+      )
+      expect(createEdgePackageJSON(options)).toEqual(packageJSON)
+    },
+  )
+
   it('should create a package.json', () => {
     const packageJSON = createPackageJSON({
       chosenAddOns: [

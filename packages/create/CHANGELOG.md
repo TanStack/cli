@@ -1,5 +1,19 @@
 # @tanstack/create
 
+## 0.71.2
+
+### Patch Changes
+
+- Keep appended add-on files on separate lines when existing content has no final newline, in both Node and edge generation. ([#396](https://github.com/TanStack/cli/pull/396))
+
+## 0.71.1
+
+### Patch Changes
+
+- Generate the route tree of new Start apps on Vite with `vite build` instead of `tsr generate`, which leaves out the Start `Register` block. ([#526](https://github.com/TanStack/cli/pull/526))
+
+- Use the Zod 4 URL validator in the React T3Env add-on, matching the Solid add-on. ([#391](https://github.com/TanStack/cli/pull/391))
+
 ## 0.71.0
 
 ### Minor Changes

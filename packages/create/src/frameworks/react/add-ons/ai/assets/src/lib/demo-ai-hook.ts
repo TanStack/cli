@@ -3,7 +3,6 @@ import {
   useChat,
   createChatClientOptions,
 } from '@tanstack/ai-react'
-import type { InferChatMessages } from '@tanstack/ai-react'
 import { clientTools } from '@tanstack/ai-client'
 
 import { recommendGuitarToolDef } from '#/lib/demo-guitar-tools'
@@ -13,11 +12,13 @@ const recommendGuitarToolClient = recommendGuitarToolDef.client(({ id }) => ({
 }))
 
 const chatOptions = createChatClientOptions({
+  threadId: 'guitar-recommendations',
   connection: fetchServerSentEvents('/demo/api/ai/chat'),
   tools: clientTools(recommendGuitarToolClient),
 })
 
-export type ChatMessages = InferChatMessages<typeof chatOptions>
+export const useGuitarRecommendationChat = () => useChat(chatOptions)
 
-export const useGuitarRecommendationChat = () =>
-  useChat({ ...chatOptions, threadId: 'guitar-recommendations' })
+export type ChatMessages = ReturnType<
+  typeof useGuitarRecommendationChat
+>['messages']

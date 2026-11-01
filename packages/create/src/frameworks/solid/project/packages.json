@@ -18,7 +18,7 @@
     "vite": {
       "scripts": {
         "dev": "vite dev --port 3000",
-        "generate-routes": "tsr generate",
+        "generate-routes": "vite build",
         "build": "vite build",
         "start": "node .output/server/index.mjs",
         "preview": "vite preview"
@@ -68,8 +68,11 @@
       }
     }
   },
-  "bundlerFileRouter": {
+  "bundlerRouterOnlyFileRouter": {
     "vite": {
+      "scripts": {
+        "generate-routes": "tsr generate"
+      },
       "devDependencies": {
         "@tanstack/router-cli": "^1.133.21"
       }
