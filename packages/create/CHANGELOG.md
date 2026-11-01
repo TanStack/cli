@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.3
+
+### Patch Changes
+
+- Publish only built files and package metadata, leaving sources and tests out of the installed package. ([#515](https://github.com/TanStack/cli/pull/515))
+
 ## 0.71.2
 
 ### Patch Changes

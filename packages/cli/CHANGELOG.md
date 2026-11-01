@@ -1,5 +1,12 @@
 # @tanstack/cli
 
+## 0.72.3
+
+### Patch Changes
+
+- Updated dependencies [[`46ea770`](https://github.com/TanStack/cli/commit/46ea770d6dbb7c3ccecc04b1c002e6ab06c799f5)]:
+  - @tanstack/create@0.71.3
+
 ## 0.72.2
 
 ### Patch Changes
