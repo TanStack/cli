@@ -106,6 +106,8 @@ jobs:
       - name: Create GitHub Release
         run: |
           gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node scripts/create-github-release.mjs ${PRERELEASE_FLAG} ${LATEST_FLAG}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

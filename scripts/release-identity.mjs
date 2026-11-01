@@ -5,3 +5,21 @@ export async function findReleaseForCommit(releases, commit, resolveTag) {
   }
   return null
 }
+
+export function latestReleaseFlag({
+  requested,
+  releaseHead,
+  latestHead,
+  isAncestor,
+}) {
+  if (requested === 'false') return '--latest=false'
+  if (requested !== 'true') return ''
+  if (
+    latestHead &&
+    latestHead !== releaseHead &&
+    isAncestor(releaseHead, latestHead)
+  ) {
+    return '--latest=false'
+  }
+  return '--latest'
+}

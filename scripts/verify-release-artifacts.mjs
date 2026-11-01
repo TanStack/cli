@@ -48,9 +48,17 @@ async function fetchAvailable(url, fetchImpl, requestTimeoutMs) {
 
 async function verifyPackage(pkg, { registry, fetchImpl, requestTimeoutMs }) {
   const metadataURL = `${registry.origin}/${encodeURIComponent(pkg.name)}/${encodeURIComponent(pkg.version)}`
-  const metadata = await (
-    await fetchAvailable(metadataURL, fetchImpl, requestTimeoutMs)
-  ).json()
+  const metadataResponse = await fetchAvailable(
+    metadataURL,
+    fetchImpl,
+    requestTimeoutMs,
+  )
+  let metadata
+  try {
+    metadata = await metadataResponse.json()
+  } catch (error) {
+    throw new NotAvailable(`${metadataURL}: ${error.message}`)
+  }
   if (metadata.name !== pkg.name || metadata.version !== pkg.version) {
     throw new Error(`Registry identity mismatch for ${pkg.name}@${pkg.version}`)
   }

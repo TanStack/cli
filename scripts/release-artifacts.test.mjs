@@ -218,3 +218,27 @@ test('rejects missing package output, unexpected registry identity and external 
     /Unexpected tarball origin/,
   )
 })
+
+test('retries a metadata response whose body was interrupted', async (t) => {
+  const fixture = await archive(t)
+  let reads = 0
+  const opts = options(async (url) => {
+    if (String(url) === tarball) return new Response(fixture.bytes)
+    reads++
+    if (reads === 1)
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(new TypeError('metadata connection interrupted'))
+          },
+        }),
+      )
+    return Response.json({
+      ...pkg,
+      dist: { tarball, integrity: fixture.integrity },
+    })
+  })
+  assert.equal((await verifyReleaseArtifacts([pkg], opts)).length, 1)
+  assert.equal(reads, 2)
+  assert.deepEqual(opts.sleeps, [10])
+})
