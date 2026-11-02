@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { parse } from 'yaml'
 
 import {
   finalizeAddOns,
@@ -356,6 +357,26 @@ describe('partner add-on scaffolds', () => {
       expect(pnpmWorkspace).not.toContain('workerd: true')
     },
   )
+
+  it.each(['ai', 'events', 'resume'])(
+    'approves Gemini install scripts only when the %s integration is selected',
+    async (addOn) => {
+      const output = await generateApp(createReactFrameworkDefinition(), [addOn])
+      const packageJSON = JSON.parse(output.files['package.json'])
+      expect(packageJSON.pnpm.onlyBuiltDependencies).toEqual(
+        expect.arrayContaining(['@google/genai', 'protobufjs']),
+      )
+      expect(parse(output.files['pnpm-workspace.yaml']).allowBuilds).toEqual(
+        expect.objectContaining({ '@google/genai': true, protobufjs: true }),
+      )
+    },
+  )
+
+  it('does not approve Gemini scripts in projects without AI', async () => {
+    const output = await generateApp(createReactFrameworkDefinition(), [])
+    expect(output.files['pnpm-workspace.yaml']).not.toContain('@google/genai')
+    expect(output.files['pnpm-workspace.yaml']).not.toContain('protobufjs')
+  })
 
   it.each(['postgres', 'mysql', 'sqlite'])(
     'approves Prisma build dependencies for pnpm with %s',

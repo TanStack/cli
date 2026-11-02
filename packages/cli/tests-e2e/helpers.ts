@@ -51,6 +51,8 @@ function runCommand(
   return new Promise<void>((resolvePromise, rejectPromise) => {
     const env = {
       ...process.env,
+      // Verify npm's default peer checks even when the developer opts out globally.
+      npm_config_legacy_peer_deps: 'false',
       ...opts.env,
     }
     env.PATH = [dirname(process.execPath), env.PATH]
