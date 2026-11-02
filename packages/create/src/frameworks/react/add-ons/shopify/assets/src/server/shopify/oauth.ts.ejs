@@ -1,0 +1,301 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { getCustomerEnv } from '#/server/shopify/env'
+
+/**
+ * OAuth 2.1 Authorization Code + PKCE flow for the Shopify Customer Account
+ * API. We're a public client (browser + Start backend), so no client secret —
+ * security comes from the PKCE verifier proof.
+ *
+ * No usable npm client exists for Customer Account API as of 2026-05; this is
+ * a hand-rolled implementation using Web APIs only (portable across Node,
+ * Workers, Vercel, Netlify, Bun, Deno).
+ */
+
+const SCOPE = 'openid email customer-account-api:full'
+
+type DiscoveryDocument = {
+  authorizationEndpoint: string
+  tokenEndpoint: string
+  endSessionEndpoint: string
+  graphqlEndpoint: string
+}
+
+let discoveryCache: DiscoveryDocument | null = null
+
+async function fetchDiscovery(): Promise<DiscoveryDocument> {
+  if (discoveryCache) return discoveryCache
+  const env = getCustomerEnv()
+  const base = `https://shopify.com/${env.SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID}`
+  const [oidcRes, customerRes] = await Promise.all([
+    fetch(`${base}/.well-known/openid-configuration`),
+    fetch(`${base}/.well-known/customer-account-api`),
+  ])
+  if (!oidcRes.ok || !customerRes.ok) {
+    throw new Error(
+      `Customer Account discovery failed (${oidcRes.status} / ${customerRes.status}). Verify SHOPIFY_CUSTOMER_ACCOUNT_SHOP_ID.`,
+    )
+  }
+  const oidc = (await oidcRes.json()) as {
+    authorization_endpoint: string
+    token_endpoint: string
+    end_session_endpoint: string
+  }
+  const customer = (await customerRes.json()) as {
+    graphql_api: { endpoint: string }
+  }
+  discoveryCache = {
+    authorizationEndpoint: oidc.authorization_endpoint,
+    tokenEndpoint: oidc.token_endpoint,
+    endSessionEndpoint: oidc.end_session_endpoint,
+    graphqlEndpoint: customer.graphql_api.endpoint,
+  }
+  return discoveryCache
+}
+
+export async function getDiscovery() {
+  return fetchDiscovery()
+}
+
+/* ─── Base64url + crypto helpers (Web Crypto only) ──────────────────────── */
+
+function bufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let str = ''
+  for (let i = 0; i < bytes.byteLength; i++) {
+    str += String.fromCharCode(bytes[i]!)
+  }
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function base64UrlEncode(input: string): string {
+  return bufferToBase64Url(new TextEncoder().encode(input).buffer as ArrayBuffer)
+}
+
+function base64UrlDecode(input: string): string {
+  const padded = input.replace(/-/g, '+').replace(/_/g, '/')
+  const padding = (4 - (padded.length % 4)) % 4
+  return atob(padded + '='.repeat(padding))
+}
+
+function randomBytes(n: number): Uint8Array {
+  const arr = new Uint8Array(n)
+  crypto.getRandomValues(arr)
+  return arr
+}
+
+function randomString(byteLength: number): string {
+  return bufferToBase64Url(randomBytes(byteLength).buffer as ArrayBuffer)
+}
+
+async function sha256(input: string): Promise<ArrayBuffer> {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+}
+
+/* ─── PKCE ──────────────────────────────────────────────────────────────── */
+
+export type PkcePair = { codeVerifier: string; codeChallenge: string }
+
+export async function createPkcePair(): Promise<PkcePair> {
+  const codeVerifier = randomString(48)
+  const codeChallenge = bufferToBase64Url(await sha256(codeVerifier))
+  return { codeVerifier, codeChallenge }
+}
+
+export function createState(): string {
+  return randomString(24)
+}
+
+/* ─── Authorize / token / logout URLs ───────────────────────────────────── */
+
+export async function buildAuthorizationUrl(input: {
+  state: string
+  codeChallenge: string
+}): Promise<string> {
+  const env = getCustomerEnv()
+  const discovery = await fetchDiscovery()
+  const url = new URL(discovery.authorizationEndpoint)
+  url.searchParams.set('client_id', env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID)
+  url.searchParams.set('scope', SCOPE)
+  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('redirect_uri', env.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI)
+  url.searchParams.set('state', input.state)
+  url.searchParams.set('code_challenge', input.codeChallenge)
+  url.searchParams.set('code_challenge_method', 'S256')
+  return url.toString()
+}
+
+type TokenResponse = {
+  access_token: string
+  refresh_token: string
+  id_token: string
+  expires_in: number
+  token_type: 'Bearer'
+}
+
+export async function exchangeCodeForTokens(input: {
+  code: string
+  codeVerifier: string
+}): Promise<TokenResponse> {
+  const env = getCustomerEnv()
+  const discovery = await fetchDiscovery()
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID,
+    code: input.code,
+    redirect_uri: env.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI,
+    code_verifier: input.codeVerifier,
+  })
+  const res = await fetch(discovery.tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Origin: new URL(env.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI).origin,
+    },
+    body,
+  })
+  if (!res.ok) {
+    throw new Error(
+      `Token exchange failed: ${res.status} ${res.statusText} ${await res.text()}`,
+    )
+  }
+  return (await res.json()) as TokenResponse
+}
+
+export async function refreshTokens(refreshToken: string): Promise<TokenResponse> {
+  const env = getCustomerEnv()
+  const discovery = await fetchDiscovery()
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID,
+    refresh_token: refreshToken,
+  })
+  const res = await fetch(discovery.tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Origin: new URL(env.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI).origin,
+    },
+    body,
+  })
+  if (!res.ok) {
+    throw new Error(`Token refresh failed: ${res.status} ${res.statusText}`)
+  }
+  return (await res.json()) as TokenResponse
+}
+
+export async function buildEndSessionUrl(idToken: string): Promise<string> {
+  const env = getCustomerEnv()
+  const discovery = await fetchDiscovery()
+  const url = new URL(discovery.endSessionEndpoint)
+  url.searchParams.set('id_token_hint', idToken)
+  url.searchParams.set(
+    'post_logout_redirect_uri',
+    new URL('/', env.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI).toString(),
+  )
+  return url.toString()
+}
+
+/* ─── Signed session cookie helpers (HS256) ─────────────────────────────── */
+
+let cachedHmacKey: CryptoKey | null = null
+
+async function getHmacKey(): Promise<CryptoKey> {
+  if (cachedHmacKey) return cachedHmacKey
+  const env = getCustomerEnv()
+  cachedHmacKey = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(env.SHOPIFY_SESSION_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify'],
+  )
+  return cachedHmacKey
+}
+
+export type CustomerSession = {
+  accessToken: string
+  refreshToken: string
+  idToken: string
+  expiresAt: number
+}
+
+export async function signSession(session: CustomerSession): Promise<string> {
+  const key = await getHmacKey()
+  const payload = base64UrlEncode(JSON.stringify(session))
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(payload),
+  )
+  return `${payload}.${bufferToBase64Url(sig)}`
+}
+
+export async function verifySession(
+  signed: string,
+): Promise<CustomerSession | null> {
+  const [payload, sig] = signed.split('.')
+  if (!payload || !sig) return null
+  const key = await getHmacKey()
+  const sigBytes = Uint8Array.from(base64UrlDecode(sig), (c) => c.charCodeAt(0))
+  const ok = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    sigBytes,
+    new TextEncoder().encode(payload),
+  )
+  if (!ok) return null
+  try {
+    return JSON.parse(base64UrlDecode(payload)) as CustomerSession
+  } catch {
+    return null
+  }
+}
+
+export function buildSession(token: TokenResponse): CustomerSession {
+  return {
+    accessToken: token.access_token,
+    refreshToken: token.refresh_token,
+    idToken: token.id_token,
+    expiresAt: Date.now() + token.expires_in * 1000,
+  }
+}
+
+export type OAuthFlightState = {
+  state: string
+  codeVerifier: string
+  redirectAfter: string
+}
+
+export async function signFlightState(
+  state: OAuthFlightState,
+): Promise<string> {
+  const key = await getHmacKey()
+  const payload = base64UrlEncode(JSON.stringify(state))
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(payload),
+  )
+  return `${payload}.${bufferToBase64Url(sig)}`
+}
+
+export async function verifyFlightState(
+  signed: string,
+): Promise<OAuthFlightState | null> {
+  const [payload, sig] = signed.split('.')
+  if (!payload || !sig) return null
+  const key = await getHmacKey()
+  const sigBytes = Uint8Array.from(base64UrlDecode(sig), (c) => c.charCodeAt(0))
+  const ok = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    sigBytes,
+    new TextEncoder().encode(payload),
+  )
+  if (!ok) return null
+  try {
+    return JSON.parse(base64UrlDecode(payload)) as OAuthFlightState
+  } catch {
+    return null
+  }
+}

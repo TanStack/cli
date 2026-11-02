@@ -1,0 +1,34 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+
+import { AccountNav } from '#/components/shop/account-nav'
+import { getCustomer } from '#/server/shopify/customer.functions'
+
+export const Route = createFileRoute('/shop/account')({
+  beforeLoad: async ({ location }) => {
+    const customer = await getCustomer()
+    if (!customer) {
+      throw redirect({
+        to: '/shop/account/login',
+        search: { redirect: location.href },
+      })
+    }
+    return { customer }
+  },
+  loader: ({ context }) => ({ customer: context.customer }),
+  component: AccountLayout,
+})
+
+function AccountLayout() {
+  return (
+    <div className="grid gap-10 lg:grid-cols-[200px_1fr]">
+      <aside>
+        <h1 className="mb-4 text-xl font-medium">Account</h1>
+        <AccountNav />
+      </aside>
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  )
+}

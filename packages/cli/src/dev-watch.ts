@@ -257,6 +257,7 @@ export class DevWatchManager {
         registeredFramework,
         this.options.cliOptions.mode,
         chosenAddonIds,
+        this.options.cliOptions.bundler,
       )
 
       // Check if package metadata was modified
@@ -272,6 +273,7 @@ export class DevWatchManager {
         targetDir: this.tempDir,
         git: false,
         install: packageMetadataChanged,
+        intent: false,
       }
 
       // Show package installation indicator if needed
@@ -466,6 +468,8 @@ export class DevWatchManager {
       addOns,
       basePackageJSON,
       optionalPackages,
+      bundlers: this.options.framework.bundlers,
+      defaultBundler: this.options.framework.defaultBundler,
       supportedModes: this.options.framework.supportedModes,
     }
   }

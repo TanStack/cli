@@ -11,7 +11,7 @@ export default function GuitarRecommendation({ id }: { id: string }) {
     return null
   }
   return (
-    <div className="my-4 rounded-lg overflow-hidden border border-orange-500/20 bg-gray-800/50">
+    <div className="demo-card my-4 overflow-hidden p-0">
       <div className="aspect-[4/3] relative overflow-hidden">
         <img
           src={guitar.image}
@@ -20,23 +20,25 @@ export default function GuitarRecommendation({ id }: { id: string }) {
         />
       </div>
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-white mb-2">{guitar.name}</h3>
-        <p className="text-sm text-gray-300 mb-3 line-clamp-2">
+        <h3 className="mb-2 text-lg font-semibold text-[var(--sea-ink)]">
+          {guitar.name}
+        </h3>
+        <p className="demo-muted mb-3 line-clamp-2 text-sm">
           {guitar.shortDescription}
         </p>
         <div className="flex items-center justify-between">
-          <div className="text-lg font-bold text-emerald-400">
+          <div className="text-lg font-bold text-[var(--lagoon-deep)]">
             ${guitar.price}
           </div>
           <button
             onClick={() => {
               navigate({
-                to: '/example/guitars/$guitarId',
+                to: '/demo/guitars/$guitarId',
                 params: { guitarId: guitar.id.toString() },
               })
               showAIAssistant.setState(() => false)
             }}
-            className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 py-1.5 rounded-lg text-sm hover:opacity-90 transition-opacity"
+            className="demo-button px-4 py-1.5 text-sm"
           >
             View Details
           </button>

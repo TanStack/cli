@@ -17,7 +17,7 @@
       "@content-collections/core": "^0.13.1",
       "@content-collections/markdown": "^0.1.4",
       "@content-collections/mdx": "^0.2.2",
-      "@content-collections/vite": "^0.2.8",
+      "@content-collections/vite": "^0.3.0",
       "@tailwindcss/typography": "^0.5.16",
       "remark-gfm": "^4.0.1",
       "zod": "^4.3.5"

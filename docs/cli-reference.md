@@ -15,13 +15,15 @@ tanstack create [project-name] [options]
 |--------|-------------|
 | `--add-ons <ids>` | Comma-separated add-on IDs |
 | `--template <url-or-id>` | Template URL/path or built-in template ID |
+| `--blank` | Create a minimal one-route Start project without default starter UI, examples, Tailwind, devtools, or a test stack |
 | `--package-manager <pm>` | `npm`, `pnpm`, `yarn`, `bun`, `deno` |
 | `--framework <name>` | `React`, `Solid` |
+| `--build-tool <name>` | `vite` (default), `rsbuild` |
 | `--router-only` | Create file-based Router-only app without TanStack Start (add-ons/deployment/template disabled) |
 | `--toolchain <id>` | Toolchain add-on (use `--list-add-ons` to see options) |
 | `--deployment <id>` | Deployment add-on (use `--list-add-ons` to see options) |
 | `--examples` / `--no-examples` | Include or exclude demo/example pages |
-| `--tailwind` / `--no-tailwind` | Deprecated compatibility flags; accepted but ignored (Tailwind is always enabled) |
+| `--tailwind` / `--no-tailwind` | Deprecated compatibility flags for standard projects; blank projects omit Tailwind |
 | `--no-git` | Skip git init |
 | `--no-install` | Skip dependency install |
 | `-y, --yes` | Use defaults, skip prompts |
@@ -36,12 +38,109 @@ tanstack create [project-name] [options]
 ```bash
 # Examples
 tanstack create my-app -y
+tanstack create my-app --blank -y
+tanstack create my-app --blank --deployment cloudflare -y
 tanstack create my-app --add-ons clerk,drizzle,tanstack-query
 tanstack create my-app --router-only --toolchain eslint --no-examples
+tanstack create my-app --build-tool rsbuild -y
+tanstack create my-app --framework Solid --build-tool rsbuild --router-only --blank --toolchain biome -y
 tanstack create my-app --template https://example.com/template.json
 tanstack create my-app --template ecommerce
 tanstack create --list-add-ons --framework React --json
 tanstack create --addon-details drizzle --framework React --json
+```
+
+`--blank` creates the smallest useful TanStack Start project: one route and no
+default starter interface, examples, Tailwind, devtools, test dependencies, or
+TanStack Intent setup. Pass `--intent` when the project should include local
+skill mappings for coding agents.
+Explicit add-ons and deployment adapters can add their own required files and
+dependencies. Add `-y` to use defaults for every remaining option; when the
+target is non-empty, also pass `--force` or the command exits without writing.
+
+### Programmatic generation
+
+Use `@tanstack/create/worker` in Cloudflare Workers and other edge SSR runtimes. It does not import the generated template manifest at module startup. Instead, provide a loader for the framework and add-on chunks your Worker supports.
+
+The default `@tanstack/create` export is still the Node/CLI path and scans framework templates from disk. `@tanstack/create/edge` remains the bundled in-memory manifest path; it is Worker-compatible at runtime, but it imports the full generated manifest and is not appropriate for size-constrained Worker bundles.
+
+```ts
+import {
+  createMemoryEnvironment,
+  createWorkerCreate,
+  createWorkerManifestLoader,
+} from '@tanstack/create/worker'
+import { manifestCatalog } from '@tanstack/create/worker-manifest/catalog'
+
+import type {
+  WorkerAddOnManifestModule,
+  WorkerFrameworkManifestModule,
+} from '@tanstack/create/worker'
+
+const frameworkLoaders: Record<
+  string,
+  () => Promise<WorkerFrameworkManifestModule>
+> = {
+  react: () => import('@tanstack/create/worker-manifest/frameworks/react'),
+}
+
+const addOnLoaders: Record<
+  string,
+  Record<string, () => Promise<WorkerAddOnManifestModule>>
+> = {
+  react: {
+    'tanstack-query': () =>
+      import(
+        '@tanstack/create/worker-manifest/frameworks/react/add-ons/tanstack-query'
+      ),
+    cloudflare: () =>
+      import(
+        '@tanstack/create/worker-manifest/frameworks/react/add-ons/cloudflare'
+      ),
+  },
+}
+
+const create = createWorkerCreate(
+  createWorkerManifestLoader({
+    loadCatalog: async () => manifestCatalog,
+    async loadFramework(frameworkId) {
+      const load = frameworkLoaders[frameworkId]
+      if (!load) throw new Error(`Unsupported framework: ${frameworkId}`)
+      return load()
+    },
+    async loadAddOn(frameworkId, addOnId) {
+      const load = addOnLoaders[frameworkId]?.[addOnId]
+      if (!load) throw new Error(`Unsupported add-on: ${addOnId}`)
+      return load()
+    },
+  }),
+)
+
+const framework = await create.getFrameworkById('react')
+const chosenAddOns = await create.finalizeAddOns(framework!, 'file-router', [
+  'tanstack-query',
+  'cloudflare',
+])
+const addOnOptions = create.populateAddOnOptionsDefaults(chosenAddOns)
+const { environment, output } = createMemoryEnvironment('/app')
+
+await create.createApp(environment, {
+  projectName: 'app',
+  targetDir: '/app',
+  framework: framework!,
+  mode: 'file-router',
+  bundler: 'vite',
+  typescript: true,
+  tailwind: true,
+  packageManager: 'pnpm',
+  git: false,
+  install: false,
+  intent: false,
+  chosenAddOns,
+  addOnOptions,
+})
+
+// output.files contains generated files for ZIP creation.
 ```
 
 ---
@@ -211,7 +310,7 @@ Removes `^` from version ranges for TanStack packages and adds any missing peer 
 
 ## Configuration
 
-Projects include `.tanstack.json`:
+Projects include `.cta.json`:
 
 ```json
 {

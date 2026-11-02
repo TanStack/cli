@@ -1,15 +1,16 @@
 {
   "name": "Prisma",
-  "description": "Add Prisma Postgres, or Prisma ORM with other DBs to your application.",
+  "description": "Type-safe database client with schema migrations (Postgres, MySQL, SQLite, MongoDB).",
   "phase": "add-on",
   "type": "add-on",
   "category": "orm",
   "exclusive": ["orm"],
   "color": "#2D3748",
   "priority": 120,
+  "partner": { "id": "prisma", "tier": "bronze" },
   "link": "https://www.prisma.io/",
   "modes": ["file-router"],
-  
+
   "postInitSpecialSteps": ["post-init-script"],
   "options": {
     "database": {

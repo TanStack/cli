@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@shopify/hydrogen-react": "^2026.1.0",
+    "valibot": "^1.0.0"
+  }
+}

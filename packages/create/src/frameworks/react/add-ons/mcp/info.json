@@ -1,7 +1,7 @@
 {
   "name": "MCP",
   "phase": "setup",
-  "description": "Add Model Context Protocol (MCP) support.",
+  "description": "Expose your app as an MCP server so AI clients (Claude, Cursor) can call into it.",
   "link": "https://mcp.dev",
   "modes": ["file-router"],
   "type": "add-on",

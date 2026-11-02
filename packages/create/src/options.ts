@@ -1,4 +1,4 @@
-import type { Options, SerializedOptions } from './types'
+import type { Options, SerializedOptions } from './types.js'
 
 export const createSerializedOptions = (options: Options) => {
   const serializedOptions: SerializedOptions = {
