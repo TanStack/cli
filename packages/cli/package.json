@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/cli",
-  "version": "0.72.5",
+  "version": "0.72.6",
   "description": "TanStack CLI",
   "type": "module",
   "main": "./dist/index.js",

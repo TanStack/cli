@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.6
+
+### Patch Changes
+
+- Include Zod in the Strapi add-on and use the current Start server-function validator API. Handle unknown router errors safely. ([#415](https://github.com/TanStack/cli/pull/415))
+
 ## 0.71.5
 
 ### Patch Changes
