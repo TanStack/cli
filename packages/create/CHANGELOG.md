@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.10
+
+### Patch Changes
+
+- Approve the Gemini SDK install scripts in AI, Events and Resume projects so fresh pnpm 11 installs succeed without interactive build approval. Update Content Collections in Events and Resume to support the generated TypeScript 6 dependency and preserve normal npm peer checks. ([#541](https://github.com/TanStack/cli/pull/541))
+
 ## 0.71.9
 
 ### Patch Changes
