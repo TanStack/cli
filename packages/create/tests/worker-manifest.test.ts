@@ -319,4 +319,55 @@ describe('@tanstack/create/worker manifest loading', () => {
       vi.unstubAllGlobals()
     }
   })
+
+  it('keeps Rsbuild rendering equal between worker and edge manifests', async () => {
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(JSON.stringify({ version: '1.0.0' }), {
+              status: 200,
+            }),
+        ),
+      )
+
+      const { loader } = createTrackedLoader()
+      const workerCreate = createWorkerCreate(loader)
+      const framework = await workerCreate.getFrameworkById('react')
+      const options = {
+        projectName: 'rsbuild-worker-app',
+        targetDir: '/rsbuild-worker-app',
+        framework: framework!,
+        mode: 'file-router',
+        bundler: 'rsbuild',
+        typescript: true,
+        tailwind: true,
+        packageManager: 'pnpm',
+        git: false,
+        install: false,
+        intent: false,
+        chosenAddOns: [],
+        addOnOptions: {},
+        includeExamples: false,
+      } satisfies Options
+      const { environment, output } = createMemoryEnvironment(options.targetDir)
+
+      await workerCreate.createApp(environment, options)
+
+      const edgeFramework = getEdgeFrameworkById('react')
+      const { environment: edgeEnvironment, output: edgeOutput } =
+        createEdgeMemoryEnvironment(options.targetDir)
+      await createEdgeApp(edgeEnvironment, {
+        ...options,
+        framework: edgeFramework!,
+      })
+
+      expect(output.files).toEqual(edgeOutput.files)
+      expect(output.files).toHaveProperty('rsbuild.config.ts')
+      expect(output.files).not.toHaveProperty('vite.config.ts')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

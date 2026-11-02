@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@sentry/solid": "^10.42.0"
+    "@sentry/solid": "^10.67.0"
   }
 }

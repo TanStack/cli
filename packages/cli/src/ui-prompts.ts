@@ -13,15 +13,50 @@ import {
   DEFAULT_PACKAGE_MANAGER,
   SUPPORTED_PACKAGE_MANAGERS,
   getAllAddOns,
+  getBundlers,
+  getDefaultBundler,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
   isCurrentDirectoryProjectNameInput,
   validateProjectName,
 } from './utils.js'
+import { orderAddOnsForPartnerPlacement } from './partner-placement.js'
 import type { AddOn, PackageManager } from '@tanstack/create'
 
 import type { Framework } from '@tanstack/create/dist/types/types.js'
+
+export async function selectBundler(
+  framework: Framework,
+  bundlerId?: string,
+): Promise<string> {
+  if (bundlerId) {
+    return resolveBundler(framework, bundlerId).id
+  }
+
+  const bundlers = getBundlers(framework)
+  if (bundlers.length === 1) {
+    return bundlers[0].id
+  }
+
+  const selected = await select({
+    message: 'Select build tool:',
+    options: bundlers.map((bundler) => ({
+      value: bundler.id,
+      label: bundler.name,
+      hint: bundler.description,
+    })),
+    initialValue: getDefaultBundler(framework).id,
+  })
+
+  if (isCancel(selected)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+
+  return resolveBundler(framework, selected).id
+}
 
 export async function selectFramework(
   frameworks: Array<Framework>,
@@ -146,16 +181,18 @@ export async function selectAddOns(
   message: string,
   forcedAddOns: Array<string> = [],
   allowMultiple: boolean = true,
+  bundlerId?: string,
 ): Promise<Array<string>> {
-  const allAddOns = await getAllAddOns(framework, mode)
+  const allAddOns = await getAllAddOns(framework, mode, bundlerId)
   const addOns = allAddOns.filter((addOn) => addOn.type === type)
   if (addOns.length === 0) {
     return []
   }
 
   if (allowMultiple) {
-    const selectableAddOns = addOns.filter(
-      (addOn) => !forcedAddOns.includes(addOn.id),
+    const selectableAddOns = orderAddOnsForPartnerPlacement(
+      addOns.filter((addOn) => !forcedAddOns.includes(addOn.id)),
+      'add-ons',
     )
 
     if (selectableAddOns.length === 0) {
@@ -381,19 +418,21 @@ export async function selectDeployment(
 ): Promise<string | undefined> {
   const deployments = new Set<AddOn>()
   let initialValue: string | undefined = undefined
-  for (const addOn of framework
-    .getAddOns()
-    .sort((a, b) => a.name.localeCompare(b.name))) {
-    if (addOn.type === 'deployment') {
-      deployments.add(addOn)
-      if (deployment && addOn.id === deployment) {
-        return deployment
-      }
-      if (forcedDeployment && addOn.id === forcedDeployment) {
-        initialValue = addOn.id
-      } else if (!initialValue && addOn.default) {
-        initialValue = addOn.id
-      }
+  for (const addOn of orderAddOnsForPartnerPlacement(
+    framework
+      .getAddOns()
+      .filter((addOn) => addOn.type === 'deployment')
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    'deployment',
+  )) {
+    deployments.add(addOn)
+    if (deployment && addOn.id === deployment) {
+      return deployment
+    }
+    if (forcedDeployment && addOn.id === forcedDeployment) {
+      initialValue = addOn.id
+    } else if (!initialValue && addOn.default) {
+      initialValue = addOn.id
     }
   }
 
