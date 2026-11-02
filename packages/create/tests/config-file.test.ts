@@ -66,7 +66,7 @@ describe('readConfigFileFromEnvironment', () => {
       JSON.stringify(persistedOptions, null, 2),
     )
     const config = await readConfigFileFromEnvironment(environment, targetDir)
-    expect(config).toEqual(persistedOptions)
+    expect(config).toEqual({ ...persistedOptions, bundler: 'vite' })
   })
 
   it('should upgrade old config files', async () => {
@@ -98,6 +98,7 @@ describe('readConfigFileFromEnvironment', () => {
 
     expect(config).toEqual({
       framework: 'react',
+      bundler: 'vite',
       projectName: 'foo',
       typescript: false,
       tailwind: false,

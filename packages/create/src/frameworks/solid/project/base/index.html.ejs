@@ -1,4 +1,4 @@
-<% if (!routerOnly) { ignoreFile() } %>
+<% if (!routerOnly || bundler !== 'vite') { ignoreFile() } %>
 <!doctype html>
 <html lang="en">
   <head>

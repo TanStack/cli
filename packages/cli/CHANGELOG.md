@@ -1,5 +1,66 @@
 # @tanstack/cli
 
+## 0.72.4
+
+### Patch Changes
+
+- Updated dependencies [[`fb4f148`](https://github.com/TanStack/cli/commit/fb4f1487c115718c5e67ff586ac799b80776cc68)]:
+  - @tanstack/create@0.71.4
+
+## 0.72.3
+
+### Patch Changes
+
+- Updated dependencies [[`46ea770`](https://github.com/TanStack/cli/commit/46ea770d6dbb7c3ccecc04b1c002e6ab06c799f5)]:
+  - @tanstack/create@0.71.3
+
+## 0.72.2
+
+### Patch Changes
+
+- Updated dependencies [[`6e3e869`](https://github.com/TanStack/cli/commit/6e3e869fd33e792b58b243ec369d4d66ec13eaba)]:
+  - @tanstack/create@0.71.2
+
+## 0.72.1
+
+### Patch Changes
+
+- Updated dependencies [[`0db921b`](https://github.com/TanStack/cli/commit/0db921b6b4e9eb9da95dd9310d6a48b0578ba68e), [`d795831`](https://github.com/TanStack/cli/commit/d795831612fdc4bdac659529f0d07e5f09c8ca3a)]:
+  - @tanstack/create@0.71.1
+
+## 0.72.0
+
+### Minor Changes
+
+- Add first-class Rsbuild build tool support for React and Solid TanStack Start and ([#505](https://github.com/TanStack/cli/pull/505))
+  router-only scaffolds, including Tailwind and ESLint/Biome toolchains.
+
+### Patch Changes
+
+- Updated dependencies [[`da2abe2`](https://github.com/TanStack/cli/commit/da2abe21470a0bfdd1be528c35b2c5874e59a4d2)]:
+  - @tanstack/create@0.71.0
+
+## 0.71.1
+
+### Patch Changes
+
+- Updated dependencies [[`1378ada`](https://github.com/TanStack/cli/commit/1378adaea7e45ef9a4f050b87f3616b2c62b1df3)]:
+  - @tanstack/create@0.70.1
+
+## 0.71.0
+
+### Minor Changes
+
+- Add Gold partner deployment targets for Render and Vercel to React and Solid ([#507](https://github.com/TanStack/cli/pull/507))
+  scaffolds. Render generates package-manager-aware Blueprint commands, while
+  Vercel generates explicit framework detection and Nitro Build Output API
+  support.
+
+### Patch Changes
+
+- Updated dependencies [[`f537073`](https://github.com/TanStack/cli/commit/f537073fc4ee24b44f3aad545a2ce48b7b48c3cc), [`8863bee`](https://github.com/TanStack/cli/commit/8863bee76fa2e19e14e38fd34278eca01e946c16), [`6f16a8b`](https://github.com/TanStack/cli/commit/6f16a8bb91a7807f3322d3efdb264da1ea82bb18), [`6f16a8b`](https://github.com/TanStack/cli/commit/6f16a8bb91a7807f3322d3efdb264da1ea82bb18)]:
+  - @tanstack/create@0.70.0
+
 ## 0.70.2
 
 ### Patch Changes

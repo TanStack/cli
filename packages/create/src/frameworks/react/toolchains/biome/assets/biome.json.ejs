@@ -10,8 +10,8 @@
 		"includes": [
 			"**/src/**/*",
 			"**/.vscode/**/*",
-			"**/index.html",
-			"**/vite.config.ts",
+			<% if (bundler === 'vite') { %>"**/index.html",
+			<% } %>"**/<%= bundler %>.config.ts",
 			"!**/src/routeTree.gen.ts",
 			"!**/src/styles.css"
 		]
@@ -33,4 +33,4 @@
 		}
 	}
 }
-
+<% if (bundler) { %><% } %>

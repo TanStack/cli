@@ -1,0 +1,21 @@
+{
+  "name": "Render",
+  "description": "Deploy to Render (full-stack cloud platform with GitHub integration).",
+  "link": "https://render.com/",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "deployment",
+  "supportedPackageManagers": ["npm", "yarn", "pnpm", "bun"],
+  "category": "deploy",
+  "exclusive": ["deploy"],
+  "color": "#46E3B7",
+  "priority": 150,
+  "partner": { "id": "render", "tier": "gold" },
+  "integrations": [
+    {
+      "type": "vite-plugin",
+      "import": "import { nitro } from 'nitro/vite'",
+      "code": "nitro({ rollupConfig: { external: [/^@sentry\\//] } })"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import {
   getRawRegistry,
   loadStarter,
   populateAddOnOptionsDefaults,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
@@ -320,6 +321,36 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
 } {
   const warnings: Array<string> = []
   const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
+  const isSupportedLegacyTemplate =
+    legacyTemplate !== undefined &&
+    SUPPORTED_LEGACY_TEMPLATES.has(legacyTemplate)
+
+  if (cliOptions.buildTool?.toLowerCase() === 'rsbuild') {
+    if (
+      cliOptions.starter ||
+      (cliOptions.template && !isSupportedLegacyTemplate) ||
+      cliOptions.templateId
+    ) {
+      return {
+        warnings,
+        error:
+          'Rsbuild does not currently support --starter, --template, or --template-id.',
+      }
+    }
+    if (cliOptions.deployment) {
+      return {
+        warnings,
+        error: 'Rsbuild does not currently support --deployment.',
+      }
+    }
+    if (cliOptions.addOns) {
+      return {
+        warnings,
+        error:
+          'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+      }
+    }
+  }
 
   if (
     cliOptions.blank &&
@@ -456,6 +487,9 @@ export async function normalizeOptions(
   const blank = cliOptions.blank === true
 
   const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
+  const isSupportedLegacyTemplate =
+    legacyTemplate !== undefined &&
+    SUPPORTED_LEGACY_TEMPLATES.has(legacyTemplate)
 
   if (!cliOptions.starter) {
     if (cliOptions.template && !legacyTemplate) {
@@ -476,6 +510,30 @@ export async function normalizeOptions(
 
   const preferredFramework = (cliOptions.framework || 'react').toLowerCase()
 
+  const initialFramework = getFrameworkById(preferredFramework)
+  let framework = initialFramework!
+  const bundler = initialFramework
+    ? resolveBundler(initialFramework, cliOptions.buildTool).id
+    : (cliOptions.buildTool ?? 'vite')
+
+  if (bundler === 'rsbuild') {
+    if (
+      cliOptions.starter ||
+      (cliOptions.template && !isSupportedLegacyTemplate) ||
+      cliOptions.templateId
+    ) {
+      throw new Error('Rsbuild does not currently support templates.')
+    }
+    if (cliOptions.deployment || opts?.forcedDeployment) {
+      throw new Error('Rsbuild does not currently support deployments.')
+    }
+    if (forcedAddOns?.length || cliOptions.addOns) {
+      throw new Error(
+        'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+      )
+    }
+  }
+
   const starter = !routerOnly && !blank && cliOptions.starter
     ? await loadStarter(
         await resolveStarterSpecifier(cliOptions.starter, preferredFramework),
@@ -490,7 +548,11 @@ export async function normalizeOptions(
     mode = starter.mode
   }
 
-  const framework = getFrameworkById(cliOptions.framework || 'react')!
+  const resolvedFramework = getFrameworkById(cliOptions.framework || 'react')
+  if (resolvedFramework) {
+    resolveBundler(resolvedFramework, bundler)
+  }
+  framework = resolvedFramework!
 
   async function selectAddOns() {
     // Edge case for Windows Powershell
@@ -531,7 +593,7 @@ export async function normalizeOptions(
         selectedAddOns.add(opts.forcedDeployment)
       }
 
-      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns))
+      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns), bundler)
     }
 
     return []
@@ -561,6 +623,7 @@ export async function normalizeOptions(
     targetDir,
     framework,
     mode,
+    bundler,
     typescript,
     tailwind,
     packageManager:
@@ -577,6 +640,7 @@ export async function normalizeOptions(
     },
     starter: starter,
     projectPreset: blank ? 'blank' : 'default',
+    routerOnly,
   }
 
   ;(normalized as Options & { includeExamples?: boolean }).includeExamples =

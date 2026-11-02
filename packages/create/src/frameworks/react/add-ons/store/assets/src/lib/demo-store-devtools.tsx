@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { store, fullName } from './demo-store'
 
 type EventMap = {
-  'store-devtools:state': {
+  state: {
     firstName: string
     lastName: string
     fullName: string
@@ -30,7 +30,7 @@ store.subscribe(() => {
 })
 
 function DevtoolPanel() {
-  const [state, setState] = useState<EventMap['store-devtools:state']>(() => ({
+  const [state, setState] = useState<EventMap['state']>(() => ({
     firstName: store.state.firstName,
     lastName: store.state.lastName,
     fullName: fullName.state,
