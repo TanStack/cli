@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.9
+
+### Patch Changes
+
+- Fix Events and Resume assistant rendering and subscription cleanup, and align their generated types and content collection configuration with current dependencies. ([#446](https://github.com/TanStack/cli/pull/446))
+
 ## 0.71.8
 
 ### Patch Changes
