@@ -79,7 +79,7 @@ const getArticleBySlug = async (slug: string) => {
 export const getArticlesData = createServerFn({
   method: "GET",
 })
-  .inputValidator(
+  .validator(
     (input?: { page?: number; category?: string; query?: string }) => input
   )
   .handler(async ({ data }): Promise<TStrapiResponseCollection<TArticle>> => {
@@ -90,7 +90,7 @@ export const getArticlesData = createServerFn({
 export const getArticleByIdData = createServerFn({
   method: "GET",
 })
-  .inputValidator((documentId: string) => documentId)
+  .validator((documentId: string) => documentId)
   .handler(async ({ data: documentId }): Promise<TStrapiResponseSingle<TArticle>> => {
     const response = await getArticleById(documentId);
     return response;
@@ -99,7 +99,7 @@ export const getArticleByIdData = createServerFn({
 export const getArticleBySlugData = createServerFn({
   method: "GET",
 })
-  .inputValidator((slug: string) => slug)
+  .validator((slug: string) => slug)
   .handler(async ({ data: slug }): Promise<TStrapiResponseCollection<TArticle>> => {
     const response = await getArticleBySlug(slug);
     return response;

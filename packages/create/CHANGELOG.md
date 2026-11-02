@@ -1,5 +1,176 @@
 # @tanstack/create
 
+## 0.71.8
+
+### Patch Changes
+
+- Fix the Sentry add-on homepage link for React and Solid to use sentry.io. ([#413](https://github.com/TanStack/cli/pull/413))
+
+## 0.71.7
+
+### Patch Changes
+
+- Write pnpm native build approvals to pnpm-workspace.yaml for pnpm 11 while retaining package.json approvals for pnpm 9 and 10. Preserve existing workspace configuration when adding integrations. ([#485](https://github.com/TanStack/cli/pull/485))
+
+  Keep ordinary pnpm 9 dependency additions working when creating a new standalone workspace, without changing existing monorepo root checks or explicit project settings.
+
+## 0.71.6
+
+### Patch Changes
+
+- Include Zod in the Strapi add-on and use the current Start server-function validator API. Handle unknown router errors safely. ([#415](https://github.com/TanStack/cli/pull/415))
+
+## 0.71.5
+
+### Patch Changes
+
+- Use the shared router factory in React and Solid router-only apps so customizations are applied and registration stays in one place. Add a browser Query provider when Query is added to a router-only app, without importing Start SSR dependencies. ([#481](https://github.com/TanStack/cli/pull/481))
+
+  Allow pnpm to update the lockfile when adding dependencies to an existing app in CI.
+
+## 0.71.4
+
+### Patch Changes
+
+- Keep the AI chat and media demos compatible with the current SDK, including thread IDs, inferred message types and complete image options. Fix the Store devtools event map and guitar navigation used by the AI demo, and omit empty pnpm settings while preserving add-on build approvals. ([#525](https://github.com/TanStack/cli/pull/525))
+
+## 0.71.3
+
+### Patch Changes
+
+- Publish only built files and package metadata, leaving sources and tests out of the installed package. ([#515](https://github.com/TanStack/cli/pull/515))
+
+## 0.71.2
+
+### Patch Changes
+
+- Keep appended add-on files on separate lines when existing content has no final newline, in both Node and edge generation. ([#396](https://github.com/TanStack/cli/pull/396))
+
+## 0.71.1
+
+### Patch Changes
+
+- Generate the route tree of new Start apps on Vite with `vite build` instead of `tsr generate`, which leaves out the Start `Register` block. ([#526](https://github.com/TanStack/cli/pull/526))
+
+- Use the Zod 4 URL validator in the React T3Env add-on, matching the Solid add-on. ([#391](https://github.com/TanStack/cli/pull/391))
+
+## 0.71.0
+
+### Minor Changes
+
+- Add first-class Rsbuild build tool support for React and Solid TanStack Start and ([#505](https://github.com/TanStack/cli/pull/505))
+  router-only scaffolds, including Tailwind and ESLint/Biome toolchains.
+
+## 0.70.1
+
+### Patch Changes
+
+- Use the supported npm response format and resolve current versions for each generated project so long-running builders pick up new releases. ([#517](https://github.com/TanStack/cli/pull/517))
+
+## 0.70.0
+
+### Minor Changes
+
+- Add Gold partner deployment targets for Render and Vercel to React and Solid ([#507](https://github.com/TanStack/cli/pull/507))
+  scaffolds. Render generates package-manager-aware Blueprint commands, while
+  Vercel generates explicit framework detection and Nitro Build Output API
+  support.
+
+### Patch Changes
+
+- Wire TanStack Intent up in on-demand discovery mode instead of writing the full ([#497](https://github.com/TanStack/cli/pull/497))
+  skill-to-task mapping table into `AGENTS.md`. Generated projects previously got
+  an `install --map` block listing every skill for every installed package — 99
+  lines in a default app, growing with each add-on — which every agent re-read on
+  every invocation. Plain `install` emits a 10-line pointer telling the agent to
+  run `intent list` and `intent load <package>#<skill>` when a task actually calls
+  for one. The "next steps" output now shows those two commands, rendered for the
+  project's package manager.
+
+- Drop unused React Query imports from the generated React `router.tsx`. The ([#498](https://github.com/TanStack/cli/pull/498))
+  `tanstack-query` branch imported `ReactNode`, `QueryClient` and the
+  `TanstackQueryProvider` default export whenever the add-on was enabled, but
+  `ReactNode` and `TanstackQueryProvider` are only referenced inside the tRPC
+  `Wrap` block and `QueryClient` was never referenced at all. Generated projects
+  set `noUnusedLocals: true`, so a fresh scaffold shipped code that violates its
+  own tsconfig. The two tRPC-only imports are now gated behind
+  `addOnEnabled.tRPC` and the `QueryClient` import is removed.
+
+- Drop two dead imports from the generated tRPC integration. `api.trpc.$.tsx` ([#498](https://github.com/TanStack/cli/pull/498))
+  imported `createServerFileRoute` from `@tanstack/react-start/server`, but the
+  route was already migrated to `createFileRoute(...)({ server: { handlers } })`
+  and that symbol is no longer exported, so the leftover import was both unused
+  and unresolvable. The tRPC branch of `root-provider.tsx` imported
+  `QueryClientProvider`, which it never renders —
+  `setupRouterSsrQueryIntegration` supplies the query client. Generated projects
+  set `noUnusedLocals: true`, so both showed up as errors in a fresh scaffold.
+
+## 0.69.2
+
+### Patch Changes
+
+- Remove `memfs` from the published runtime dependencies by reusing the internal in-memory environment. ([#501](https://github.com/TanStack/cli/pull/501))
+
+## 0.69.1
+
+### Patch Changes
+
+- Fix pnpm 11 build approvals for Prisma and Netlify projects, make generated Prisma MySQL apps use their configured `DATABASE_URL`, and update the Prisma demo to current server-function and package-script APIs. ([#492](https://github.com/TanStack/cli/pull/492))
+
+## 0.69.0
+
+### Minor Changes
+
+- Add a `--blank` project preset that creates a production-ready one-route app ([#488](https://github.com/TanStack/cli/pull/488))
+  without starter UI, Tailwind, devtools, test tooling, Intent setup, or unused
+  public assets. Pass `--intent` to opt local coding-agent skill mappings back in.
+  Also move integration-specific dependencies to their owning add-ons and stop
+  shipping an unused test stack in standard Start projects. Explicit styling and
+  deployment add-ons remain composable with the blank preset, including when
+  added later.
+
+### Patch Changes
+
+- Modernize the Clerk and WorkOS add-ons with their full-stack TanStack Start SDKs, ([#490](https://github.com/TanStack/cli/pull/490))
+  update Railway projects for Railpack, and use safer Sentry defaults. Secret
+  environment values are no longer stored in `.cta.json` or overwritten by
+  `tanstack add`, and pnpm 11 projects receive the build approvals their selected
+  integrations require.
+
+## 0.68.5
+
+### Patch Changes
+
+- Order partner integrations by sponsorship tier and rotate integrations within each tier for every CLI run. ([#486](https://github.com/TanStack/cli/pull/486))
+
+## 0.68.4
+
+### Patch Changes
+
+- Fix Worker usage by adding a provider-based `@tanstack/create/worker` entry that avoids importing the full generated create manifest at startup. ([#477](https://github.com/TanStack/cli/pull/477))
+
+## 0.68.3
+
+### Patch Changes
+
+- Add a Worker-safe edge export backed by a build-time generated template and add-on manifest. ([#475](https://github.com/TanStack/cli/pull/475))
+
+## 0.68.2
+
+### Patch Changes
+
+- Keep the generated route tree tracked in new React and Solid apps and run route generation once during scaffold. ([#464](https://github.com/TanStack/cli/pull/464))
+
+## 0.68.1
+
+### Patch Changes
+
+- Keep the generated AI assistant demo panel inside the viewport. ([#459](https://github.com/TanStack/cli/pull/459))
+
+- Normalize generated demo pages to use the base template styling instead of bespoke full-page gradients and mismatched color treatments. ([#461](https://github.com/TanStack/cli/pull/461))
+
+- Ignore the generated route tree in new React and Solid app gitignores. ([#460](https://github.com/TanStack/cli/pull/460))
+
 ## 0.68.0
 
 ### Minor Changes

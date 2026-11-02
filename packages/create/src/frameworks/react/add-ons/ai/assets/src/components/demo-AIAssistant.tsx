@@ -24,7 +24,7 @@ function Messages({ messages }: { messages: ChatMessages }) {
 
   if (!messages.length) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+      <div className="demo-muted flex flex-1 items-center justify-center text-sm">
         Ask me anything! I'm here to help.
       </div>
     )
@@ -36,9 +36,7 @@ function Messages({ messages }: { messages: ChatMessages }) {
         <div
           key={id}
           className={`py-3 ${
-            role === 'assistant'
-              ? 'bg-linear-to-r from-orange-500/5 to-red-600/5'
-              : 'bg-transparent'
+            role === 'assistant' ? 'bg-[var(--chip-bg)]' : 'bg-transparent'
           }`}
         >
           {parts.map((part, index) => {
@@ -46,15 +44,15 @@ function Messages({ messages }: { messages: ChatMessages }) {
               return (
                 <div key={index} className="flex items-start gap-2 px-4">
                   {role === 'assistant' ? (
-                    <div className="w-6 h-6 rounded-lg bg-linear-to-r from-orange-500 to-red-600 flex items-center justify-center text-xs font-medium text-white flex-shrink-0">
+                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--lagoon-deep)] text-xs font-medium text-white">
                       AI
                     </div>
                   ) : (
-                    <div className="w-6 h-6 rounded-lg bg-gray-700 flex items-center justify-center text-xs font-medium text-white flex-shrink-0">
+                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--sea-ink-soft)] text-xs font-medium text-white">
                       Y
                     </div>
                   )}
-                  <div className="flex-1 min-w-0 text-white prose dark:prose-invert max-w-none prose-sm">
+                  <div className="min-w-0 flex-1 max-w-none text-sm text-[var(--sea-ink)]">
                     <Streamdown>{part.content}</Streamdown>
                   </div>
                 </div>
@@ -87,7 +85,7 @@ export default function AIAssistant() {
     <div className="relative z-50">
       <button
         onClick={() => showAIAssistant.setState((state) => !state)}
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-linear-to-r from-green-700 to-green-900 text-white hover:opacity-90 transition-opacity"
+        className="demo-button w-full justify-between px-4 py-2.5"
       >
         <div className="flex items-center gap-2">
           <BotIcon size={24} />
@@ -97,12 +95,14 @@ export default function AIAssistant() {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-0 left-full ml-2 w-[700px] h-[600px] bg-gray-900 rounded-lg shadow-xl border border-orange-500/20 flex flex-col">
-          <div className="flex items-center justify-between p-3 border-b border-orange-500/20">
-            <h3 className="font-semibold text-white">AI Assistant</h3>
+        <div className="demo-panel fixed inset-x-4 top-20 z-[100] flex h-[calc(100vh-6rem)] max-h-[600px] flex-col overflow-hidden p-0 sm:left-auto sm:w-[min(calc(100vw-2rem),700px)]">
+          <div className="flex items-center justify-between border-b border-[var(--line)] p-3">
+            <h3 className="font-semibold text-[var(--sea-ink)]">
+              AI Assistant
+            </h3>
             <button
               onClick={() => showAIAssistant.setState((state) => !state)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="demo-muted transition-colors hover:text-[var(--sea-ink)]"
             >
               <X className="w-4 h-4" />
             </button>
@@ -110,7 +110,7 @@ export default function AIAssistant() {
 
           <Messages messages={messages} />
 
-          <div className="p-3 border-t border-orange-500/20">
+          <div className="border-t border-[var(--line)] p-3">
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -125,7 +125,7 @@ export default function AIAssistant() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type your message..."
-                  className="w-full rounded-lg border border-orange-500/20 bg-gray-800/50 pl-3 pr-10 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-transparent resize-none overflow-hidden"
+                  className="demo-textarea pr-10 text-sm"
                   rows={1}
                   style={{ minHeight: '36px', maxHeight: '120px' }}
                   onInput={(e) => {
@@ -145,7 +145,7 @@ export default function AIAssistant() {
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-orange-500 hover:text-orange-400 disabled:text-gray-500 transition-colors focus:outline-none"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-[var(--lagoon-deep)] transition-colors hover:text-[var(--sea-ink)] disabled:text-[var(--sea-ink-soft)]"
                 >
                   <Send className="w-4 h-4" />
                 </button>

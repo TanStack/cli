@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start": "<%= addOnEnabled.sentry ? 'node --import ./.output/server/instrument.server.mjs .output/server/index.mjs' : 'node .output/server/index.mjs' %>"
+  },
+  "dependencies": {
+    "nitro": "3.0.260610-beta"
+  }
+}

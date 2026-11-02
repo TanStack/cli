@@ -7,9 +7,10 @@
   "exclusive": ["orm"],
   "color": "#2D3748",
   "priority": 120,
+  "partner": { "id": "prisma", "tier": "bronze" },
   "link": "https://www.prisma.io/",
   "modes": ["file-router"],
-  
+
   "postInitSpecialSteps": ["post-init-script"],
   "options": {
     "database": {

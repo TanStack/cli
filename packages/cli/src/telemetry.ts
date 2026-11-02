@@ -1,9 +1,9 @@
 import { version as nodeVersion } from 'node:process'
 
 import {
+  TELEMETRY_NOTICE_VERSION,
   getTelemetryStatus,
   markTelemetryNoticeSeen,
-  TELEMETRY_NOTICE_VERSION,
 } from './telemetry-config.js'
 
 import type { StatusEvent, StatusStepType } from '@tanstack/create'

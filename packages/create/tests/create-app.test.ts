@@ -4,8 +4,7 @@ import { resolve } from 'node:path'
 import { createApp } from '../src/create-app.js'
 
 import { createMemoryEnvironment } from '../src/environment.js'
-import { FILE_ROUTER } from '../src/constants.js'
-import { AddOn, Options } from '../src/types.js'
+import type { AddOn, Options } from '../src/types.js'
 
 const simpleOptions = {
   projectName: 'test',
@@ -43,7 +42,7 @@ const simpleOptions = {
   packageManager: 'pnpm',
   typescript: true,
   tailwind: true,
-  mode: FILE_ROUTER,
+  mode: 'file-router',
   variableValues: {},
 } as unknown as Options
 
@@ -86,6 +85,43 @@ describe('createApp', () => {
 
     expect(output.files['/src/test2.txt']).toEqual('Hello-2')
     expect(output.commands.some(({ command }) => command === 'echo')).toBe(true)
+  })
+
+  it.each(['react', 'solid'])(
+    'generates routes for %s file-router apps after install',
+    async (frameworkId) => {
+      const { environment, output } = createMemoryEnvironment()
+      await createApp(environment, {
+        ...simpleOptions,
+        framework: {
+          ...simpleOptions.framework,
+          id: frameworkId,
+        },
+        install: true,
+      } as Options)
+
+      expect(output.commands).toContainEqual({
+        command: 'pnpm',
+        args: ['generate-routes'],
+      })
+    },
+  )
+
+  it('skips route generation when dependency install is skipped', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await createApp(environment, {
+      ...simpleOptions,
+      framework: {
+        ...simpleOptions.framework,
+        id: 'react',
+      },
+      install: false,
+    })
+
+    expect(output.commands).not.toContainEqual({
+      command: 'pnpm',
+      args: ['generate-routes'],
+    })
   })
 
   it('should create an app - with a add-on', async () => {

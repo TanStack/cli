@@ -2,11 +2,12 @@
   "name": "Sentry",
   "phase": "setup",
   "description": "Add Sentry for error monitoring and crash reporting (requires Start).",
-  "link": "https://sentry.com/",
+  "link": "https://sentry.io/",
   "modes": ["file-router"],
   "type": "add-on",
   "category": "monitoring",
   "color": "#362D59",
+  "partner": { "id": "sentry", "tier": "bronze" },
   "routes": [
     {
       "url": "/demo/sentry/bad-event-handler",

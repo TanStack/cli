@@ -10,6 +10,27 @@ export const SUPPORTED_PACKAGE_MANAGERS = [
 export type PackageManager = (typeof SUPPORTED_PACKAGE_MANAGERS)[number]
 export const DEFAULT_PACKAGE_MANAGER: PackageManager = 'npm'
 
+export function validatePackageManagerSupport(
+  packageManager: PackageManager,
+  addOns: Array<{
+    name: string
+    supportedPackageManagers?: Array<PackageManager>
+  }>,
+) {
+  const unsupported = addOns.find(
+    (addOn) =>
+      addOn.supportedPackageManagers &&
+      !addOn.supportedPackageManagers.includes(packageManager),
+  )
+
+  const supportedPackageManagers = unsupported?.supportedPackageManagers
+  if (!unsupported || !supportedPackageManagers) return
+
+  throw new Error(
+    `${unsupported.name} does not support the ${packageManager} package manager. Choose ${supportedPackageManagers.join(', ')}.`,
+  )
+}
+
 export function getPackageManager(): PackageManager | undefined {
   const userAgent = process.env.npm_config_user_agent
 
@@ -61,6 +82,20 @@ export function getPackageManagerExecuteCommand(
   }
 }
 
+export const INTENT_PACKAGE = '@tanstack/intent'
+
+export function intentCommand(
+  packageManager: PackageManager,
+  args: Array<string>,
+) {
+  const { command, args: commandArgs } = getPackageManagerExecuteCommand(
+    packageManager,
+    INTENT_PACKAGE,
+    args,
+  )
+  return [command, ...commandArgs].join(' ')
+}
+
 export function getPackageManagerInstallCommand(
   packagerManager: PackageManager,
   pkg?: string,
@@ -93,11 +128,16 @@ export function packageManagerInstall(
   cwd: string,
   packagerManager: PackageManager,
   pkg?: string,
+  options?: { updateLockfile?: boolean },
 ) {
   const { command, args: commandArgs } = getPackageManagerInstallCommand(
     packagerManager,
     pkg,
   )
+  // Adding an add-on intentionally changes package.json, including in CI.
+  if (packagerManager === 'pnpm' && options?.updateLockfile && !pkg) {
+    commandArgs.push('--no-frozen-lockfile')
+  }
   return environment.execute(command, commandArgs, cwd)
 }
 

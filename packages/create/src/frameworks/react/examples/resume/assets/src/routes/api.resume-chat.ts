@@ -26,7 +26,13 @@ export const Route = createFileRoute('/api/resume-chat')({
 
         try {
           const body = await request.json()
-          const { messages } = body
+          const { messages, threadId } = body
+          if (typeof threadId !== 'string' || !threadId.trim()) {
+            return Response.json(
+              { error: 'A threadId is required' },
+              { status: 400 },
+            )
+          }
           const data = body.data || {}
 
           const SYSTEM_PROMPT = `You are a helpful resume assistant helping recruiters and hiring managers evaluate if this candidate is a good fit for their job requirements.
@@ -84,6 +90,7 @@ CONTEXT: You are helping evaluate this candidate's qualifications for potential 
             systemPrompts: [SYSTEM_PROMPT],
             agentLoopStrategy: maxIterations(5),
             messages,
+            threadId,
             abortController,
           })
 

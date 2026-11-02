@@ -5,21 +5,28 @@ import { formatCommand } from './utils.js'
 import { writeConfigFileToEnvironment } from './config-file.js'
 import {
   getPackageManagerScriptCommand,
+  intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
 import { createPackageJSON } from './package-json.js'
+import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { createTemplateFile } from './template-file.js'
 import { installShadcnComponents } from './integrations/shadcn.js'
 import { setupGit } from './integrations/git.js'
 import { setupIntent } from './integrations/intent.js'
 import { runSpecialSteps } from './special-steps/index.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
 function stripExamplesFromOptions(options: Options): Options {
-  if (options.includeExamples !== false) {
+  const includeExamples =
+    options.projectPreset !== 'blank' && options.includeExamples !== false
+
+  if (includeExamples) {
     return options
   }
 
@@ -31,7 +38,7 @@ function stripExamplesFromOptions(options: Options): Options {
           !isDemoFilePath(route.path) &&
           !(route.url && route.url.startsWith('/demo')),
       )
-      
+
       const filteredIntegrations = (addOn.integrations || []).filter(
         (integration) => !isDemoFilePath(integration.path)
       )
@@ -53,11 +60,19 @@ function stripExamplesFromOptions(options: Options): Options {
 
   return {
     ...options,
+    includeExamples: false,
     chosenAddOns,
   }
 }
 
-async function writeFiles(environment: Environment, options: Options) {
+async function writeFiles(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  const workspaceWasPresent = environment.exists(
+    resolve(options.targetDir, 'pnpm-workspace.yaml'),
+  )
   const templateFileFromContent = createTemplateFile(environment, options)
 
   async function writeFileBundle(bundle: FileBundleHandler) {
@@ -127,6 +142,13 @@ async function writeFiles(environment: Environment, options: Options) {
     message: 'Writing package.json...',
   })
   const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  await writePnpmWorkspace(
+    environment,
+    resolve(options.targetDir, 'pnpm-workspace.yaml'),
+    options.packageManager,
+    packageJSON,
+    { ...context, workspaceWasPresent },
+  )
   await environment.writeFile(
     resolve(options.targetDir, './package.json'),
     JSON.stringify(packageJSON, null, 2),
@@ -277,6 +299,37 @@ async function runCommandsAndInstallDependencies(
   await installShadcnComponents(environment, options.targetDir, options)
 
   await setupIntent(environment, options.targetDir, options)
+
+  if (shouldGenerateRoutes(options)) {
+    s.start(`Generating route tree...`)
+    const command = getPackageManagerScriptCommand(options.packageManager, [
+      'generate-routes',
+    ])
+    const cmd = formatCommand(command)
+    environment.startStep({
+      id: 'generate-routes',
+      type: 'command',
+      message: cmd,
+    })
+    await environment.execute(
+      command.command,
+      command.args,
+      options.targetDir,
+      {
+        inherit: true,
+      },
+    )
+    environment.finishStep('generate-routes', 'Route tree generated')
+    s.stop(`Route tree generated`)
+  }
+}
+
+function shouldGenerateRoutes(options: Options) {
+  return (
+    options.install !== false &&
+    options.mode === 'file-router' &&
+    (options.framework.id === 'react' || options.framework.id === 'solid')
+  )
 }
 
 async function seedEnvValues(environment: Environment, options: Options) {
@@ -379,7 +432,7 @@ function buildNextSteps(options: Options): string {
   }
   if (options.intent) {
     sections.push(
-      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  • "migrate this Next.js page to TanStack Start"\n  • "add a protected /dashboard route"\n  • "show me how to use TanStack Router search params"`,
+      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  • ${intentCommand(options.packageManager, ['list'])}\n  • ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  • "migrate this Next.js page to TanStack Start"\n  • "add a protected /dashboard route"\n  • "show me how to use TanStack Router search params"`,
     )
   }
 
@@ -420,6 +473,10 @@ ${environment.getErrors().join('\n')}`
 `
 
   const nextSteps = buildNextSteps(options)
+  const readmeDescription =
+    options.projectPreset === 'blank'
+      ? 'running, building, adding routes, and selected integrations.'
+      : 'testing, styling, adding routes, etc.'
 
   // Use the force luke! :)
   environment.outro(
@@ -430,15 +487,20 @@ ${cdInstruction}% ${formatCommand(
       getPackageManagerScriptCommand(options.packageManager, ['dev']),
     )}
 ${nextSteps}
-Please read the README.md file for information on testing, styling, adding routes, etc.${errorStatement}`,
+Please read the README.md file for information on ${readmeDescription}${errorStatement}`,
   )
 }
 
-export async function createApp(environment: Environment, options: Options) {
-  const effectiveOptions = stripExamplesFromOptions(options)
+export async function createApp(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions)
+  await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
   await runCommandsAndInstallDependencies(environment, effectiveOptions)

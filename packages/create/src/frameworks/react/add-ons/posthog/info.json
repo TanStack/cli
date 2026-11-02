@@ -8,7 +8,6 @@
   "color": "#1D4AFF",
   "priority": 20,
   "link": "https://posthog.com",
-  "tailwind": true,
   "routes": [
     {
       "icon": "BarChart",
