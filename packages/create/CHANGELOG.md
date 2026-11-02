@@ -1,5 +1,13 @@
 # @tanstack/create
 
+## 0.71.7
+
+### Patch Changes
+
+- Write pnpm native build approvals to pnpm-workspace.yaml for pnpm 11 while retaining package.json approvals for pnpm 9 and 10. Preserve existing workspace configuration when adding integrations. ([#485](https://github.com/TanStack/cli/pull/485))
+
+  Keep ordinary pnpm 9 dependency additions working when creating a new standalone workspace, without changing existing monorepo root checks or explicit project settings.
+
 ## 0.71.6
 
 ### Patch Changes
