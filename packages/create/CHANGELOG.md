@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.8
+
+### Patch Changes
+
+- Fix the Sentry add-on homepage link for React and Solid to use sentry.io. ([#413](https://github.com/TanStack/cli/pull/413))
+
 ## 0.71.7
 
 ### Patch Changes
