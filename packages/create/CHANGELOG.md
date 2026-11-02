@@ -1,5 +1,13 @@
 # @tanstack/create
 
+## 0.71.5
+
+### Patch Changes
+
+- Use the shared router factory in React and Solid router-only apps so customizations are applied and registration stays in one place. Add a browser Query provider when Query is added to a router-only app, without importing Start SSR dependencies. ([#481](https://github.com/TanStack/cli/pull/481))
+
+  Allow pnpm to update the lockfile when adding dependencies to an existing app in CI.
+
 ## 0.71.4
 
 ### Patch Changes
