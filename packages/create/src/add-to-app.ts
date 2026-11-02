@@ -391,6 +391,8 @@ export async function addToApp(
     environment,
     newOptions.targetDir,
     newOptions.packageManager,
+    undefined,
+    { updateLockfile: true },
   )
   s.stop(`Installed dependencies`)
   environment.finishStep('install-dependencies', 'Dependencies installed')

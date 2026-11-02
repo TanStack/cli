@@ -1,12 +1,32 @@
 import { describe, expect, it } from 'vitest'
+import { createMemoryEnvironment } from '../src/environment.js'
 
 import {
   getPackageManagerExecuteCommand,
   getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
+  packageManagerInstall,
   translateExecuteCommand,
 } from '../src/package-manager.js'
 import { formatCommand } from '../src/utils.js'
+
+describe('installing after package.json changes', () => {
+  it('updates the pnpm lockfile only when requested', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await packageManagerInstall(environment, '/app', 'pnpm')
+    await packageManagerInstall(environment, '/app', 'pnpm', undefined, {
+      updateLockfile: true,
+    })
+    await packageManagerInstall(environment, '/app', 'npm', undefined, {
+      updateLockfile: true,
+    })
+    expect(output.commands).toEqual([
+      { command: 'pnpm', args: ['install'] },
+      { command: 'pnpm', args: ['install', '--no-frozen-lockfile'] },
+      { command: 'npm', args: ['install'] },
+    ])
+  })
+})
 
 describe('getPackageManagerScriptCommand', () => {
   it('yarn', () => {
