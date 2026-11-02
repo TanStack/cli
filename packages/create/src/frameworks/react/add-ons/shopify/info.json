@@ -5,6 +5,7 @@
   "modes": ["file-router"],
   "type": "add-on",
   "category": "other",
+  "tailwind": true,
   "color": "#5A31F4",
   "priority": 80,
   "link": "https://shopify.dev/docs/storefronts/headless",

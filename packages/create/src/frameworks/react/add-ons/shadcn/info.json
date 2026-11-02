@@ -6,6 +6,7 @@
   "link": "https://ui.shadcn.com/",
   "type": "add-on",
   "category": "styling",
+  "tailwind": true,
   "color": "#000000",
   "priority": 30
 }

@@ -127,14 +127,17 @@ export function createTemplateFile(environment: Environment, options: Options) {
     const templateValues = {
       packageManager: options.packageManager,
       projectName: options.projectName,
+      bundler: options.bundler ?? 'vite',
       typescript: true,
-      tailwind: true,
+      tailwind: options.tailwind,
+      blank: options.projectPreset === 'blank',
       js: 'ts',
       jsx: 'tsx',
       fileRouter: options.mode === 'file-router',
       codeRouter: options.mode === 'code-router',
       routerOnly: options.routerOnly === true,
-      includeExamples: options.includeExamples !== false,
+      includeExamples:
+        options.projectPreset !== 'blank' && options.includeExamples !== false,
       addOnEnabled,
       addOnOption: options.addOnOptions,
       addOns: options.chosenAddOns,
@@ -196,7 +199,14 @@ export function createTemplateFile(environment: Environment, options: Options) {
     }
 
     if (append) {
-      await environment.appendFile(joinPaths(options.targetDir, target), content)
+      const targetPath = joinPaths(options.targetDir, target)
+      if (content && !/^[\r\n]/.test(content) && environment.exists(targetPath)) {
+        const existing = await environment.readFile(targetPath)
+        if (existing && !/[\r\n]$/.test(existing)) {
+          content = `\n${content}`
+        }
+      }
+      await environment.appendFile(targetPath, content)
     } else {
       await environment.writeFile(joinPaths(options.targetDir, target), content)
     }

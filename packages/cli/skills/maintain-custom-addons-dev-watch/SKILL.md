@@ -4,9 +4,10 @@ description: >
   Build and iterate custom add-ons/templates with tanstack add-on init,
   add-on compile, add-on dev, and tanstack create --dev-watch, including sync
   loop preconditions, watch-path validation, and project metadata constraints.
-type: lifecycle
-library: tanstack-cli
-library_version: "0.62.1"
+metadata:
+  type: lifecycle
+  library: tanstack-cli
+  library_version: "0.62.1"
 requires:
   - add-addons-existing-app
 ---

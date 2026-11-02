@@ -9,6 +9,8 @@
   "exclusive": ["deploy"],
   "color": "#9B4DCA",
   "priority": 160,
+  "partner": { "id": "railway", "tier": "gold" },
+  "deletedFiles": ["nixpacks.toml"],
   "integrations": [
     {
       "type": "vite-plugin",

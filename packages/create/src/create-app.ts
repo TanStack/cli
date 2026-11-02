@@ -5,8 +5,10 @@ import { formatCommand } from './utils.js'
 import { writeConfigFileToEnvironment } from './config-file.js'
 import {
   getPackageManagerScriptCommand,
+  intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
 import { createPackageJSON } from './package-json.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
@@ -15,11 +17,15 @@ import { installShadcnComponents } from './integrations/shadcn.js'
 import { setupGit } from './integrations/git.js'
 import { setupIntent } from './integrations/intent.js'
 import { runSpecialSteps } from './special-steps/index.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
 function stripExamplesFromOptions(options: Options): Options {
-  if (options.includeExamples !== false) {
+  const includeExamples =
+    options.projectPreset !== 'blank' && options.includeExamples !== false
+
+  if (includeExamples) {
     return options
   }
 
@@ -53,6 +59,7 @@ function stripExamplesFromOptions(options: Options): Options {
 
   return {
     ...options,
+    includeExamples: false,
     chosenAddOns,
   }
 }
@@ -410,7 +417,7 @@ function buildNextSteps(options: Options): string {
   }
   if (options.intent) {
     sections.push(
-      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  • "migrate this Next.js page to TanStack Start"\n  • "add a protected /dashboard route"\n  • "show me how to use TanStack Router search params"`,
+      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  • ${intentCommand(options.packageManager, ['list'])}\n  • ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  • "migrate this Next.js page to TanStack Start"\n  • "add a protected /dashboard route"\n  • "show me how to use TanStack Router search params"`,
     )
   }
 
@@ -451,6 +458,10 @@ ${environment.getErrors().join('\n')}`
 `
 
   const nextSteps = buildNextSteps(options)
+  const readmeDescription =
+    options.projectPreset === 'blank'
+      ? 'running, building, adding routes, and selected integrations.'
+      : 'testing, styling, adding routes, etc.'
 
   // Use the force luke! :)
   environment.outro(
@@ -461,12 +472,13 @@ ${cdInstruction}% ${formatCommand(
       getPackageManagerScriptCommand(options.packageManager, ['dev']),
     )}
 ${nextSteps}
-Please read the README.md file for information on testing, styling, adding routes, etc.${errorStatement}`,
+Please read the README.md file for information on ${readmeDescription}${errorStatement}`,
   )
 }
 
 export async function createApp(environment: Environment, options: Options) {
-  const effectiveOptions = stripExamplesFromOptions(options)
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
   await writeFiles(environment, effectiveOptions)

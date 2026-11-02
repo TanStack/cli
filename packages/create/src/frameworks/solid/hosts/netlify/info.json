@@ -9,6 +9,7 @@
   "exclusive": ["deploy"],
   "color": "#00C7B7",
   "priority": 180,
+  "partner": { "id": "netlify", "tier": "gold" },
   "integrations": [
     {
       "type": "vite-plugin",

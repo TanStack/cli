@@ -7,28 +7,31 @@ import { createTemplateFile } from '../src/template-file.js'
 
 import type { FrameworkDefinition, Options } from '../src/types.js'
 
-const routerOnlyTemplateOptions = {
-  projectName: 'test',
-  targetDir: '/test',
-  framework: {
-    id: 'test',
-    name: 'Test',
-  },
-  chosenAddOns: [],
-  addOnOptions: {},
-  packageManager: 'pnpm',
-  typescript: true,
-  tailwind: true,
-  mode: 'file-router',
-  routerOnly: true,
-} as unknown as Options
-
 async function renderRouterOnlyEntries(framework: FrameworkDefinition) {
   const { environment, output } = createMemoryEnvironment()
-  const templateFile = createTemplateFile(
-    environment,
-    routerOnlyTemplateOptions,
-  )
+  const { base, addOns, ...definition } = framework
+  const options: Options = {
+    projectName: 'test',
+    targetDir: '/test',
+    framework: {
+      ...definition,
+      getFiles: async () => Object.keys(base),
+      getFileContents: async (path) => base[path],
+      getDeletedFiles: async () => [],
+      getAddOns: () => addOns,
+    },
+    chosenAddOns: [],
+    addOnOptions: {},
+    packageManager: 'pnpm',
+    typescript: true,
+    tailwind: true,
+    mode: 'file-router',
+    routerOnly: true,
+    git: false,
+    install: false,
+    intent: false,
+  }
+  const templateFile = createTemplateFile(environment, options)
 
   environment.startRun()
   await templateFile('src/main.tsx.ejs', framework.base['src/main.tsx.ejs'])
@@ -59,15 +62,14 @@ describe('framework templates', () => {
   it.each([
     ['React', createReactFrameworkDefinition],
     ['Solid', createSolidFrameworkDefinition],
-  ])('%s includes route generation tooling', (_, createDefinition) => {
+  ])('%s defaults to Vite and offers Rsbuild', (_, createDefinition) => {
     const framework = createDefinition()
 
-    expect(framework.base['package.json']).toContain(
-      '"generate-routes": "tsr generate"',
-    )
-    expect(
-      framework.optionalPackages['file-router'].devDependencies,
-    ).toHaveProperty('@tanstack/router-cli')
+    expect(framework.defaultBundler).toBe('vite')
+    expect(framework.bundlers?.map((bundler) => bundler.id)).toEqual([
+      'vite',
+      'rsbuild',
+    ])
   })
 
   it.each([

@@ -48,7 +48,7 @@ export function toCleanPath(absolutePath: string, baseDir: string): string {
   if (normalizedPath.startsWith(normalizedBase)) {
     cleanPath = normalizedPath.slice(normalizedBase.length)
   } else if (hasDrive(normalizedPath) !== hasDrive(normalizedBase)) {
-    // Handle paths that are missing the Windows drive letter (e.g. memfs on Windows)
+    // Handle paths that are missing the Windows drive letter in memory.
     const pathNoDrive = stripDrive(normalizedPath)
     const baseNoDrive = stripDrive(normalizedBase)
     if (pathNoDrive.startsWith(baseNoDrive)) {

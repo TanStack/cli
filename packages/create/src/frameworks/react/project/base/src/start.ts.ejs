@@ -1,0 +1,20 @@
+<% if (routerOnly || (!addOnEnabled.clerk && !addOnEnabled.workos)) { ignoreFile(); return; } %>
+import { createCsrfMiddleware, createStart } from '@tanstack/react-start'
+<% if (addOnEnabled.clerk) { %>
+import { clerkMiddleware } from '@clerk/tanstack-react-start/server'
+<% } %>
+<% if (addOnEnabled.workos) { %>
+import { authkitMiddleware } from '@workos/authkit-tanstack-react-start'
+<% } %>
+
+const csrfMiddleware = createCsrfMiddleware({
+  filter: (context) => context.handlerType === 'serverFn',
+})
+
+export const startInstance = createStart(() => ({
+  requestMiddleware: [
+    csrfMiddleware,
+    <% if (addOnEnabled.clerk) { %>clerkMiddleware(),<% } %>
+    <% if (addOnEnabled.workos) { %>authkitMiddleware(),<% } %>
+  ],
+}))

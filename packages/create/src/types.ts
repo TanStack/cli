@@ -39,6 +39,9 @@ export const AddOnBaseSchema = z.object({
   warning: z.string().optional(),
   tailwind: z.boolean().optional(),
   type: z.enum(['add-on', 'example', 'starter', 'toolchain', 'deployment']),
+  supportedPackageManagers: z
+    .array(z.enum(['npm', 'yarn', 'pnpm', 'bun', 'deno']))
+    .optional(),
   category: z
     .enum([
       'tanstack',
@@ -61,6 +64,13 @@ export const AddOnBaseSchema = z.object({
     .optional(),
   color: z.string().optional(),
   priority: z.number().optional(),
+  partner: z
+    .object({
+      id: z.string(),
+      tier: z.enum(['gold', 'silver', 'bronze']),
+      placementWeight: z.number().positive().optional(),
+    })
+    .optional(),
   command: z
     .object({
       command: z.string(),
@@ -82,6 +92,12 @@ export const AddOnBaseSchema = z.object({
     .object({
       dependencies: z.record(z.string(), z.string()).optional(),
       devDependencies: z.record(z.string(), z.string()).optional(),
+      engines: z.record(z.string(), z.string()).optional(),
+      pnpm: z
+        .object({
+          onlyBuiltDependencies: z.array(z.string()).optional(),
+        })
+        .optional(),
       scripts: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
@@ -177,6 +193,12 @@ export type AddOn = AddOnCompiled & FileBundleHandler
 
 export type Starter = StarterCompiled & FileBundleHandler
 
+export type BundlerDefinition = {
+  id: string
+  name: string
+  description: string
+}
+
 export type FrameworkDefinition = {
   id: string
   name: string
@@ -187,6 +209,9 @@ export type FrameworkDefinition = {
   addOns: Array<AddOn>
   basePackageJSON: Record<string, any>
   optionalPackages: Record<string, any>
+
+  bundlers?: Array<BundlerDefinition>
+  defaultBundler?: string
 
   supportedModes: Record<
     string,
@@ -209,6 +234,7 @@ export interface Options {
 
   framework: Framework
   mode: string
+  bundler?: string
 
   typescript: boolean
   tailwind: boolean
@@ -221,6 +247,7 @@ export interface Options {
   chosenAddOns: Array<AddOn>
   addOnOptions: Record<string, Record<string, any>>
   starter?: Starter | undefined
+  projectPreset?: 'default' | 'blank'
   routerOnly?: boolean
   includeExamples?: boolean
   envVarValues?: Record<string, string>

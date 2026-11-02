@@ -1,6 +1,9 @@
+<% const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
 <% if (routerOnly) { %>
 import { Outlet, createRootRoute } from '@tanstack/solid-router'
+<% if (showDevtools) { %>
 import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
+<% } %>
 
 import '../styles.css'
 
@@ -12,13 +15,15 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <TanStackRouterDevtools position="bottom-right" />
+      <% if (showDevtools) { %><TanStackRouterDevtools position="bottom-right" /><% } %>
     </>
   )
 }
-<% } else if (!includeExamples) { %>
+<% } else if (!includeExamples || blank) { %>
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/solid-router'
+<% if (showDevtools) { %>
 import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
+<% } %>
 
 <% if (addOnEnabled['solid-ui']) { %>
 import "@fontsource/inter/400.css"
@@ -51,7 +56,7 @@ function RootComponent() {
         <body>
           <Suspense>
             <Outlet />
-            <TanStackRouterDevtools />
+            <% if (showDevtools) { %><TanStackRouterDevtools /><% } %>
             <% for(const integration of integrations.filter(i => i.type === 'layout')) { %>
               <<%= integration.jsName %> />
             <% } %>

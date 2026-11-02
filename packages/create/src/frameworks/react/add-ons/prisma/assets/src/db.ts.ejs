@@ -1,19 +1,18 @@
 import { PrismaClient } from './generated/prisma/client.js'
+<% if (addOnOption.prisma.database !== 'sqlite') { %>
+import { getDatabaseUrl } from './database-url.js'
+<% } %>
 
 <% if (addOnOption.prisma.database === 'postgres') { %>
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
+  connectionString: getDatabaseUrl(),
 });<% } %>
 
 <% if (addOnOption.prisma.database === 'mysql') { %>
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-const adapter = new PrismaMariaDb({
-  host: "localhost",
-  port: 3306,
-  connectionLimit: 5
-});<% } %>
+const adapter = new PrismaMariaDb(getDatabaseUrl());<% } %>
 
 <% if (addOnOption.prisma.database === 'sqlite') { %>
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';

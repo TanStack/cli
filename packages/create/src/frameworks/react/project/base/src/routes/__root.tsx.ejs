@@ -1,7 +1,10 @@
+<% const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
 <% if (routerOnly) { %>
 import { Outlet, createRootRoute } from '@tanstack/react-router'
+<% if (showDevtools) { %>
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+<% } %>
 
 import '../styles.css'
 
@@ -13,7 +16,7 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <TanStackDevtools
+      <% if (showDevtools) { %><TanStackDevtools
         config={{
           position: 'bottom-right',
         }}
@@ -23,16 +26,17 @@ function RootComponent() {
             render: <TanStackRouterDevtoolsPanel />,
           },
         ]}
-      />
+      /><% } %>
     </>
   )
 }
-<% } else if (!includeExamples) { %>
+<% } else if (!includeExamples || blank) { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
   HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+<% if (showDevtools) { %>import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools'
+<% } %>
 <% for(const integration of integrations.filter(i => i.type === 'layout' || i.type === 'provider' || i.type === 'devtools')) { %>
 import <%= integration.jsName %> from '<%= relativePath(integration.path, true) %>'
 <% } %><% if (addOnEnabled.paraglide) { %>
@@ -101,7 +105,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <% for(const integration of integrations.filter(i => i.type === 'provider')) { %><<%= integration.jsName %>>
         <% } %>{children}
-          <TanStackDevtools
+          <% if (showDevtools) { %><TanStackDevtools
             config={{
               position: 'bottom-right',
             }}
@@ -112,7 +116,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               },
               <% for(const integration of integrations.filter(i => i.type === 'devtools')) { %><%= integration.jsName %>,<% } %>
             ]}
-          />
+          /><% } %>
           <% for(const integration of integrations.filter(i => i.type === 'layout')) { %><<%= integration.jsName %> />
           <% } %><% for(const integration of integrations.filter(i => i.type === 'provider').reverse()) { %></<%= integration.jsName %>>
         <% } %><Scripts />

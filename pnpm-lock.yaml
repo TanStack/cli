@@ -257,9 +257,6 @@ importers:
       ignore:
         specifier: ^7.0.3
         version: 7.0.5
-      memfs:
-        specifier: ^4.17.0
-        version: 4.17.0
       parse-gitignore:
         specifier: ^2.0.0
         version: 2.0.0
@@ -288,6 +285,9 @@ importers:
       eslint:
         specifier: ^9.20.0
         version: 9.25.1(jiti@2.6.1)
+      memfs:
+        specifier: 4.17.0
+        version: 4.17.0
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
