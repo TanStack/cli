@@ -7,7 +7,10 @@ import { createTemplateFile } from '../src/template-file.js'
 
 import type { FrameworkDefinition, Options } from '../src/types.js'
 
-async function renderRouterOnlyEntries(framework: FrameworkDefinition) {
+async function renderRouterOnlyEntries(
+  framework: FrameworkDefinition,
+  query = false,
+) {
   const { environment, output } = createMemoryEnvironment()
   const { base, addOns, ...definition } = framework
   const options: Options = {
@@ -20,7 +23,9 @@ async function renderRouterOnlyEntries(framework: FrameworkDefinition) {
       getDeletedFiles: async () => [],
       getAddOns: () => addOns,
     },
-    chosenAddOns: [],
+    chosenAddOns: query
+      ? addOns.filter((addOn) => addOn.id === 'tanstack-query')
+      : [],
     addOnOptions: {},
     packageManager: 'pnpm',
     typescript: true,
@@ -101,6 +106,19 @@ describe('framework templates', () => {
       expect(router).toContain('export function getRouter()')
       expect(router).toContain(`declare module '${routerPackage}'`)
       expect(router).toContain('router: ReturnType<typeof getRouter>')
+    },
+  )
+  it.each([
+    ['React', createReactFrameworkDefinition],
+    ['Solid', createSolidFrameworkDefinition],
+  ])(
+    '%s router-only Query uses a browser provider without an SSR dependency',
+    async (_, createDefinition) => {
+      const { router } = await renderRouterOnlyEntries(createDefinition(), true)
+      expect(router).toContain('QueryClientProvider')
+      expect(router).toContain('client={context.queryClient}')
+      expect(router).not.toContain('react-router-ssr-query')
+      expect(router).not.toContain('setupRouterSsrQueryIntegration')
     },
   )
 })

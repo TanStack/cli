@@ -128,11 +128,16 @@ export function packageManagerInstall(
   cwd: string,
   packagerManager: PackageManager,
   pkg?: string,
+  options?: { updateLockfile?: boolean },
 ) {
   const { command, args: commandArgs } = getPackageManagerInstallCommand(
     packagerManager,
     pkg,
   )
+  // Adding an add-on intentionally changes package.json, including in CI.
+  if (packagerManager === 'pnpm' && options?.updateLockfile && !pkg) {
+    commandArgs.push('--no-frozen-lockfile')
+  }
   return environment.execute(command, commandArgs, cwd)
 }
 

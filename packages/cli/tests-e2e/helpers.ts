@@ -429,7 +429,7 @@ export async function createAppFixture(
 
     if (postCreateAddOns?.length) {
       const postAddOnsStartedAt = now()
-      await runCommand(process.execPath, [cliDistPath, 'add', ...postCreateAddOns], {
+      await runCommand(process.execPath, [cliDistPath, 'add', ...postCreateAddOns, '--forced'], {
         cwd: appDir,
         env: {
           CI: '1',
