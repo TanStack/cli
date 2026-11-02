@@ -20,5 +20,11 @@
   "devDependencies": {
     "@content-collections/core": "^0.13.1",
     "@content-collections/vite": "^0.3.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@google/genai",
+      "protobufjs"
+    ]
   }
 }
