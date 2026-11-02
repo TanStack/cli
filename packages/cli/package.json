@@ -58,7 +58,6 @@
     "commander": "^13.1.0",
     "diff": "^7.0.0",
     "semver": "^7.7.2",
-    "tempy": "^3.1.0",
     "validate-npm-package-name": "^7.0.0",
     "zod": "^3.24.2"
   },
