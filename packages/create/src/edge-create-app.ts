@@ -1,4 +1,5 @@
 import { createPackageJSON } from './edge-package-json.js'
+import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { createTemplateFile } from './edge-template-file.js'
 import { formatCommand } from './utils.js'
 import { isBase64, isDemoFilePath } from './edge-file-helpers.js'
@@ -61,7 +62,14 @@ function stripExamplesFromOptions(options: Options): Options {
   }
 }
 
-async function writeFiles(environment: Environment, options: Options) {
+async function writeFiles(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  const workspaceWasPresent = environment.exists(
+    joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
+  )
   const templateFileFromContent = createTemplateFile(environment, options)
 
   async function writeFileBundle(bundle: FileBundleHandler) {
@@ -130,6 +138,13 @@ async function writeFiles(environment: Environment, options: Options) {
     message: 'Writing package.json...',
   })
   const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  await writePnpmWorkspace(
+    environment,
+    joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
+    options.packageManager,
+    packageJSON,
+    { ...context, workspaceWasPresent },
+  )
   await environment.writeFile(
     joinPaths(options.targetDir, './package.json'),
     JSON.stringify(packageJSON, null, 2),
@@ -592,12 +607,16 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
   )
 }
 
-export async function createApp(environment: Environment, options: Options) {
+export async function createApp(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
   validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
   const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions)
+  await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
   await runCommandsAndInstallDependencies(environment, effectiveOptions)

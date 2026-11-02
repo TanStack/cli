@@ -11,6 +11,7 @@ import {
   validatePackageManagerSupport,
 } from './package-manager.js'
 import { createPackageJSON } from './package-json.js'
+import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { createTemplateFile } from './template-file.js'
 import { installShadcnComponents } from './integrations/shadcn.js'
@@ -64,7 +65,14 @@ function stripExamplesFromOptions(options: Options): Options {
   }
 }
 
-async function writeFiles(environment: Environment, options: Options) {
+async function writeFiles(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  const workspaceWasPresent = environment.exists(
+    resolve(options.targetDir, 'pnpm-workspace.yaml'),
+  )
   const templateFileFromContent = createTemplateFile(environment, options)
 
   async function writeFileBundle(bundle: FileBundleHandler) {
@@ -134,6 +142,13 @@ async function writeFiles(environment: Environment, options: Options) {
     message: 'Writing package.json...',
   })
   const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  await writePnpmWorkspace(
+    environment,
+    resolve(options.targetDir, 'pnpm-workspace.yaml'),
+    options.packageManager,
+    packageJSON,
+    { ...context, workspaceWasPresent },
+  )
   await environment.writeFile(
     resolve(options.targetDir, './package.json'),
     JSON.stringify(packageJSON, null, 2),
@@ -476,12 +491,16 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
   )
 }
 
-export async function createApp(environment: Environment, options: Options) {
+export async function createApp(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
   validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
   const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions)
+  await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
   await runCommandsAndInstallDependencies(environment, effectiveOptions)
