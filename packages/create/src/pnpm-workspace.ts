@@ -1,3 +1,4 @@
+import { dirnamePath, joinPaths } from './edge-path.js'
 import type { Environment } from './types.js'
 
 export function pnpmBuildDependencies(
@@ -47,7 +48,7 @@ export async function mergePnpmWorkspace(
         typeof key.value !== 'string' ||
         /[*?{}[\]]|.+@/.test(key.value.replace(/^@/, '')) ||
         !isScalar(value) ||
-        value.value !== true,
+        typeof value.value !== 'boolean',
     )
   const missing = [...names].filter(
     (name) =>
@@ -68,14 +69,51 @@ export async function writePnpmWorkspace(
   path: string,
   packageManager: string,
   packageJSON: Record<string, unknown>,
+  context: { existingProject?: boolean; workspaceWasPresent?: boolean } = {},
 ) {
   const dependencies = pnpmBuildDependencies(packageJSON)
   if (packageManager !== 'pnpm' || !dependencies.length) return
   const existing = environment.exists(path)
     ? await environment.readFile(path)
     : undefined
-  await environment.writeFile(
-    path,
-    await mergePnpmWorkspace(existing, dependencies),
+  const workspace = await mergePnpmWorkspace(existing, dependencies)
+  await environment.writeFile(path, workspace)
+  if (
+    !context.existingProject &&
+    !(context.workspaceWasPresent ?? existing !== undefined)
+  ) {
+    const npmrcPath = joinPaths(dirnamePath(path), '.npmrc')
+    const npmrc = environment.exists(npmrcPath)
+      ? await environment.readFile(npmrcPath)
+      : undefined
+    const compatible = await standalonePnpmNpmrc(undefined, workspace, npmrc)
+    if (compatible !== undefined)
+      await environment.writeFile(npmrcPath, compatible)
+  }
+}
+
+export async function standalonePnpmNpmrc(
+  previousWorkspace: string | undefined,
+  workspace: string,
+  npmrc: string | undefined,
+): Promise<string | undefined> {
+  if (previousWorkspace !== undefined) return undefined
+  const { isScalar, isSeq, parseDocument } = await import('yaml')
+  const packages = parseDocument(workspace).get('packages', true)
+  if (
+    !isSeq(packages) ||
+    packages.items.length !== 1 ||
+    !isScalar(packages.items[0]) ||
+    packages.items[0].value !== '.'
   )
+    return undefined
+  const content = npmrc ?? ''
+  const bom = content.startsWith('\uFEFF') ? '\uFEFF' : ''
+  const body = bom ? content.slice(1) : content
+  // Only inspect the global INI section and preserve explicit user values.
+  const globalSection = body.split(/^\s*\[/m, 1)[0]
+  if (/^\s*["']?ignore-workspace-root-check["']?\s*=/im.test(globalSection))
+    return content
+  // pnpm 9 does not read this setting from pnpm-workspace.yaml.
+  return `${bom}ignore-workspace-root-check=true\n${body}`
 }

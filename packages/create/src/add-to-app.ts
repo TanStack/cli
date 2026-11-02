@@ -16,7 +16,11 @@ import {
   recursivelyGatherFilesFromEnvironment,
 } from './file-helpers.js'
 import { mergePackageJSON } from './package-json.js'
-import { mergePnpmWorkspace, pnpmBuildDependencies } from './pnpm-workspace.js'
+import {
+  mergePnpmWorkspace,
+  pnpmBuildDependencies,
+  standalonePnpmNpmrc,
+} from './pnpm-workspace.js'
 import { runSpecialSteps } from './special-steps/index.js'
 import { loadStarter } from './custom-add-ons/starter.js'
 import { setupIntent } from './integrations/intent.js'
@@ -142,7 +146,7 @@ function assertNoExclusiveAddOnConflicts(addOns: Array<AddOn>) {
 
 async function runCreateApp(options: Required<Options>) {
   const { environment, output } = createMemoryEnvironment(options.targetDir)
-  await createApp(environment, options)
+  await createApp(environment, options, { existingProject: true })
   return output
 }
 
@@ -221,6 +225,12 @@ export async function writeFiles(
         const currentPackage = currentFiles['package.json'] ? JSON.parse(currentFiles['package.json']) : {}
         const mergedPackage = mergePackageJSON(currentPackage, JSON.parse(generatedPackage))
         relativeOutputFiles[relativeFile] = await mergePnpmWorkspace(currentFiles[relativeFile] ?? generatedContents, pnpmBuildDependencies(mergedPackage), pnpmBuildDependencies(currentPackage))
+        const npmrc = await standalonePnpmNpmrc(
+          currentFiles[relativeFile],
+          relativeOutputFiles[relativeFile],
+          relativeOutputFiles['.npmrc'] ?? currentFiles['.npmrc'],
+        )
+        if (npmrc !== undefined) relativeOutputFiles['.npmrc'] = npmrc
       }
     }
     if (

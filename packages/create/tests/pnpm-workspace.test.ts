@@ -3,11 +3,112 @@ import { parse } from 'yaml'
 import {
   mergePnpmWorkspace,
   writePnpmWorkspace,
+  standalonePnpmNpmrc,
 } from '../src/pnpm-workspace.js'
 import { createMemoryEnvironment } from '../src/environment.js'
 import { writeFiles } from '../src/add-to-app.js'
 
 describe('pnpm build approvals', () => {
+  it('keeps pnpm 9 dependency additions working in a new standalone app', async () => {
+    const { environment, output } = createMemoryEnvironment('/app')
+    environment.startRun()
+    await writePnpmWorkspace(environment, '/app/pnpm-workspace.yaml', 'pnpm', {
+      pnpm: { onlyBuiltDependencies: ['esbuild'] },
+    })
+    environment.finishRun()
+    expect(output.files['.npmrc']).toBe('ignore-workspace-root-check=true\n')
+    expect(parse(output.files['pnpm-workspace.yaml']).allowBuilds.esbuild).toBe(
+      true,
+    )
+  })
+  it('handles workspace config emitted by framework templates during creation', async () => {
+    const { environment, output } = createMemoryEnvironment('/app')
+    environment.startRun()
+    await environment.writeFile('/app/pnpm-workspace.yaml', 'allowBuilds:\n  esbuild: true\n')
+    await writePnpmWorkspace(environment, '/app/pnpm-workspace.yaml', 'pnpm', {
+      pnpm: { onlyBuiltDependencies: ['esbuild'] },
+    }, { workspaceWasPresent: false })
+    environment.finishRun()
+    expect(output.files['.npmrc']).toBe('ignore-workspace-root-check=true\n')
+  })
+  it('preserves project registry settings, comments and explicit root-check choices', async () => {
+    const workspace = await mergePnpmWorkspace(undefined, ['esbuild'])
+    const original =
+      '\uFEFF# project registry\nregistry=https://registry.example.test/\n'
+    expect(await standalonePnpmNpmrc(undefined, workspace, original)).toBe(
+      '\uFEFFignore-workspace-root-check=true\n# project registry\nregistry=https://registry.example.test/\n',
+    )
+    const explicit =
+      'ignore-workspace-root-check=false\nregistry=https://registry.example.test/\n'
+    expect(await standalonePnpmNpmrc(undefined, workspace, explicit)).toBe(
+      explicit,
+    )
+    expect(
+      await standalonePnpmNpmrc(
+        undefined,
+        workspace,
+        '[other]\nignore-workspace-root-check=false\n',
+      ),
+    ).toBe(
+      'ignore-workspace-root-check=true\n[other]\nignore-workspace-root-check=false\n',
+    )
+  })
+  it('does not change existing or custom monorepo root checks', async () => {
+    const standalone = await mergePnpmWorkspace(undefined, ['esbuild'])
+    const monorepo = 'packages:\n  - apps/*\nallowBuilds:\n  esbuild: true\n'
+    expect(
+      await standalonePnpmNpmrc(monorepo, standalone, undefined),
+    ).toBeUndefined()
+    expect(
+      await standalonePnpmNpmrc(undefined, monorepo, undefined),
+    ).toBeUndefined()
+  })
+  it('defers standalone configuration until an existing app is merged', async () => {
+    const { environment, output } = createMemoryEnvironment('/app')
+    environment.startRun()
+    await writePnpmWorkspace(
+      environment,
+      '/app/pnpm-workspace.yaml',
+      'pnpm',
+      { pnpm: { onlyBuiltDependencies: ['esbuild'] } },
+      { existingProject: true },
+    )
+    environment.finishRun()
+    expect(output.files['.npmrc']).toBeUndefined()
+    expect(output.files['pnpm-workspace.yaml']).toBeDefined()
+  })
+  it('preserves existing npmrc content when adding pnpm config to an older app', async () => {
+    const { environment, output } = createMemoryEnvironment('/app')
+    environment.startRun()
+    await environment.writeFile(
+      '/app/package.json',
+      JSON.stringify({ pnpm: { onlyBuiltDependencies: ['esbuild'] } }),
+    )
+    await environment.writeFile(
+      '/app/.npmrc',
+      '# keep\nregistry=https://registry.example.test/\n',
+    )
+    await writeFiles(
+      environment,
+      '/app',
+      {
+        files: {
+          '/app/package.json': JSON.stringify({
+            pnpm: { onlyBuiltDependencies: ['esbuild'] },
+          }),
+          '/app/pnpm-workspace.yaml': await mergePnpmWorkspace(undefined, [
+            'esbuild',
+          ]),
+        },
+        deletedFiles: [],
+      },
+      true,
+    )
+    environment.finishRun()
+    expect(output.files['.npmrc']).toBe(
+      'ignore-workspace-root-check=true\n# keep\nregistry=https://registry.example.test/\n',
+    )
+  })
   it('creates a workspace compatible with pnpm 9 and current build approvals', async () => {
     expect(
       parse(
@@ -31,6 +132,13 @@ describe('pnpm build approvals', () => {
     })
   })
   it('retains explicit denials and does not broaden a custom policy', async () => {
+    expect(
+      parse(
+        await mergePnpmWorkspace('allowBuilds:\n  optional-native: false\n', [
+          'esbuild',
+        ]),
+      ).allowBuilds,
+    ).toEqual({ 'optional-native': false, esbuild: true })
     expect(
       parse(
         await mergePnpmWorkspace('allowBuilds:\n  esbuild: false\n', [
