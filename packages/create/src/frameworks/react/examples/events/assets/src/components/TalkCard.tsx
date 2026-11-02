@@ -13,7 +13,8 @@ interface TalkCardProps {
 export default function TalkCard({ talk, featured = false }: TalkCardProps) {
   return (
     <Link
-      to={`/talks/${talk.slug}`}
+      to="/talks/$slug"
+      params={{ slug: talk.slug }}
       className="group relative block"
     >
       <Card
