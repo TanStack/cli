@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
+import { styleText } from 'node:util';
 
 import chokidar from 'chokidar'
-import chalk from 'chalk'
 import { temporaryDirectory } from 'tempy'
 import {
   createApp,
@@ -114,11 +114,11 @@ export class DevWatchManager {
 
     // Log startup with tree style
     console.log()
-    console.log(chalk.bold('dev-watch'))
-    this.log.tree('', `watching: ${chalk.cyan(this.options.watchPath)}`)
-    this.log.tree('', `target: ${chalk.cyan(this.options.targetDir)}`)
+    console.log(styleText('bold', 'dev-watch'))
+    this.log.tree('', `watching: ${styleText('cyan', this.options.watchPath)}`)
+    this.log.tree('', `target: ${styleText('cyan', this.options.targetDir)}`)
     if (this.options.runDevCommand) {
-      this.log.tree('', `app dev server: ${chalk.cyan('enabled')}`)
+      this.log.tree('', `app dev server: ${styleText('cyan', 'enabled')}`)
     }
     this.log.tree('', 'ready', true)
 
@@ -278,7 +278,7 @@ export class DevWatchManager {
 
       // Show package installation indicator if needed
       if (packageMetadataChanged) {
-        this.log.tree('  ', `${chalk.yellow('⟳')} installing packages...`)
+        this.log.tree('  ', `${styleText('yellow', '⟳')} installing packages...`)
       }
 
       // Create app in temp directory with silent environment
@@ -307,10 +307,10 @@ export class DevWatchManager {
       const elapsed = Date.now() - startTime
 
       // Build tree-style summary
-      this.log.tree('  ', `duration: ${chalk.cyan(elapsed + 'ms')}`)
+      this.log.tree('  ', `duration: ${styleText('cyan', elapsed + 'ms')}`)
 
       if (packageMetadataChanged) {
-        this.log.tree('  ', `packages: ${chalk.green('✓ installed')}`)
+        this.log.tree('  ', `packages: ${styleText('green', '✓ installed')}`)
       }
 
       // Always show the last item in tree without checking for files to show
@@ -323,7 +323,7 @@ export class DevWatchManager {
       if (syncResult.updated.length > 0) {
         this.log.tree(
           '  ',
-          `updated: ${chalk.green(syncResult.updated.length + ' file' + (syncResult.updated.length > 1 ? 's' : ''))}`,
+          `updated: ${styleText('green', syncResult.updated.length + ' file' + (syncResult.updated.length > 1 ? 's' : ''))}`,
           syncResult.created.length === 0 &&
             syncResult.deleted.length === 0 &&
             syncResult.errors.length === 0,
@@ -332,21 +332,21 @@ export class DevWatchManager {
       if (syncResult.created.length > 0) {
         this.log.tree(
           '  ',
-          `created: ${chalk.green(syncResult.created.length + ' file' + (syncResult.created.length > 1 ? 's' : ''))}`,
+          `created: ${styleText('green', syncResult.created.length + ' file' + (syncResult.created.length > 1 ? 's' : ''))}`,
           syncResult.deleted.length === 0 && syncResult.errors.length === 0,
         )
       }
       if (syncResult.deleted.length > 0) {
         this.log.tree(
           '  ',
-          `deleted: ${chalk.green(syncResult.deleted.length + ' file' + (syncResult.deleted.length > 1 ? 's' : ''))}`,
+          `deleted: ${styleText('green', syncResult.deleted.length + ' file' + (syncResult.deleted.length > 1 ? 's' : ''))}`,
           syncResult.errors.length === 0,
         )
       }
       if (syncResult.errors.length > 0) {
         this.log.tree(
           '  ',
-          `failed: ${chalk.red(syncResult.errors.length + ' file' + (syncResult.errors.length > 1 ? 's' : ''))}`,
+          `failed: ${styleText('red', syncResult.errors.length + ' file' + (syncResult.errors.length > 1 ? 's' : ''))}`,
           true,
         )
       }
@@ -384,11 +384,11 @@ export class DevWatchManager {
               const prefix = '    │ '
               relevantLines.forEach((line) => {
                 if (line.startsWith('+') && !line.startsWith('+++')) {
-                  console.log(chalk.gray(prefix) + '  ' + chalk.green(line))
+                  console.log(styleText('gray', prefix) + '  ' + styleText('green', line))
                 } else if (line.startsWith('-') && !line.startsWith('---')) {
-                  console.log(chalk.gray(prefix) + '  ' + chalk.red(line))
+                  console.log(styleText('gray', prefix) + '  ' + styleText('red', line))
                 } else if (line.startsWith('@')) {
-                  console.log(chalk.gray(prefix) + '  ' + chalk.cyan(line))
+                  console.log(styleText('gray', prefix) + '  ' + styleText('cyan', line))
                 }
               })
             }
@@ -401,14 +401,14 @@ export class DevWatchManager {
         syncResult.created.forEach((file, index) => {
           const isLast =
             index === syncResult.created.length - 1 && syncResult.deleted.length === 0
-          this.log.treeItem('  ', `${chalk.green('+')} ${file}`, isLast)
+          this.log.treeItem('  ', `${styleText('green', '+')} ${file}`, isLast)
         })
       }
 
       if (syncResult.deleted.length > 0) {
         syncResult.deleted.forEach((file, index) => {
           const isLast = index === syncResult.deleted.length - 1
-          this.log.treeItem('  ', `${chalk.red('-')} ${file}`, isLast)
+          this.log.treeItem('  ', `${styleText('red', '-')} ${file}`, isLast)
         })
       }
 
@@ -418,7 +418,7 @@ export class DevWatchManager {
         syncResult.errors.forEach((err, index) => {
           this.log.tree(
             '  ',
-            `${chalk.red('error:')} ${err}`,
+            `${styleText('red', 'error:')} ${err}`,
             index === syncResult.errors.length - 1,
           )
         })
@@ -507,7 +507,7 @@ export class DevWatchManager {
     )
 
     this.log.section('app dev server')
-    this.log.tree('  ', `starting: ${chalk.cyan([command, ...args].join(' '))}`)
+    this.log.tree('  ', `starting: ${styleText('cyan', [command, ...args].join(' '))}`)
 
     this.appDevProcess = spawn(command, args, {
       cwd: this.options.targetDir,
@@ -552,17 +552,17 @@ export class DevWatchManager {
   private log = {
     tree: (prefix: string, msg: string, isLast = false) => {
       const connector = isLast ? '└─' : '├─'
-      console.log(chalk.gray(prefix + connector) + ' ' + msg)
+      console.log(styleText('gray', prefix + connector) + ' ' + msg)
     },
     treeItem: (prefix: string, msg: string, isLast = false) => {
       const connector = isLast ? '└─' : '├─'
-      console.log(chalk.gray(prefix + '  ' + connector) + ' ' + msg)
+      console.log(styleText('gray', prefix + '  ' + connector) + ' ' + msg)
     },
     info: (msg: string) => console.log(msg),
-    error: (msg: string) => console.error(chalk.red('✗') + ' ' + msg),
-    success: (msg: string) => console.log(chalk.green('✓') + ' ' + msg),
-    warning: (msg: string) => console.log(chalk.yellow('⚠') + ' ' + msg),
-    section: (title: string) => console.log('\n' + chalk.bold('▸ ' + title)),
+    error: (msg: string) => console.error(styleText('red', '✗') + ' ' + msg),
+    success: (msg: string) => console.log(styleText('green', '✓') + ' ' + msg),
+    warning: (msg: string) => console.log(styleText('yellow', '⚠') + ' ' + msg),
+    section: (title: string) => console.log('\n' + styleText('bold', '▸ ' + title)),
     subsection: (msg: string) => console.log('  ' + msg),
   }
 }

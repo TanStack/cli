@@ -48,12 +48,11 @@
   "license": "MIT",
   "packageManager": "pnpm@9.15.5",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.17.0"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "@tanstack/create": "workspace:*",
-    "chalk": "^5.4.1",
     "chokidar": "^3.6.0",
     "commander": "^13.1.0",
     "diff": "^7.0.0",
