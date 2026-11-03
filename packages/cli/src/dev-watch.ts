@@ -1,10 +1,10 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 
 import chokidar from 'chokidar'
 import chalk from 'chalk'
-import { temporaryDirectory } from 'tempy'
 import {
   createApp,
   finalizeAddOns,
@@ -234,8 +234,10 @@ export class DevWatchManager {
       const chosenAddonIds = this.options.cliOptions.chosenAddOns.map(
         (m) => m.id,
       )
-      // Create temp directory for this build using tempy
-      this.tempDir = temporaryDirectory()
+      // Create temp directory for this build
+      this.tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'tanstack-dev-watch-'),
+      )
 
       // Register the scanned framework
       registerFramework(
@@ -292,10 +294,14 @@ export class DevWatchManager {
       await createApp(silentEnvironment, updatedOptions)
 
       // Sync files to target directory
-      const syncResult = await this.syncer.sync(this.tempDir, this.options.targetDir, {
-        deleteRemoved: this.lastSyncedSourceFiles !== null,
-        previousSourceFiles: this.lastSyncedSourceFiles ?? undefined,
-      })
+      const syncResult = await this.syncer.sync(
+        this.tempDir,
+        this.options.targetDir,
+        {
+          deleteRemoved: this.lastSyncedSourceFiles !== null,
+          previousSourceFiles: this.lastSyncedSourceFiles ?? undefined,
+        },
+      )
       this.lastSyncedSourceFiles = new Set(syncResult.sourceFiles)
 
       // Clean up temp directory after sync is complete
@@ -398,12 +404,13 @@ export class DevWatchManager {
           }
         })
       }
-      
+
       // Show created files
       if (syncResult.created.length > 0) {
         syncResult.created.forEach((file, index) => {
           const isLast =
-            index === syncResult.created.length - 1 && syncResult.deleted.length === 0
+            index === syncResult.created.length - 1 &&
+            syncResult.deleted.length === 0
           this.log.treeItem('  ', `${chalk.green('+')} ${file}`, isLast)
         })
       }
