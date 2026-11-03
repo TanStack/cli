@@ -119,6 +119,21 @@ for (const [runtime, createApp] of Object.entries({
       },
     )
 
+    it.each(['malformed', 'rejected'])(
+      'keeps plain dlx when optional version detection is %s',
+      async (result) => {
+        const { environment, output } = createMemoryEnvironment('/app')
+        environment.getPackageManagerVersion = async () => {
+          if (result === 'rejected') throw new Error('Version probe unavailable')
+          return 'not-a-version'
+        }
+        await createApp(environment, options)
+        expect(output.commands).toEqual([{
+          command: 'pnpm', args: ['dlx', 'storybook', 'init'],
+        }])
+      },
+    )
+
     it('uses explicit target versions in memory plans without probing the host', async () => {
       const { environment, output } = createMemoryEnvironment('/app')
       const lookup = vi.fn(async () => '11.22.0')

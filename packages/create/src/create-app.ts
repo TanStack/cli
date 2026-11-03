@@ -4,6 +4,7 @@ import { isBase64, isDemoFilePath } from './file-helpers.js'
 import { formatCommand } from './utils.js'
 import { writeConfigFileToEnvironment } from './config-file.js'
 import {
+  detectPnpmVersion,
   getPackageManagerScriptCommand,
   intentCommand,
   packageManagerInstall,
@@ -177,10 +178,7 @@ async function runCommandsAndInstallDependencies(
     needsBuildApproval &&
     packageManagerVersion === undefined
   ) {
-    packageManagerVersion = await environment.getPackageManagerVersion?.(
-      'pnpm',
-      options.targetDir,
-    )
+    packageManagerVersion = await detectPnpmVersion(environment, options.targetDir)
   }
 
   const s = environment.spinner()

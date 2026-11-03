@@ -63,6 +63,18 @@ export function getPackageManagerScriptCommand(
   }
 }
 
+const PNPM_VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/
+
+export async function detectPnpmVersion(environment: Environment, cwd: string) {
+  try {
+    const detected = await environment.getPackageManagerVersion?.('pnpm', cwd)
+    const version = typeof detected === 'string' ? detected.trim() : undefined
+    return version && PNPM_VERSION_PATTERN.test(version) ? version : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export type ExecuteCommandOptions = {
   /**
    * Package names that are allowed to run postinstall/build scripts while the
@@ -84,7 +96,7 @@ export function getPackageManagerExecuteCommand(
       return { command: 'yarn', args: ['dlx', pkg, ...args] }
     case 'pnpm': {
       const version = options.packageManagerVersion
-      const parsedVersion = version?.match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/)
+      const parsedVersion = version?.match(PNPM_VERSION_PATTERN)
       if (version !== undefined && !parsedVersion && options.allowBuilds?.length)
         throw new Error(`Invalid pnpm version: ${version}`)
       const supportsAllowBuild = parsedVersion && (
