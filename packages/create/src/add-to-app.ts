@@ -216,6 +216,22 @@ export async function writeFiles(
     false,
   )
 
+  // Ignored files still need merge and overwrite protection when targeted.
+  const outputTargets = new Set(Object.keys(relativeOutputFiles))
+  if (Object.prototype.hasOwnProperty.call(relativeOutputFiles, 'pnpm-workspace.yaml')) {
+    outputTargets.add('.npmrc')
+  }
+  for (const relativeFile of outputTargets) {
+    const target = resolve(cwd, relativeFile)
+    if (
+      !Object.prototype.hasOwnProperty.call(currentFiles, relativeFile) &&
+      environment.exists(target) &&
+      !environment.isDirectory(target)
+    ) {
+      currentFiles[relativeFile] = await environment.readFile(target)
+    }
+  }
+
   for (const [relativeFile, generatedContents] of Object.entries(
     relativeOutputFiles,
   )) {
@@ -247,7 +263,7 @@ export async function writeFiles(
   const overwrittenFiles: Array<string> = []
   const changedFiles: Array<string> = []
   for (const relativeFile of Object.keys(relativeOutputFiles)) {
-    if (currentFiles[relativeFile]) {
+    if (Object.prototype.hasOwnProperty.call(currentFiles, relativeFile)) {
       if (currentFiles[relativeFile] !== relativeOutputFiles[relativeFile]) {
         overwrittenFiles.push(relativeFile)
       }
