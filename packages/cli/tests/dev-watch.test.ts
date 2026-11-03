@@ -1,6 +1,9 @@
+import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 import { describe, expect, it } from 'vitest'
 import {
@@ -29,6 +32,21 @@ function frameworkFromDefinition(definition: FrameworkDefinition): Framework {
 }
 
 describe('DevWatchManager', () => {
+  it('syncs the second edit to the generated app', async () => {
+    const fixture = fileURLToPath(
+      new URL('./fixtures/dev-watch-rebuild.mjs', import.meta.url),
+    )
+    const root = await mkdtemp(join(tmpdir(), 'tanstack-watch-refresh-'))
+    try {
+      const { stdout } = await promisify(execFile)(process.execPath, [fixture, root], {
+        timeout: 20_000,
+      })
+      expect(stdout).toContain('WATCH_REFRESH_VERIFIED')
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 25_000)
+
   it('preserves bundler metadata when rebuilding a watched framework', async () => {
     const watchPath = await mkdtemp(join(tmpdir(), 'tanstack-dev-watch-'))
     const baseDirectory = join(watchPath, 'project', 'base')
