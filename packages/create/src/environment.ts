@@ -46,7 +46,10 @@ export function createDefaultEnvironment(): Environment {
     },
     getPackageManagerVersion: async (packageManager, cwd) => {
       try {
-        const result = await execa(packageManager, ['--version'], { cwd })
+        const result = await execa(packageManager, ['--version'], {
+          cwd,
+          timeout: 15_000,
+        })
         return result.stdout.trim()
       } catch {
         return undefined
@@ -115,8 +118,9 @@ export function createDefaultEnvironment(): Environment {
 }
 
 export function createMemoryEnvironment(returnPathsRelativeTo: string = '') {
-  const { environment, output } =
-    createEdgeMemoryEnvironment(returnPathsRelativeTo)
+  const { environment, output } = createEdgeMemoryEnvironment(
+    returnPathsRelativeTo,
+  )
   const resolvePath = (path: string) => resolve(process.cwd(), path)
 
   const appendFile = environment.appendFile
