@@ -63,7 +63,8 @@ export function getPackageManagerScriptCommand(
   }
 }
 
-const PNPM_VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/
+// Full SemVer grammar requires non-empty suffixes and valid numeric identifiers.
+const PNPM_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
 
 export async function detectPnpmVersion(environment: Environment, cwd: string) {
   try {
