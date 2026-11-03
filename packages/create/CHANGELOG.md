@@ -1,5 +1,13 @@
 # @tanstack/create
 
+## 0.71.11
+
+### Patch Changes
+
+- Keep optional pnpm version detection from aborting project generation. Failed or malformed probes retain the compatible plain dlx command in Node, edge and add-to-app flows. ([#545](https://github.com/TanStack/cli/pull/545))
+
+- Add command-specific build approvals for Storybook's esbuild installation on pnpm 10.2 and newer. Older and unknown target versions retain the compatible plain dlx command. Add-on and starter command definitions can declare requested build approvals, with version-aware planning shared by create and add-to-existing-app flows. ([#521](https://github.com/TanStack/cli/pull/521))
+
 ## 0.71.10
 
 ### Patch Changes
