@@ -238,10 +238,13 @@ export class DevWatchManager {
       this.tempDir = temporaryDirectory()
 
       // Register the scanned framework
-      registerFramework({
-        ...refreshedFramework,
-        id: `${refreshedFramework.id}-updated`,
-      })
+      registerFramework(
+        {
+          ...refreshedFramework,
+          id: `${refreshedFramework.id}-updated`,
+        },
+        { replace: true },
+      )
 
       // Get the registered framework
       const registeredFramework = getFrameworkById(
