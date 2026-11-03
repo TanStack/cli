@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.13
+
+### Patch Changes
+
+- Use an available Claude model in the Solid tanchat example instead of the retired Claude 3 Opus model. ([#543](https://github.com/TanStack/cli/pull/543))
+
 ## 0.71.12
 
 ### Patch Changes
