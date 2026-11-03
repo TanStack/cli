@@ -31,15 +31,19 @@ export const Route = createFileRoute('/api/remy-chat')({
           const forwardedProps =
             body.forwardedProps && typeof body.forwardedProps === 'object'
               ? body.forwardedProps
-              : body
+              : {}
           const speakerSlug =
             typeof forwardedProps.speakerSlug === 'string'
               ? forwardedProps.speakerSlug
-              : undefined
+              : typeof body.speakerSlug === 'string'
+                ? body.speakerSlug
+                : undefined
           const talkSlug =
             typeof forwardedProps.talkSlug === 'string'
               ? forwardedProps.talkSlug
-              : undefined
+              : typeof body.talkSlug === 'string'
+                ? body.talkSlug
+                : undefined
           if (typeof threadId !== 'string' || !threadId.trim()) {
             return Response.json(
               { error: 'A threadId is required' },

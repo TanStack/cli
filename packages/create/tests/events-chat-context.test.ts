@@ -99,6 +99,15 @@ describe('events chat page context', () => {
     expect(prompts).not.toContain('speaker with slug "old-speaker"')
   })
 
+  it.each([
+    { forwardedProps: { speakerSlug: 'alice' }, talkSlug: 'pastry' },
+    { speakerSlug: 'alice', forwardedProps: { talkSlug: 'pastry' } },
+  ])('preserves both slugs in a mixed payload: %j', async (body) => {
+    const { prompts } = await requestContext(body)
+    expect(prompts).toContain('speaker with slug "alice"')
+    expect(prompts).toContain('session with slug "pastry"')
+  })
+
   it('ignores non-string context instead of adding it to the prompt', async () => {
     const { prompts } = await requestContext({
       forwardedProps: { speakerSlug: { invalid: true }, talkSlug: ['invalid'] },
