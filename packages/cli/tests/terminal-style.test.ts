@@ -13,6 +13,8 @@ function render(extra: Record<string, string> = {}, flags: Array<string> = []) {
   delete env.FORCE_COLOR
   delete env.NO_COLOR
   delete env.NODE_DISABLE_COLORS
+  delete env.TF_BUILD
+  delete env.AGENT_NAME
   env.TERM = 'xterm-256color'
   Object.assign(env, extra)
   return execFileSync(

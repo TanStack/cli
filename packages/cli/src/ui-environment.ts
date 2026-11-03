@@ -9,8 +9,8 @@ import {
 } from '@clack/prompts'
 
 import { createDefaultEnvironment } from '@tanstack/create'
-import type { Environment, StatusEvent } from '@tanstack/create'
 import { styleText } from './terminal-style.js'
+import type { Environment, StatusEvent } from '@tanstack/create'
 import type { TelemetryClient } from './telemetry.js'
 
 export function createUIEnvironment(
