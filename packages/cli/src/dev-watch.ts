@@ -304,15 +304,6 @@ export class DevWatchManager {
       )
       this.lastSyncedSourceFiles = new Set(syncResult.sourceFiles)
 
-      // Clean up temp directory after sync is complete
-      try {
-        await fs.promises.rm(this.tempDir, { recursive: true, force: true })
-      } catch (cleanupError) {
-        this.log.warning(
-          `Failed to clean up temp directory: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
-        )
-      }
-
       const elapsed = Date.now() - startTime
 
       // Build tree-style summary
@@ -438,6 +429,15 @@ export class DevWatchManager {
         `Build #${buildId} failed: ${error instanceof Error ? error.message : String(error)}`,
       )
     } finally {
+      if (this.tempDir) {
+        try {
+          await fs.promises.rm(this.tempDir, { recursive: true, force: true })
+        } catch (cleanupError) {
+          this.log.warning(
+            `Failed to clean up temp directory: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
+          )
+        }
+      }
       this.isBuilding = false
     }
   }
