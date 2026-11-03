@@ -1,5 +1,11 @@
 # @tanstack/cli
 
+## 0.72.14
+
+### Patch Changes
+
+- Change temp directory creation to use built-in Node utilities. ([#536](https://github.com/TanStack/cli/pull/536))
+
 ## 0.72.13
 
 ### Patch Changes
