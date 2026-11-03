@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.14
+
+### Patch Changes
+
+- Preserve speaker and talk page context in the events example chat. ([#550](https://github.com/TanStack/cli/pull/550))
+
 ## 0.71.13
 
 ### Patch Changes
