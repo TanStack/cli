@@ -7,10 +7,10 @@ import {
   outro,
   spinner,
 } from '@clack/prompts'
-import chalk from 'chalk'
 
 import { createDefaultEnvironment } from '@tanstack/create'
 import type { Environment, StatusEvent } from '@tanstack/create'
+import { styleText } from './terminal-style.js'
 import type { TelemetryClient } from './telemetry.js'
 
 export function createUIEnvironment(
@@ -36,7 +36,7 @@ export function createUIEnvironment(
       },
       info: (title?: string, message?: string) => {
         log.info(
-          `${title ? chalk.red(title) : ''}${message ? '\n' + chalk.green(message) : ''}`,
+          `${title ? styleText('red', title) : ''}${message ? '\n' + styleText('green', message) : ''}`,
         )
       },
       error: (title?: string, message?: string) => {

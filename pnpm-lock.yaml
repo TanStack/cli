@@ -184,9 +184,6 @@ importers:
       '@tanstack/create':
         specifier: workspace:*
         version: link:../create
-      chalk:
-        specifier: ^5.4.1
-        version: 5.4.1
       chokidar:
         specifier: ^3.6.0
         version: 3.6.0
@@ -199,6 +196,9 @@ importers:
       semver:
         specifier: ^7.7.2
         version: 7.7.3
+      supports-color:
+        specifier: ^10.2.2
+        version: 10.2.2
       validate-npm-package-name:
         specifier: ^7.0.0
         version: 7.0.0
@@ -219,8 +219,8 @@ importers:
         specifier: ^5.2.0
         version: 5.2.3
       '@types/node':
-        specifier: ^22.13.4
-        version: 22.15.3
+        specifier: ^22.20.5
+        version: 22.20.5
       '@types/semver':
         specifier: ^7.7.0
         version: 7.7.0
@@ -1053,6 +1053,9 @@ packages:
 
   '@types/node@22.15.3':
     resolution: {integrity: sha512-lX7HFZeHf4QG/J7tBZqrCAXwz9J5RD56Y6MpP0eJkka8p+K0RY/yBTW7CYFJ4VGCclxqOLKmiGP5juQc6MKgcw==}
+
+  '@types/node@22.20.5':
+    resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
   '@types/node@24.6.0':
     resolution: {integrity: sha512-F1CBxgqwOMc4GKJ7eY22hWhBVQuMYTtqI8L0FcszYcpYX0fzfDGpez22Xau8Mgm7O9fI+zA/TYIdq3tGWfweBA==}
@@ -2986,6 +2989,10 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
+  supports-color@10.2.2:
+    resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
+    engines: {node: '>=18'}
+
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
@@ -4251,6 +4258,10 @@ snapshots:
   '@types/node@12.20.55': {}
 
   '@types/node@22.15.3':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.20.5':
     dependencies:
       undici-types: 6.21.0
 
@@ -6215,6 +6226,8 @@ snapshots:
   strip-final-newline@4.0.0: {}
 
   strip-json-comments@3.1.1: {}
+
+  supports-color@10.2.2: {}
 
   supports-color@7.2.0:
     dependencies:
