@@ -1,5 +1,19 @@
 <div align="center">
-  <h1>TanStack CLI</h1>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://tanstack.com/api/readme/cli.png?theme=dark"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="https://tanstack.com/api/readme/cli.png"
+    />
+    <img
+      src="https://tanstack.com/api/readme/cli.png"
+      alt="TanStack CLI"
+      width="900"
+    />
+  </picture>
 </div>
 
 <div align="center">
@@ -30,6 +44,7 @@ npx @tanstack/cli create my-app
 
 - **TanStack Start** - Full-stack SSR framework (default)
 - **TanStack Router** - Type-safe routing (`--router-only` for SPA)
+- **Vite or Rsbuild** - Choose the build tool for React and Solid projects
 - **Add-ons** - Auth, database, deployment, monitoring, and more
 - **CLI Introspection** - Agent-friendly discovery via JSON CLI output
 
@@ -44,6 +59,9 @@ npx @tanstack/cli create my-app --blank -y
 
 # Create Router-only SPA (no SSR)
 npx @tanstack/cli create my-app --router-only
+
+# Create with Rsbuild
+npx @tanstack/cli create my-app --build-tool rsbuild -y
 
 # With add-ons
 npx @tanstack/cli create my-app --add-ons clerk,drizzle,tanstack-query
@@ -70,7 +88,7 @@ npx @tanstack/cli search-docs "loaders" --library router --framework react --jso
 
 TanStack CLI sends anonymous usage telemetry by default.
 
-- Sent: command usage, durations, selected framework/package manager/add-on ids, and coarse result metadata
+- Sent: command usage, durations, selected framework/build tool/package manager/add-on ids, and coarse result metadata
 - Never sent: project names, file paths, target directories, raw search queries, raw template URLs/paths, add-on config values, env vars, or raw error messages
 - Disabled automatically in `CI`, or when `DO_NOT_TRACK=1` or `TANSTACK_CLI_TELEMETRY_DISABLED=1`
 

@@ -20,7 +20,7 @@ function RouteComponent() {
     <main className="demo-page">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-center">
         <section className="demo-panel">
-          <Link to="/demo/guitars/" className="mb-4 inline-block">
+          <Link to="/demo/guitars" className="mb-4 inline-block">
             &larr; Back to all guitars
           </Link>
           <h1 className="demo-title mb-4">{guitar.name}</h1>

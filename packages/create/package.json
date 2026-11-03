@@ -1,10 +1,13 @@
 {
   "name": "@tanstack/create",
-  "version": "0.69.1",
+  "version": "0.71.14",
   "description": "TanStack Application Builder Engine",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
@@ -73,10 +76,10 @@
     "ejs": "^3.1.10",
     "execa": "^9.5.2",
     "ignore": "^7.0.3",
-    "memfs": "^4.17.0",
     "parse-gitignore": "^2.0.0",
     "prettier": "^3.5.0",
     "rimraf": "^6.0.1",
+    "yaml": "^2.8.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -85,6 +88,7 @@
     "@types/parse-gitignore": "^1.0.2",
     "@vitest/coverage-v8": "4.1.5",
     "eslint": "^9.20.0",
+    "memfs": "4.17.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.5",
     "vitest-fetch-mock": "^0.4.5"

@@ -1,4 +1,5 @@
 import { createPackageJSON } from './edge-package-json.js'
+import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { createTemplateFile } from './edge-template-file.js'
 import { formatCommand } from './utils.js'
 import { isBase64, isDemoFilePath } from './edge-file-helpers.js'
@@ -6,12 +7,17 @@ import { basenamePath, joinPaths, normalizePath } from './edge-path.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { writeConfigFileToEnvironment } from './edge-config-file.js'
 import {
+  INTENT_PACKAGE,
+  detectPnpmVersion,
   getPackageManagerExecuteCommand,
   getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
+  intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
@@ -58,7 +64,14 @@ function stripExamplesFromOptions(options: Options): Options {
   }
 }
 
-async function writeFiles(environment: Environment, options: Options) {
+async function writeFiles(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  const workspaceWasPresent = environment.exists(
+    joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
+  )
   const templateFileFromContent = createTemplateFile(environment, options)
 
   async function writeFileBundle(bundle: FileBundleHandler) {
@@ -127,6 +140,13 @@ async function writeFiles(environment: Environment, options: Options) {
     message: 'Writing package.json...',
   })
   const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  await writePnpmWorkspace(
+    environment,
+    joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
+    options.packageManager,
+    packageJSON,
+    { ...context, workspaceWasPresent },
+  )
   await environment.writeFile(
     joinPaths(options.targetDir, './package.json'),
     JSON.stringify(packageJSON, null, 2),
@@ -264,7 +284,7 @@ async function setupIntent(
     })
     environment.finishStep(
       'setup-intent',
-      'TanStack Intent setup skipped: no dependencies installed yet',
+      'TanStack Intent setup skipped: dependencies not installed',
     )
     return
   }
@@ -272,13 +292,13 @@ async function setupIntent(
   environment.startStep({
     id: 'setup-intent',
     type: 'command',
-    message: 'Setting up TanStack Intent skill mappings...',
+    message: 'Setting up TanStack Intent skill discovery...',
   })
 
   const { command, args } = getPackageManagerExecuteCommand(
     options.packageManager,
-    '@tanstack/intent',
-    ['install', '--map'],
+    INTENT_PACKAGE,
+    ['install'],
   )
   await environment.execute(command, args, normalizePath(targetDir))
   environment.finishStep('setup-intent', 'TanStack Intent configured')
@@ -287,7 +307,19 @@ async function setupIntent(
 async function runCommandsAndInstallDependencies(
   environment: Environment,
   options: Options,
+  packageManagerVersion?: string,
 ) {
+  const needsBuildApproval =
+    options.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) ||
+    options.starter?.command?.allowBuilds?.length
+  if (
+    options.packageManager === 'pnpm' &&
+    needsBuildApproval &&
+    packageManagerVersion === undefined
+  ) {
+    packageManagerVersion = await detectPnpmVersion(environment, options.targetDir)
+  }
+
   const s = environment.spinner()
 
   if (options.git) {
@@ -365,7 +397,8 @@ async function runCommandsAndInstallDependencies(
       const translated = translateExecuteCommand(options.packageManager, {
         command: addOn.command!.command,
         args: addOn.command!.args || [],
-      })
+        allowBuilds: addOn.command!.allowBuilds,
+      }, packageManagerVersion)
       const cmd = formatCommand(translated)
       environment.startStep({
         id: 'run-commands',
@@ -392,7 +425,8 @@ async function runCommandsAndInstallDependencies(
     const starterTranslated = translateExecuteCommand(options.packageManager, {
       command: options.starter.command.command,
       args: options.starter.command.args || [],
-    })
+      allowBuilds: options.starter.command.allowBuilds,
+    }, packageManagerVersion)
     const cmd = formatCommand(starterTranslated)
     environment.startStep({
       id: 'run-starter-command',
@@ -549,18 +583,12 @@ function buildNextSteps(options: Options): string {
       const installCommand = formatCommand(
         getPackageManagerInstallCommand(options.packageManager),
       )
-      const intentCommand = formatCommand(
-        getPackageManagerExecuteCommand(options.packageManager, '@tanstack/intent', [
-          'install',
-          '--map',
-        ]),
-      )
       sections.push(
-        `Working with an AI agent? TanStack Intent was skipped because dependency installation was\nskipped, so no agent config (AGENTS.md / CLAUDE.md) was written. After installing dependencies,\nwire it up with:\n  % ${installCommand}\n  % ${intentCommand}`,
+        `TanStack Intent setup was skipped because dependency installation was skipped.\nInstall dependencies, then generate agent guidance:\n  % ${installCommand}\n  % ${intentCommand(options.packageManager, ['install'])}`,
       )
     } else {
       sections.push(
-        `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nwith explicit skill mappings for the libraries you installed. Try asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
+        `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  - ${intentCommand(options.packageManager, ['list'])}\n  - ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
       )
     }
   }
@@ -617,14 +645,19 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
   )
 }
 
-export async function createApp(environment: Environment, options: Options) {
-  const effectiveOptions = stripExamplesFromOptions(options)
+export async function createApp(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean; packageManagerVersion?: string } = {},
+) {
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions)
+  await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
-  await runCommandsAndInstallDependencies(environment, effectiveOptions)
+  await runCommandsAndInstallDependencies(environment, effectiveOptions, context.packageManagerVersion)
   environment.finishRun()
 
   report(environment, effectiveOptions)

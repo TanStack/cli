@@ -1,6 +1,6 @@
 # Framework Adapter Options
 
-Targets `@tanstack/cli` v0.70.0.
+Targets `@tanstack/cli` v0.71.0.
 
 ## Supported values
 

@@ -132,7 +132,8 @@ function SchedulePage() {
                 return (
                   <Link
                     key={session.talkSlug}
-                    to={`/talks/${talk.slug}`}
+                    to="/talks/$slug"
+                    params={{ slug: talk.slug }}
                     className="group block"
                   >
                     <div className="relative flex gap-6 md:gap-10">
