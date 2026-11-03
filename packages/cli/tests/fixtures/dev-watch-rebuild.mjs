@@ -8,7 +8,7 @@ import {
   getFrameworks,
   registerFramework,
 } from '@tanstack/create'
-import { DevWatchManager } from '../../dist/dev-watch.js'
+import { DevWatchManager } from '../../src/dev-watch.ts'
 
 const root = process.argv[2]
 assert.ok(root)

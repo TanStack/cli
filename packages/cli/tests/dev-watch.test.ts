@@ -38,7 +38,8 @@ describe('DevWatchManager', () => {
     )
     const root = await mkdtemp(join(tmpdir(), 'tanstack-watch-refresh-'))
     try {
-      const { stdout } = await promisify(execFile)(process.execPath, [fixture, root], {
+      const { stdout } = await promisify(execFile)(process.execPath, ['--import', 'tsx', fixture, root], {
+        cwd: fileURLToPath(new URL('../', import.meta.url)),
         timeout: 20_000,
       })
       expect(stdout).toContain('WATCH_REFRESH_VERIFIED')
