@@ -292,7 +292,22 @@ async function setupIntent(
 async function runCommandsAndInstallDependencies(
   environment: Environment,
   options: Options,
+  packageManagerVersion?: string,
 ) {
+  const needsBuildApproval =
+    options.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) ||
+    options.starter?.command?.allowBuilds?.length
+  if (
+    options.packageManager === 'pnpm' &&
+    needsBuildApproval &&
+    packageManagerVersion === undefined
+  ) {
+    packageManagerVersion = await environment.getPackageManagerVersion?.(
+      'pnpm',
+      options.targetDir,
+    )
+  }
+
   const s = environment.spinner()
 
   if (options.git) {
@@ -370,7 +385,8 @@ async function runCommandsAndInstallDependencies(
       const translated = translateExecuteCommand(options.packageManager, {
         command: addOn.command!.command,
         args: addOn.command!.args || [],
-      })
+        allowBuilds: addOn.command!.allowBuilds,
+      }, packageManagerVersion)
       const cmd = formatCommand(translated)
       environment.startStep({
         id: 'run-commands',
@@ -397,7 +413,8 @@ async function runCommandsAndInstallDependencies(
     const starterTranslated = translateExecuteCommand(options.packageManager, {
       command: options.starter.command.command,
       args: options.starter.command.args || [],
-    })
+      allowBuilds: options.starter.command.allowBuilds,
+    }, packageManagerVersion)
     const cmd = formatCommand(starterTranslated)
     environment.startStep({
       id: 'run-starter-command',
@@ -610,7 +627,7 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
 export async function createApp(
   environment: Environment,
   options: Options,
-  context: { existingProject?: boolean } = {},
+  context: { existingProject?: boolean; packageManagerVersion?: string } = {},
 ) {
   validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
   const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
@@ -619,7 +636,7 @@ export async function createApp(
   await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
-  await runCommandsAndInstallDependencies(environment, effectiveOptions)
+  await runCommandsAndInstallDependencies(environment, effectiveOptions, context.packageManagerVersion)
   environment.finishRun()
 
   report(environment, effectiveOptions)
