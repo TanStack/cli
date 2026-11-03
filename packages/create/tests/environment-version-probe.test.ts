@@ -125,7 +125,9 @@ describe('package-manager version subprocess', () => {
     )
     const environment = createDefaultEnvironment()
     await expect(probe(environment, cwd)).resolves.toBe('10.2.0')
-    expect(await readFile(join(cwd, 'cwd'), 'utf8')).toBe(await realpath(cwd))
+    expect(await realpath(await readFile(join(cwd, 'cwd'), 'utf8'))).toBe(
+      await realpath(cwd),
+    )
     expect(environment.getErrors()).toEqual([])
   })
 
