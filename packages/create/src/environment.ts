@@ -45,14 +45,51 @@ export function createDefaultEnvironment(): Environment {
       return writeFile(path, getBinaryFile(base64Contents) as string)
     },
     getPackageManagerVersion: async (packageManager, cwd) => {
+      const subprocess = execa(packageManager, ['--version'], {
+        cwd,
+        // A separate group lets POSIX cleanup include descendants holding pipes.
+        detached: process.platform !== 'win32',
+      })
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const timeout = new Promise<undefined>((resolveTimeout) => {
+        timer = setTimeout(async () => {
+          if (subprocess.pid !== undefined) {
+            try {
+              if (process.platform === 'win32') {
+                if (
+                  subprocess.exitCode === null &&
+                  subprocess.signalCode === null
+                ) {
+                  await execa(
+                    'taskkill',
+                    ['/PID', String(subprocess.pid), '/T', '/F'],
+                    {
+                      timeout: 5_000,
+                      windowsHide: true,
+                    },
+                  )
+                }
+              } else {
+                process.kill(-subprocess.pid, 'SIGKILL')
+              }
+            } catch {
+              subprocess.kill('SIGKILL')
+            }
+          }
+          // An inherited pipe must not keep an optional lookup pending.
+          subprocess.stdout.destroy()
+          subprocess.stderr.destroy()
+          await subprocess.catch(() => undefined)
+          resolveTimeout(undefined)
+        }, 15_000)
+      })
       try {
-        const result = await execa(packageManager, ['--version'], {
-          cwd,
-          timeout: 15_000,
-        })
-        return result.stdout.trim()
+        const result = await Promise.race([subprocess, timeout])
+        return result?.stdout.trim()
       } catch {
         return undefined
+      } finally {
+        clearTimeout(timer)
       }
     },
     execute: async (

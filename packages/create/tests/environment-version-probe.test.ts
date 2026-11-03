@@ -58,7 +58,17 @@ afterEach(async () => {
       } catch {}
     } catch {}
   }
-  if (directory) await rm(directory, { recursive: true, force: true })
+  if (directory) {
+    try {
+      const pid = Number(
+        await readFile(join(directory, 'descendant.pid'), 'utf8'),
+      )
+      try {
+        process.kill(pid, 'SIGKILL')
+      } catch {}
+    } catch {}
+    await rm(directory, { recursive: true, force: true })
+  }
   directory = undefined
   pidFile = undefined
 })
@@ -76,6 +86,39 @@ async function probe(
 }
 
 describe('package-manager version subprocess', () => {
+  it('terminates descendants holding the probe pipes open', async () => {
+    const cwd = await installShim(
+      "const { spawn } = await import('node:child_process');" +
+        "const child = spawn(process.execPath, ['-e', " +
+        JSON.stringify(
+          "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)",
+        ) +
+        "], { stdio: ['ignore', 'inherit', 'inherit'] });" +
+        "writeFileSync('descendant.pid', String(child.pid)); setInterval(() => {}, 1000)",
+    )
+    const environment = createDefaultEnvironment()
+    const started = Date.now()
+    await expect(probe(environment, cwd)).resolves.toBeUndefined()
+    expect(Date.now() - started).toBeLessThan(23_000)
+    const pid = Number(await readFile(join(cwd, 'descendant.pid'), 'utf8'))
+    await expect
+      .poll(
+        () => {
+          try {
+            process.kill(pid, 0)
+            return false
+          } catch {
+            return true
+          }
+        },
+        { timeout: 2_000 },
+      )
+      .toBe(true)
+    // Remove the receipt so cleanup cannot target a later reused PID.
+    await rm(join(cwd, 'descendant.pid'))
+    expect(environment.getErrors()).toEqual([])
+  }, 30_000)
+
   it('reads and trims the version in the target project', async () => {
     const cwd = await installShim(
       "process.stdout.write(' 10.2.0 ' + String.fromCharCode(10))",
@@ -91,7 +134,19 @@ describe('package-manager version subprocess', () => {
     const environment = createDefaultEnvironment()
     await expect(probe(environment, cwd)).resolves.toBeUndefined()
     const pid = Number(await readFile(join(cwd, 'probe.pid'), 'utf8'))
-    expect(() => process.kill(pid, 0)).toThrow()
+    await expect
+      .poll(
+        () => {
+          try {
+            process.kill(pid, 0)
+            return false
+          } catch {
+            return true
+          }
+        },
+        { timeout: 2_000 },
+      )
+      .toBe(true)
     expect(environment.getErrors()).toEqual([])
   }, 30_000)
 })
