@@ -1,5 +1,11 @@
 # @tanstack/create
 
+## 0.71.12
+
+### Patch Changes
+
+- Refresh the registered framework on each dev-watch rebuild so later edits reach the generated app without accumulating stale framework entries. ([#546](https://github.com/TanStack/cli/pull/546))
+
 ## 0.71.11
 
 ### Patch Changes
