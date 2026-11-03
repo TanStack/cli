@@ -270,7 +270,7 @@ type ProjectEnvironment = {
 }
 
 type FileEnvironment = {
-  getPackageManagerVersion?: (packageManager: PackageManager, cwd: string) => Promise<string>
+  getPackageManagerVersion?: (packageManager: PackageManager, cwd: string) => Promise<string | undefined>
   appendFile: (path: string, contents: string) => Promise<void>
   copyFile: (from: string, to: string) => Promise<void>
   writeFile: (path: string, contents: string) => Promise<void>

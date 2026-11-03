@@ -8,6 +8,7 @@ import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { writeConfigFileToEnvironment } from './edge-config-file.js'
 import {
   INTENT_PACKAGE,
+  detectPnpmVersion,
   getPackageManagerExecuteCommand,
   getPackageManagerScriptCommand,
   intentCommand,
@@ -302,10 +303,7 @@ async function runCommandsAndInstallDependencies(
     needsBuildApproval &&
     packageManagerVersion === undefined
   ) {
-    packageManagerVersion = await environment.getPackageManagerVersion?.(
-      'pnpm',
-      options.targetDir,
-    )
+    packageManagerVersion = await detectPnpmVersion(environment, options.targetDir)
   }
 
   const s = environment.spinner()

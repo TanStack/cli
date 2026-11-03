@@ -10,7 +10,7 @@ import {
   writeConfigFileToEnvironment,
 } from './config-file.js'
 import { formatCommand } from './utils.js'
-import { packageManagerInstall } from './package-manager.js'
+import { detectPnpmVersion, packageManagerInstall } from './package-manager.js'
 import {
   isBase64,
   recursivelyGatherFilesFromEnvironment,
@@ -373,7 +373,7 @@ export async function addToApp(
   const newOptions = await createOptions(persistedOptions, addOns, cwd)
   const needsBuildApproval = newOptions.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) || newOptions.starter?.command?.allowBuilds?.length
   const packageManagerVersion = newOptions.packageManager === 'pnpm' && needsBuildApproval
-    ? await environment.getPackageManagerVersion?.('pnpm', cwd)
+    ? await detectPnpmVersion(environment, cwd)
     : undefined
 
   const output = await runCreateApp({
