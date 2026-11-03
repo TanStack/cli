@@ -1,5 +1,12 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,11 +20,7 @@ import {
 
 import { DevWatchManager } from '../src/dev-watch'
 
-import type {
-  Framework,
-  FrameworkDefinition,
-  Options,
-} from '@tanstack/create'
+import type { Framework, FrameworkDefinition, Options } from '@tanstack/create'
 
 function frameworkFromDefinition(definition: FrameworkDefinition): Framework {
   const { addOns, base, ...framework } = definition
@@ -38,12 +41,45 @@ describe('DevWatchManager', () => {
     )
     const root = await mkdtemp(join(tmpdir(), 'tanstack-watch-refresh-'))
     try {
-      const { stdout } = await promisify(execFile)(process.execPath, ['--import', 'tsx', fixture, root], {
-        cwd: fileURLToPath(new URL('../', import.meta.url)),
-        timeout: 20_000,
-      })
+      const { stdout } = await promisify(execFile)(
+        process.execPath,
+        ['--import', 'tsx', fixture, root],
+        {
+          cwd: fileURLToPath(new URL('../', import.meta.url)),
+          timeout: 20_000,
+        },
+      )
       expect(stdout).toContain('WATCH_REFRESH_VERIFIED')
     } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 25_000)
+
+  it('cleans up when shutdown interrupts temporary directory allocation', async () => {
+    const fixture = fileURLToPath(
+      new URL('./fixtures/dev-watch-rebuild.mjs', import.meta.url),
+    )
+    const root = await mkdtemp(join(tmpdir(), 'tanstack-watch-cancel-'))
+    const ownedPrefix = join(tmpdir(), 'tanstack-dev-watch-')
+    let temporaryDirectory: string | undefined
+    try {
+      await promisify(execFile)(
+        process.execPath,
+        ['--import', 'tsx', fixture, root, 'cancel'],
+        {
+          cwd: fileURLToPath(new URL('../', import.meta.url)),
+          timeout: 20_000,
+        },
+      )
+      temporaryDirectory = await readFile(join(root, 'created-path'), 'utf8')
+      expect(temporaryDirectory.startsWith(ownedPrefix)).toBe(true)
+      await expect(access(temporaryDirectory)).rejects.toMatchObject({
+        code: 'ENOENT',
+      })
+    } finally {
+      if (temporaryDirectory?.startsWith(ownedPrefix)) {
+        await rm(temporaryDirectory, { recursive: true, force: true })
+      }
       await rm(root, { recursive: true, force: true })
     }
   }, 25_000)
@@ -89,9 +125,7 @@ describe('DevWatchManager', () => {
       ).createFrameworkDefinitionFromWatchPath()
 
       expect(refreshedFramework?.bundlers).toEqual(framework.bundlers)
-      expect(refreshedFramework?.defaultBundler).toBe(
-        framework.defaultBundler,
-      )
+      expect(refreshedFramework?.defaultBundler).toBe(framework.defaultBundler)
     } finally {
       await rm(watchPath, { recursive: true, force: true })
     }
