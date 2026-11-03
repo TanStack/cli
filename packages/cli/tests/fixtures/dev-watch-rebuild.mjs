@@ -65,7 +65,53 @@ const manager = new DevWatchManager({
   packageManager: 'npm',
   environment,
 })
-if (process.argv[3] === 'cancel') {
+if (process.argv[3] === 'fail') {
+  const allocated = []
+  const receipt = path.join(root, 'failed-paths.json')
+  const original = fsSync.mkdtempSync
+  fsSync.mkdtempSync = (...args) => {
+    const directory = original(...args)
+    if (directory.startsWith(path.join(tmpdir(), 'tanstack-dev-watch-'))) {
+      allocated.push(directory)
+      fsSync.writeFileSync(receipt, JSON.stringify(allocated))
+    }
+    return directory
+  }
+  // Removing a selected add-on from a watched framework fails after allocation.
+  cliOptions.chosenAddOns = [{ id: 'removed-addon' }]
+  try {
+    await manager.start()
+    await once(manager.watcher, 'ready')
+    for (const value of ['first failed build', 'second failed build']) {
+      const expected = manager.buildCount + 1
+      await fs.writeFile(source, value)
+      const deadline = Date.now() + 8000
+      while (
+        (manager.buildCount < expected || manager.isBuilding) &&
+        Date.now() < deadline
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      }
+      assert.equal(manager.buildCount, expected)
+      assert.equal(manager.isBuilding, false)
+    }
+    assert.equal(allocated.length, 2)
+    for (const directory of allocated) {
+      await assert.rejects(fs.access(directory), { code: 'ENOENT' })
+    }
+    assert.deepEqual(await fs.readdir(targetDir), [])
+    await new Promise((resolve, reject) => {
+      process.stdout.write('WATCH_FAILED_BUILD_CLEANUP_VERIFIED\n', (error) => {
+        if (error) reject(error)
+        else resolve()
+      })
+    })
+  } catch (error) {
+    console.error(error)
+  } finally {
+    await manager.stop()
+  }
+} else if (process.argv[3] === 'cancel') {
   const receipt = path.join(root, 'created-path')
   const originalAsync = fs.mkdtemp
   fs.mkdtemp = async (...args) => {
