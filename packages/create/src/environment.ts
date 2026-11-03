@@ -44,6 +44,10 @@ export function createDefaultEnvironment(): Environment {
       await mkdir(dirname(path), { recursive: true })
       return writeFile(path, getBinaryFile(base64Contents) as string)
     },
+    getPackageManagerVersion: async (packageManager, cwd) => {
+      const result = await execa(packageManager, ['--version'], { cwd })
+      return result.stdout.trim()
+    },
     execute: async (
       command: string,
       args: Array<string>,

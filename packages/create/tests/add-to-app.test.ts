@@ -10,6 +10,7 @@ import {
   writeFiles,
 } from '../src/add-to-app.js'
 import {
+  getFrameworkById,
   __testClearFrameworks,
   __testRegisterFramework,
 } from '../src/frameworks.js'
@@ -422,6 +423,27 @@ describe('writeFiles', () => {
 })
 
 describe('runNewCommands', () => {
+  it.each(['10.1.0', '10.2.0'])(
+    'does not rerun an existing approved command when planning for pnpm %s',
+    async (packageManagerVersion) => {
+      const framework = getFrameworkById('test')
+      if (!framework) throw new Error('Missing test framework')
+      const addOns = framework.getAddOns()
+      framework.getAddOns = () => addOns.map((addOn) => addOn.id === 'test'
+        ? { ...addOn, command: { command: 'npx', args: ['storybook', 'init'], allowBuilds: ['esbuild'] } }
+        : addOn)
+      const { environment, output } = createMemoryEnvironment('/foo')
+      const args = [
+        ...(packageManagerVersion === '10.2.0' ? ['--allow-build=esbuild'] : []),
+        'dlx', 'storybook', 'init',
+      ]
+      await runNewCommands(environment, {
+        ...fakeCTAJSON, packageManager: 'pnpm', chosenAddOns: ['test'],
+      }, '/foo', { commands: [{ command: 'pnpm', args }] }, packageManagerVersion)
+      expect(output.commands).toEqual([])
+    },
+  )
+
   it('should run new commands', async () => {
     const { environment, output } = createMemoryEnvironment('/foo')
     environment.startRun()

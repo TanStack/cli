@@ -63,16 +63,41 @@ export function getPackageManagerScriptCommand(
   }
 }
 
+export type ExecuteCommandOptions = {
+  /**
+   * Package names that are allowed to run postinstall/build scripts while the
+   * executed package is being installed. Supported by pnpm 10.2 and newer.
+   */
+  allowBuilds?: Array<string>
+  /** Unknown versions retain the compatible plain dlx command. */
+  packageManagerVersion?: string
+}
+
 export function getPackageManagerExecuteCommand(
   packagerManager: PackageManager,
   pkg: string,
   args: Array<string> = [],
+  options: ExecuteCommandOptions = {},
 ) {
   switch (packagerManager) {
     case 'yarn':
       return { command: 'yarn', args: ['dlx', pkg, ...args] }
-    case 'pnpm':
-      return { command: 'pnpm', args: ['dlx', pkg, ...args] }
+    case 'pnpm': {
+      const version = options.packageManagerVersion
+      const parsedVersion = version?.match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/)
+      if (version !== undefined && !parsedVersion && options.allowBuilds?.length)
+        throw new Error(`Invalid pnpm version: ${version}`)
+      const supportsAllowBuild = parsedVersion && (
+        Number(parsedVersion[1]) > 10 ||
+        (Number(parsedVersion[1]) === 10 && Number(parsedVersion[2]) >= 2))
+      const allowBuildFlags = supportsAllowBuild
+        ? (options.allowBuilds || []).map((name) => `--allow-build=${name}`)
+        : []
+      return {
+        command: 'pnpm',
+        args: [...allowBuildFlags, 'dlx', pkg, ...args],
+      }
+    }
     case 'bun':
       return { command: 'bunx', args: ['--bun', pkg, ...args] }
     case 'deno':
@@ -143,12 +168,22 @@ export function packageManagerInstall(
 
 export function translateExecuteCommand(
   packageManager: PackageManager,
-  command: { command: string; args?: Array<string> },
+  command: {
+    command: string
+    args?: Array<string>
+    allowBuilds?: Array<string>
+  },
+  packageManagerVersion?: string,
 ): { command: string; args: Array<string> } {
   const args = command.args || []
   const parsed = parseExecuteCommand(command.command, args)
   if (parsed) {
-    return getPackageManagerExecuteCommand(packageManager, parsed.pkg, parsed.args)
+    return getPackageManagerExecuteCommand(
+      packageManager,
+      parsed.pkg,
+      parsed.args,
+      { allowBuilds: command.allowBuilds, packageManagerVersion },
+    )
   }
   return { command: command.command, args }
 }

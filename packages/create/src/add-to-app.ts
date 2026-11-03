@@ -144,9 +144,9 @@ function assertNoExclusiveAddOnConflicts(addOns: Array<AddOn>) {
   }
 }
 
-async function runCreateApp(options: Required<Options>) {
+async function runCreateApp(options: Required<Options>, packageManagerVersion?: string) {
   const { environment, output } = createMemoryEnvironment(options.targetDir)
-  await createApp(environment, options, { existingProject: true })
+  await createApp(environment, options, { existingProject: true, packageManagerVersion })
   return output
 }
 
@@ -315,10 +315,11 @@ export async function runNewCommands(
       args: Array<string>
     }>
   },
+  packageManagerVersion?: string,
 ) {
   const originalOutput = await runCreateApp({
     ...(await createOptions(originalOptions, [], cwd)),
-  } as Required<Options>)
+  } as Required<Options>, packageManagerVersion)
 
   const originalCommands = new Set(
     originalOutput.commands.map((c) => [c.command, ...c.args].join(' ')),
@@ -370,11 +371,15 @@ export async function addToApp(
   })
 
   const newOptions = await createOptions(persistedOptions, addOns, cwd)
+  const needsBuildApproval = newOptions.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) || newOptions.starter?.command?.allowBuilds?.length
+  const packageManagerVersion = newOptions.packageManager === 'pnpm' && needsBuildApproval
+    ? await environment.getPackageManagerVersion?.('pnpm', cwd)
+    : undefined
 
   const output = await runCreateApp({
     ...newOptions,
     targetDir: cwd,
-  } as Required<Options>)
+  } as Required<Options>, packageManagerVersion)
 
   await writeFiles(environment, cwd, output, !!options?.forced)
 
@@ -435,7 +440,7 @@ export async function addToApp(
 
   // Handle new commands
 
-  await runNewCommands(environment, persistedOptions, cwd, output)
+  await runNewCommands(environment, persistedOptions, cwd, output, packageManagerVersion)
 
   const intent = options?.intent ?? persistedOptions.intent ?? true
   newOptions.intent = intent
