@@ -1,4 +1,5 @@
 import { createPackageJSON } from './edge-package-json.js'
+import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { createTemplateFile } from './edge-template-file.js'
 import { formatCommand } from './utils.js'
 import { isBase64, isDemoFilePath } from './edge-file-helpers.js'
@@ -7,13 +8,16 @@ import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { writeConfigFileToEnvironment } from './edge-config-file.js'
 import {
   INTENT_PACKAGE,
+  detectPnpmVersion,
   getPackageManagerExecuteCommand,
+  getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
   intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
   validatePackageManagerSupport,
 } from './package-manager.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
@@ -60,7 +64,14 @@ function stripExamplesFromOptions(options: Options): Options {
   }
 }
 
-async function writeFiles(environment: Environment, options: Options) {
+async function writeFiles(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  const workspaceWasPresent = environment.exists(
+    joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
+  )
   const templateFileFromContent = createTemplateFile(environment, options)
 
   async function writeFileBundle(bundle: FileBundleHandler) {
@@ -129,6 +140,13 @@ async function writeFiles(environment: Environment, options: Options) {
     message: 'Writing package.json...',
   })
   const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  await writePnpmWorkspace(
+    environment,
+    joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
+    options.packageManager,
+    packageJSON,
+    { ...context, workspaceWasPresent },
+  )
   await environment.writeFile(
     joinPaths(options.targetDir, './package.json'),
     JSON.stringify(packageJSON, null, 2),
@@ -255,7 +273,20 @@ async function setupIntent(
   options: Options,
 ) {
   if (!options.intent) {
-    return
+    return false
+  }
+
+  if (options.install === false) {
+    environment.startStep({
+      id: 'setup-intent',
+      type: 'info',
+      message: 'Skipping TanStack Intent setup...',
+    })
+    environment.finishStep(
+      'setup-intent',
+      'TanStack Intent setup skipped: dependencies not installed',
+    )
+    return false
   }
 
   environment.startStep({
@@ -269,14 +300,30 @@ async function setupIntent(
     INTENT_PACKAGE,
     ['install'],
   )
-  await environment.execute(command, args, normalizePath(targetDir))
-  environment.finishStep('setup-intent', 'TanStack Intent configured')
+  const result = await environment.execute(command, args, normalizePath(targetDir))
+  environment.finishStep(
+    'setup-intent',
+    result.failed ? 'TanStack Intent setup failed' : 'TanStack Intent configured',
+  )
+  return !result.failed
 }
 
 async function runCommandsAndInstallDependencies(
   environment: Environment,
   options: Options,
+  packageManagerVersion?: string,
 ) {
+  const needsBuildApproval =
+    options.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) ||
+    options.starter?.command?.allowBuilds?.length
+  if (
+    options.packageManager === 'pnpm' &&
+    needsBuildApproval &&
+    packageManagerVersion === undefined
+  ) {
+    packageManagerVersion = await detectPnpmVersion(environment, options.targetDir)
+  }
+
   const s = environment.spinner()
 
   if (options.git) {
@@ -354,7 +401,8 @@ async function runCommandsAndInstallDependencies(
       const translated = translateExecuteCommand(options.packageManager, {
         command: addOn.command!.command,
         args: addOn.command!.args || [],
-      })
+        allowBuilds: addOn.command!.allowBuilds,
+      }, packageManagerVersion)
       const cmd = formatCommand(translated)
       environment.startStep({
         id: 'run-commands',
@@ -381,7 +429,8 @@ async function runCommandsAndInstallDependencies(
     const starterTranslated = translateExecuteCommand(options.packageManager, {
       command: options.starter.command.command,
       args: options.starter.command.args || [],
-    })
+      allowBuilds: options.starter.command.allowBuilds,
+    }, packageManagerVersion)
     const cmd = formatCommand(starterTranslated)
     environment.startStep({
       id: 'run-starter-command',
@@ -401,7 +450,7 @@ async function runCommandsAndInstallDependencies(
   }
 
   await installShadcnComponents(environment, options.targetDir, options)
-  await setupIntent(environment, options.targetDir, options)
+  const intentConfigured = await setupIntent(environment, options.targetDir, options)
 
   if (shouldGenerateRoutes(options)) {
     s.start('Generating route tree...')
@@ -425,6 +474,8 @@ async function runCommandsAndInstallDependencies(
     environment.finishStep('generate-routes', 'Route tree generated')
     s.stop('Route tree generated')
   }
+
+  return intentConfigured
 }
 
 function shouldGenerateRoutes(options: Options) {
@@ -501,7 +552,7 @@ async function writeEnvExample(environment: Environment, options: Options) {
 
 const SHIPPING_CATEGORIES = new Set(['auth', 'database', 'orm', 'deploy'])
 
-function buildNextSteps(options: Options): string {
+function buildNextSteps(options: Options, intentConfigured: boolean): string {
   const collectedEnv = new Set(Object.keys(options.envVarValues || {}))
   const listedEnvVars = new Set<string>()
   const envVarLines: Array<string> = []
@@ -534,15 +585,28 @@ function buildNextSteps(options: Options): string {
     sections.push(`Docs for the integrations you picked:\n${docLines.join('\n')}`)
   }
   if (options.intent) {
-    sections.push(
-      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  - ${intentCommand(options.packageManager, ['list'])}\n  - ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
-    )
+    if (options.install === false) {
+      const installCommand = formatCommand(
+        getPackageManagerInstallCommand(options.packageManager),
+      )
+      sections.push(
+        `TanStack Intent setup was skipped because dependency installation was skipped.\nInstall dependencies, then generate agent guidance:\n  % ${installCommand}\n  % ${intentCommand(options.packageManager, ['install', '--map'])}`,
+      )
+    } else if (intentConfigured) {
+      sections.push(
+        `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  - ${intentCommand(options.packageManager, ['list'])}\n  - ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
+      )
+    }
   }
 
   return sections.length > 0 ? `\nNext steps:\n\n${sections.join('\n\n')}\n` : ''
 }
 
-function report(environment: Environment, options: Options) {
+function report(
+  environment: Environment,
+  options: Options,
+  intentConfigured: boolean,
+) {
   const warnings: Array<string> = []
   for (const addOn of options.chosenAddOns) {
     if (addOn.warning) {
@@ -554,13 +618,20 @@ function report(environment: Environment, options: Options) {
     environment.warn('Warnings', warnings.join('\n'))
   }
 
+  const errors = [...environment.getErrors()]
+  if (options.intent && options.install !== false && !intentConfigured) {
+    const retryCommand = intentCommand(options.packageManager, ['install'])
+    if (!errors.some((error) => error.includes(retryCommand))) {
+      errors.push(`TanStack Intent setup failed. To retry, run ${retryCommand} in your project.`)
+    }
+  }
   let errorStatement = ''
-  if (environment.getErrors().length) {
+  if (errors.length) {
     errorStatement = `
 
 Errors were encountered during the creation of your app:
 
-${environment.getErrors().join('\n')}`
+${errors.join('\n')}`
   }
 
   const targetDir = normalizePath(options.targetDir)
@@ -573,7 +644,7 @@ ${environment.getErrors().join('\n')}`
     : `% cd ${options.projectName}
 `
 
-  const nextSteps = buildNextSteps(options)
+  const nextSteps = buildNextSteps(options, intentConfigured)
   const readmeDescription =
     options.projectPreset === 'blank'
       ? 'running, building, adding routes, and selected integrations.'
@@ -591,16 +662,24 @@ Please read the README.md file for information on ${readmeDescription}${errorSta
   )
 }
 
-export async function createApp(environment: Environment, options: Options) {
+export async function createApp(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean; packageManagerVersion?: string } = {},
+) {
   validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
-  const effectiveOptions = stripExamplesFromOptions(options)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions)
+  await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
-  await runCommandsAndInstallDependencies(environment, effectiveOptions)
+  const intentConfigured = await runCommandsAndInstallDependencies(
+    environment,
+    effectiveOptions,
+    context.packageManagerVersion,
+  )
   environment.finishRun()
 
-  report(environment, effectiveOptions)
+  report(environment, effectiveOptions, intentConfigured)
 }

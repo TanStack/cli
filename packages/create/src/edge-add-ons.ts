@@ -1,11 +1,20 @@
 import { AddOnCompiledSchema } from './types.js'
+import {
+  assertAddOnSupportedByBundler,
+  isAddOnSupportedByBundler,
+  resolveBundler,
+} from './build-tools.js'
 
 import type { AddOn, Framework } from './types.js'
 
-export function getAllAddOns(framework: Framework, mode: string): Array<AddOn> {
+export function getAllAddOns(framework: Framework, mode: string, bundlerId?: string): Array<AddOn> {
+  const bundler = resolveBundler(framework, bundlerId).id
   return framework
     .getAddOns()
-    .filter((a) => a.modes.includes(mode))
+    .filter(
+      (addOn) =>
+        addOn.modes.includes(mode) && isAddOnSupportedByBundler(addOn, bundler),
+    )
     .sort((a, b) => {
       const aPriority = a.priority ?? 0
       const bPriority = b.priority ?? 0
@@ -17,9 +26,13 @@ export async function finalizeAddOns(
   framework: Framework,
   mode: string,
   chosenAddOnIDs: Array<string>,
+  bundlerId?: string,
 ): Promise<Array<AddOn>> {
+  const bundler = resolveBundler(framework, bundlerId).id
   const finalAddOnIDs = new Set(chosenAddOnIDs)
-  const addOns = getAllAddOns(framework, mode)
+  const addOns = framework
+    .getAddOns()
+    .filter((addOn) => addOn.modes.includes(mode))
 
   for (const addOnID of finalAddOnIDs) {
     let addOn: AddOn | undefined
@@ -43,11 +56,14 @@ export async function finalizeAddOns(
       )
     }
 
+    assertAddOnSupportedByBundler(addOn, bundler)
+
     for (const dependsOn of addOn.dependsOn || []) {
       const dep = addOns.find((a) => a.id === dependsOn)
       if (!dep) {
         throw new Error(`Dependency ${dependsOn} not found`)
       }
+      assertAddOnSupportedByBundler(dep, bundler)
       finalAddOnIDs.add(dep.id)
     }
   }

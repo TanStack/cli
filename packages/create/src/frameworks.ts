@@ -136,7 +136,10 @@ export function __testClearFrameworks() {
   frameworks.length = 0
 }
 
-export function registerFramework(framework: FrameworkDefinition) {
+export function registerFramework(
+  framework: FrameworkDefinition,
+  options?: { replace?: boolean },
+) {
   const { addOns, base, ...rest } = framework
 
   const frameworkWithBundler: Framework = {
@@ -151,7 +154,14 @@ export function registerFramework(framework: FrameworkDefinition) {
     getAddOns: () => addOns,
   }
 
-  frameworks.push(frameworkWithBundler)
+  const existingIndex = options?.replace
+    ? frameworks.findIndex((registered) => registered.id === framework.id)
+    : -1
+  if (existingIndex >= 0) {
+    frameworks[existingIndex] = frameworkWithBundler
+  } else {
+    frameworks.push(frameworkWithBundler)
+  }
 }
 
 export function getFrameworkById(id: string) {
