@@ -1,0 +1,23 @@
+<% if (!addOnEnabled.sentry) { ignoreFile(); return; } -%>
+import { httpServerIntegration, withSentry } from '@sentry/cloudflare'
+import { wrapFetchWithSentry } from '@sentry/tanstackstart-react'
+import handler from '<%= addOnEnabled.paraglide ? './server.js' : '@tanstack/react-start/server-entry' %>'
+
+export default withSentry(
+  (env: { VITE_SENTRY_DSN?: string }) => ({
+    dsn: env.VITE_SENTRY_DSN ?? import.meta.env.VITE_SENTRY_DSN,
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: false, response: false },
+      httpBodies: [],
+    },
+    integrations: [httpServerIntegration({ maxRequestBodySize: 'none' })],
+    tracesSampleRate: 0.1,
+  }),
+  wrapFetchWithSentry({
+    fetch(request: Request) {
+      return handler.fetch(request)
+    },
+  }),
+)
