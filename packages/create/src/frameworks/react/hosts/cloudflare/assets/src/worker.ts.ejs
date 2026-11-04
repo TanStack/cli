@@ -4,8 +4,8 @@ import { wrapFetchWithSentry } from '@sentry/tanstackstart-react'
 import handler from '@tanstack/react-start/server-entry'
 
 export default withSentry(
-  () => ({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
+  (env: { VITE_SENTRY_DSN?: string }) => ({
+    dsn: env.VITE_SENTRY_DSN ?? import.meta.env.VITE_SENTRY_DSN,
     dataCollection: {
       userInfo: false,
       httpBodies: [],
