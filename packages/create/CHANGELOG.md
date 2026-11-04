@@ -1,5 +1,15 @@
 # @tanstack/create
 
+## 0.71.15
+
+### Patch Changes
+
+- Skip Intent setup when dependency installation is skipped, and print the package-manager-specific follow-up instead of claiming agent guidance was configured. ([#496](https://github.com/TanStack/cli/pull/496))
+
+- Correct the generated Nitro server command and deployment directory to match its .output build artifacts. ([#555](https://github.com/TanStack/cli/pull/555))
+
+- Preserve ignored existing files when merging add-ons, including pnpm registry settings, and ask before overwriting them. ([#554](https://github.com/TanStack/cli/pull/554))
+
 ## 0.71.14
 
 ### Patch Changes
