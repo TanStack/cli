@@ -280,7 +280,7 @@ type FileEnvironment = {
     args: Array<string>,
     cwd: string,
     options?: { inherit?: boolean },
-  ) => Promise<{ stdout: string }>
+  ) => Promise<{ stdout: string; failed?: boolean }>
   deleteFile: (path: string) => Promise<void>
 
   exists: (path: string) => boolean

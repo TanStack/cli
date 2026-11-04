@@ -77,7 +77,7 @@ export function createDefaultEnvironment(): Environment {
         errors.push(
           `Command "${command} ${args.join(' ')}" did not run successfully. Please run this manually in your project.`,
         )
-        return { stdout: '' }
+        return { stdout: '', failed: true }
       }
     },
     deleteFile: async (path: string) => {

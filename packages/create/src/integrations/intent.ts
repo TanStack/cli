@@ -14,7 +14,7 @@ export async function setupIntent(
   options: Options,
 ) {
   if (!options.intent) {
-    return
+    return false
   }
 
   if (options.install === false) {
@@ -27,7 +27,7 @@ export async function setupIntent(
       'setup-intent',
       'TanStack Intent setup skipped: dependencies not installed',
     )
-    return
+    return false
   }
 
   const s = environment.spinner()
@@ -39,15 +39,19 @@ export async function setupIntent(
   })
 
   try {
-    await packageManagerExecute(
+    const result = await packageManagerExecute(
       environment,
       resolve(targetDir),
       options.packageManager,
       INTENT_PACKAGE,
       ['install'],
     )
-    environment.finishStep('setup-intent', 'TanStack Intent configured')
-    s.stop('TanStack Intent configured')
+    const message = result.failed
+      ? 'TanStack Intent setup failed'
+      : 'TanStack Intent configured'
+    environment.finishStep('setup-intent', message)
+    s.stop(message)
+    return !result.failed
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unknown error'
@@ -60,5 +64,6 @@ export async function setupIntent(
       'TanStack Intent setup failed',
       `Continuing without it. You can run it later with: ${intentCommand(options.packageManager, ['install'])}\n\n${message}`,
     )
+    return false
   }
 }
