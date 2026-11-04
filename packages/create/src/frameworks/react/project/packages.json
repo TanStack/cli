@@ -15,7 +15,8 @@
   "devtools": {
     "dependencies": {
       "@tanstack/react-devtools": "latest",
-      "@tanstack/react-router-devtools": "latest"
+      "@tanstack/react-router-devtools": "latest",
+      "@tanstack/router-core": "latest"
     }
   },
   "examples": {
