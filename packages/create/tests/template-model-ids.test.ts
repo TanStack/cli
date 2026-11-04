@@ -21,6 +21,9 @@ const frameworksDir = fileURLToPath(
 // hard-codes one generates a project whose AI chat fails at the first request.
 const RETIRED_CLAUDE_MODEL = /claude-3(?:-5|-7)?-(?:opus|sonnet|haiku)/
 
+// Google shut down gemini-2.0-flash (and its -exp variants) on 2026-06-01.
+const RETIRED_GEMINI_MODEL = /gemini-2\.0-flash/
+
 function listFiles(dir: string): Array<string> {
   return readdirSync(dir).flatMap((entry) => {
     if (entry === 'node_modules') return []
@@ -29,16 +32,25 @@ function listFiles(dir: string): Array<string> {
   })
 }
 
-function findRetiredModelFiles(root: string): Array<string> {
+function findRetiredModelFiles(
+  root: string,
+  pattern: RegExp = RETIRED_CLAUDE_MODEL,
+): Array<string> {
   return listFiles(root)
     .filter((file) => /\.(ts|tsx|js|jsx|json|md|ejs)$/.test(file))
-    .filter((file) => RETIRED_CLAUDE_MODEL.test(readFileSync(file, 'utf8')))
+    .filter((file) => pattern.test(readFileSync(file, 'utf8')))
     .map((file) => relative(root, file))
 }
 
 describe('framework templates', () => {
   it('do not reference retired Claude model IDs', () => {
     expect(findRetiredModelFiles(frameworksDir)).toEqual([])
+  })
+
+  it('do not reference retired Gemini model IDs', () => {
+    expect(findRetiredModelFiles(frameworksDir, RETIRED_GEMINI_MODEL)).toEqual(
+      [],
+    )
   })
 
   it('ignores installed dependencies while checking authored templates', () => {
