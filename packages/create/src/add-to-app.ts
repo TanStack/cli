@@ -461,8 +461,6 @@ export async function addToApp(
 
   await runNewCommands(environment, persistedOptions, cwd, output, packageManagerVersion)
 
-  const intent = options?.intent ?? persistedOptions.intent ?? true
-  newOptions.intent = intent
   await setupIntent(environment, cwd, newOptions)
 
   environment.startStep({

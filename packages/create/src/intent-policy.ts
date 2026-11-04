@@ -1,4 +1,5 @@
-import { dirnamePath, joinPaths, normalizePath } from './edge-path.js'
+import { readIntentConfigManifests } from './intent-project.js'
+import { joinPaths, normalizePath } from './edge-path.js'
 import type { Environment } from './types.js'
 
 /** Retain the user's Intent policy, version, and dependency location on merge. */
@@ -47,7 +48,7 @@ export async function configureIntentPolicy(
   // real project. Its overlay must never introduce a new permission policy.
   if (context.existingProject) return
 
-  let dir = normalizePath(targetDir)
+  const dir = normalizePath(targetDir)
   const localPath = joinPaths(dir, 'package.json')
   const existing =
     context.existingPackageJSON ??
@@ -55,6 +56,12 @@ export async function configureIntentPolicy(
       ? JSON.parse(await environment.readFile(localPath))
       : {})
   preserveIntentConfiguration(packageJSON, existing)
+
+  const manifests = await readIntentConfigManifests(
+    environment,
+    dir,
+    packageJSON,
+  )
 
   // Preserve malformed values too: Intent must report them, not the scaffold
   // silently repairing them. null/omitted skills inherit from ancestors.
@@ -68,23 +75,16 @@ export async function configureIntentPolicy(
     return
   if (localIntent?.skills != null) return
 
-  for (;;) {
-    const parent = dirnamePath(dir)
-    if (parent === dir) break
-    dir = parent
-    const path = joinPaths(dir, 'package.json')
-    if (environment.exists(path)) {
-      const ancestor = JSON.parse(await environment.readFile(path))
-      if (ancestor.intent !== undefined) {
-        const intent = ancestor.intent
-        if (
-          !intent ||
-          typeof intent !== 'object' ||
-          Array.isArray(intent) ||
-          intent.skills != null
-        )
-          return
-      }
+  for (const ancestor of manifests.slice(1)) {
+    if (ancestor.intent !== undefined) {
+      const intent = ancestor.intent
+      if (
+        !intent ||
+        typeof intent !== 'object' ||
+        Array.isArray(intent) ||
+        intent.skills != null
+      )
+        return
     }
   }
 
