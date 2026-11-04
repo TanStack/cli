@@ -199,6 +199,7 @@ describe('createApp', () => {
       expect(steps).toContain('TanStack Intent setup failed')
       expect(steps).not.toContain('TanStack Intent configured')
       expect(outro).not.toContain('was wired up by TanStack Intent')
+      expect(outro).toContain('To retry, run pnpm dlx @tanstack/intent install')
     },
   )
 

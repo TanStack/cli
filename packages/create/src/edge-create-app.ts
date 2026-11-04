@@ -618,13 +618,20 @@ function report(
     environment.warn('Warnings', warnings.join('\n'))
   }
 
+  const errors = [...environment.getErrors()]
+  if (options.intent && options.install !== false && !intentConfigured) {
+    const retryCommand = intentCommand(options.packageManager, ['install'])
+    if (!errors.some((error) => error.includes(retryCommand))) {
+      errors.push(`TanStack Intent setup failed. To retry, run ${retryCommand} in your project.`)
+    }
+  }
   let errorStatement = ''
-  if (environment.getErrors().length) {
+  if (errors.length) {
     errorStatement = `
 
 Errors were encountered during the creation of your app:
 
-${environment.getErrors().join('\n')}`
+${errors.join('\n')}`
   }
 
   const targetDir = normalizePath(options.targetDir)
