@@ -1,5 +1,5 @@
 <% if (!addOnEnabled.sentry) { ignoreFile(); return; } -%>
-import { withSentry } from '@sentry/cloudflare'
+import { httpServerIntegration, withSentry } from '@sentry/cloudflare'
 import { wrapFetchWithSentry } from '@sentry/tanstackstart-react'
 import handler from '@tanstack/react-start/server-entry'
 
@@ -8,8 +8,11 @@ export default withSentry(
     dsn: env.VITE_SENTRY_DSN ?? import.meta.env.VITE_SENTRY_DSN,
     dataCollection: {
       userInfo: false,
+      cookies: false,
+      httpHeaders: false,
       httpBodies: [],
     },
+    integrations: [httpServerIntegration({ maxRequestBodySize: 'none' })],
     tracesSampleRate: 0.1,
   }),
   wrapFetchWithSentry({

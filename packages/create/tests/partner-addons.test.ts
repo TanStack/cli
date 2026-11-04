@@ -469,6 +469,11 @@ describe('partner add-on scaffolds', () => {
     expect(output.files['src/worker.ts']).toContain('withSentry(')
     expect(output.files['src/worker.ts']).toContain('wrapFetchWithSentry(')
     expect(output.files['src/worker.ts']).toContain('env.VITE_SENTRY_DSN ??')
+    expect(output.files['src/worker.ts']).toContain('httpHeaders: false')
+    expect(output.files['src/worker.ts']).toContain('cookies: false')
+    expect(output.files['src/worker.ts']).toContain("maxRequestBodySize: 'none'")
+    expect(output.files['src/start.ts']).toContain('sentryGlobalRequestMiddleware,')
+    expect(output.files['src/start.ts']).toContain('functionMiddleware: [sentryGlobalFunctionMiddleware]')
     expect(output.files['instrument.server.mjs']).toBeUndefined()
   })
 
