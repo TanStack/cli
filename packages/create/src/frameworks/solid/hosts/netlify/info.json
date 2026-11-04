@@ -1,6 +1,6 @@
 {
   "name": "Netlify",
-  "description": "Netlify deployment setup",
+  "description": "Deploy to Netlify (Functions and Edge Functions, GitHub-driven).",
   "link": "https://docs.netlify.com",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],
@@ -9,6 +9,7 @@
   "exclusive": ["deploy"],
   "color": "#00C7B7",
   "priority": 180,
+  "partner": { "id": "netlify", "tier": "gold" },
   "integrations": [
     {
       "type": "vite-plugin",

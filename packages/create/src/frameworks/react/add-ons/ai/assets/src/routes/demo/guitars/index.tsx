@@ -8,48 +8,42 @@ export const Route = createFileRoute('/demo/guitars/')({
 
 function GuitarsIndex() {
   return (
-    <div className="bg-black text-white p-5">
-      <h1 className="text-3xl font-bold mb-8 text-center">Featured Guitars</h1>
-      <div className="flex flex-wrap gap-12 justify-center">
+    <main className="demo-page demo-page-wide">
+      <h1 className="demo-title mb-8 text-center">Featured Guitars</h1>
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {guitars.map((guitar) => (
-          <div
-            key={guitar.id}
-            className="w-full md:w-[calc(50%-1.5rem)] xl:w-[calc(33.333%-2rem)] relative mb-24"
-          >
+          <div key={guitar.id}>
             <Link
-              to="/example/guitars/$guitarId"
+              to="/demo/guitars/$guitarId"
               params={{
                 guitarId: guitar.id.toString(),
               }}
+              className="block no-underline"
             >
-              <div className="relative z-0 w-full aspect-square mb-8">
-                <div className="w-full h-full overflow-hidden rounded-2xl border-4 border-gray-800 shadow-2xl">
+              <article className="demo-card h-full overflow-hidden p-0 transition hover:-translate-y-0.5">
+                <div className="aspect-square overflow-hidden">
                   <img
                     src={guitar.image}
                     alt={guitar.name}
-                    className="w-full h-full object-cover guitar-image group-hover:scale-105 transition-transform duration-500"
+                    className="guitar-image h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
-
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-emerald-500/80 text-white px-4 py-2 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-sm">
-                  View Details
+                <div className="p-5">
+                  <h2 className="mb-2 text-xl font-bold text-[var(--sea-ink)]">
+                    {guitar.name}
+                  </h2>
+                  <p className="demo-muted mb-3 line-clamp-2">
+                    {guitar.shortDescription}
+                  </p>
+                  <div className="text-xl font-bold text-[var(--lagoon-deep)]">
+                    ${guitar.price}
+                  </div>
                 </div>
-              </div>
-
-              <div className="absolute bottom-0 right-0 z-10 w-[80%] bg-gray-900/60 backdrop-blur-md rounded-2xl p-5 border border-gray-800/50 shadow-xl transform translate-y-[40%]">
-                <h2 className="text-xl font-bold mb-2">{guitar.name}</h2>
-                <p className="text-gray-300 mb-3 line-clamp-2">
-                  {guitar.shortDescription}
-                </p>
-                <div className="text-xl font-bold text-emerald-400">
-                  ${guitar.price}
-                </div>
-              </div>
+              </article>
             </Link>
           </div>
         ))}
       </div>
-    </div>
+    </main>
   )
 }

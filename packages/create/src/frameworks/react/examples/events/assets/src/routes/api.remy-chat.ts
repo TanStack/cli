@@ -27,8 +27,29 @@ export const Route = createFileRoute('/api/remy-chat')({
 
         try {
           const body = await request.json()
-          const { messages, speakerSlug, talkSlug } = body
-          const data = body.data || {}
+          const { messages, threadId } = body
+          const forwardedProps =
+            body.forwardedProps && typeof body.forwardedProps === 'object'
+              ? body.forwardedProps
+              : {}
+          const speakerSlug =
+            typeof forwardedProps.speakerSlug === 'string'
+              ? forwardedProps.speakerSlug
+              : typeof body.speakerSlug === 'string'
+                ? body.speakerSlug
+                : undefined
+          const talkSlug =
+            typeof forwardedProps.talkSlug === 'string'
+              ? forwardedProps.talkSlug
+              : typeof body.talkSlug === 'string'
+                ? body.talkSlug
+                : undefined
+          if (typeof threadId !== 'string' || !threadId.trim()) {
+            return Response.json(
+              { error: 'A threadId is required' },
+              { status: 400 },
+            )
+          }
 
           const SYSTEM_PROMPT = `You are Remy, a charming and knowledgeable culinary assistant for the Haute Pâtisserie 2026 conference in Paris. You have a warm, enthusiastic personality and deep appreciation for the art of pastry and baking.
 
@@ -59,7 +80,7 @@ ${talkSlug ? `CONTEXT: The user is viewing the session with slug "${talkSlug}".`
 Remember: You are the friendly face of Haute Pâtisserie 2026. Make every attendee feel welcome and excited about the culinary journey ahead!`
 
           // Determine the best available provider
-          let provider: string = 'ollama'
+          let provider: 'anthropic' | 'openai' | 'gemini' | 'ollama' = 'ollama'
           let model: string = 'mistral:7b'
           if (process.env.ANTHROPIC_API_KEY) {
             provider = 'anthropic'
@@ -95,6 +116,7 @@ Remember: You are the friendly face of Haute Pâtisserie 2026. Make every attend
             systemPrompts: [SYSTEM_PROMPT],
             agentLoopStrategy: maxIterations(5),
             messages,
+            threadId,
             abortController,
           })
 

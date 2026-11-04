@@ -20,11 +20,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"],
       "content-collections": ["./.content-collections/generated"],
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*"]
     }
   }
 }

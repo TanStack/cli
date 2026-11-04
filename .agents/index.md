@@ -14,6 +14,9 @@ npx @tanstack/cli add clerk drizzle
 
 # List available add-ons
 npx @tanstack/cli create --list-add-ons
+
+# Minimal one-route Start app
+npx @tanstack/cli create my-app --blank -y
 ```
 
 ## Monorepo Structure
@@ -46,6 +49,7 @@ node ../cli/packages/cli/dist/index.js create my-app
 | Add-on    | Plugin that extends apps (auth, DB, etc) | `--add-ons`   |
 | Template  | Reusable project template                  | `--template`  |
 | Framework | React or Solid                           | `--framework` |
+| Build tool | Vite (default) or Rsbuild               | `--build-tool` |
 
 ## CLI Commands
 
@@ -67,9 +71,11 @@ node ../cli/packages/cli/dist/index.js create my-app
 | -------------------- | ------------------------------------------------------- |
 | `--add-ons <ids>`    | Comma-separated add-on IDs                              |
 | `--framework <name>` | React or Solid                                          |
+| `--build-tool <name>` | Vite (default) or Rsbuild                              |
 | `--toolchain <id>`   | Toolchain (use `--list-add-ons` to see options)         |
 | `--deployment <id>`  | Deployment target (use `--list-add-ons` to see options) |
 | `--template <url-or-id>` | Use template URL/path or built-in ID               |
+| `--blank`              | Minimal project without starter UI or default tooling |
 | `--no-git`           | Skip git init                                           |
 | `--no-install`       | Skip npm install                                        |
 | `-y`                 | Accept defaults                                         |
@@ -81,7 +87,9 @@ node ../cli/packages/cli/dist/index.js create my-app
 | ---------------- | ------- | ---------------------------------------- |
 | `projectName`    | string  | Project name                             |
 | `typescript`     | boolean | Always true (TanStack Start requires TS) |
-| `tailwind`       | boolean | Always true (Tailwind always enabled)    |
+| `tailwind`       | boolean | False for blank unless an add-on requires it |
+| `bundler`        | string  | Resolved bundler (`vite` or `rsbuild`)   |
+| `blank`          | boolean | True when using the blank project preset |
 | `fileRouter`     | boolean | Always true                              |
 | `addOnEnabled`   | object  | `{ [id]: boolean }`                      |
 | `addOnOption`    | object  | `{ [id]: options }`                      |
@@ -126,7 +134,7 @@ This project uses [TanStack Intent](https://github.com/TanStack/intent). Run `np
 <!-- intent-skills:start -->
 # Skill mappings — when working in these areas, load the linked skill file into context.
 skills:
-  - task: "scaffold a new TanStack app with create command, framework, template, toolchain, deployment, or add-on flags"
+  - task: "scaffold a new TanStack app with create command, framework, build tool, template, toolchain, deployment, or add-on flags"
     load: "packages/cli/skills/create-app-scaffold/SKILL.md"
   - task: "add add-ons to an existing project using tanstack add"
     load: "packages/cli/skills/add-addons-existing-app/SKILL.md"
@@ -137,5 +145,3 @@ skills:
   - task: "author, compile, or dev-watch custom add-ons or templates"
     load: "packages/cli/skills/maintain-custom-addons-dev-watch/SKILL.md"
 <!-- intent-skills:end -->
-
-

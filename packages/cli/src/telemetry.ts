@@ -1,9 +1,9 @@
 import { version as nodeVersion } from 'node:process'
 
 import {
+  TELEMETRY_NOTICE_VERSION,
   getTelemetryStatus,
   markTelemetryNoticeSeen,
-  TELEMETRY_NOTICE_VERSION,
 } from './telemetry-config.js'
 
 import type { StatusEvent, StatusStepType } from '@tanstack/create'
@@ -21,12 +21,14 @@ interface PendingStep {
   type: StatusStepType
 }
 
-const POSTHOG_API_HOST = 'https://us.i.posthog.com'
-const POSTHOG_CAPTURE_ENDPOINT = `${POSTHOG_API_HOST}/capture/`
-const POSTHOG_PROJECT_TOKEN = 'phc_xJ2VBahJBzy3BShLhuGpw7EyoSuQtgwXXvhE9BYtHuKQ'
+const TELEMETRY_TRANSPORT_ENDPOINT = 'https://www.google-analytics.com/g/collect'
+const TELEMETRY_PROPERTY_ID = 'G-JMT1Z50SPS'
 const TELEMETRY_NOTICE =
   'TanStack CLI sends anonymous usage telemetry by default. It never sends project names, paths, raw search text, template URLs, add-on config values, or raw error messages. Disable it with `tanstack telemetry disable` or `TANSTACK_CLI_TELEMETRY_DISABLED=1`.'
 const TELEMETRY_TIMEOUT_MS = 1200
+const TELEMETRY_VALUE_MAX_LENGTH = 500
+const TELEMETRY_NUMERIC_PREFIX = 'epn.'
+const TELEMETRY_STRING_PREFIX = 'ep.'
 
 let telemetryStatusPromise: Promise<Awaited<ReturnType<typeof getTelemetryStatus>>> | undefined
 
@@ -54,6 +56,75 @@ function cleanProperties(value: unknown): unknown {
   }
 
   return value
+}
+
+function truncateValue(value: string) {
+  return value.length > TELEMETRY_VALUE_MAX_LENGTH
+    ? `${value.slice(0, TELEMETRY_VALUE_MAX_LENGTH - 1)}…`
+    : value
+}
+
+function normalizeParamKey(key: string) {
+  const normalized = key.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+/, '')
+  const prefixed = /^[a-zA-Z]/.test(normalized)
+    ? normalized
+    : `p_${normalized || 'value'}`
+
+  return prefixed.slice(0, 40)
+}
+
+function normalizeParamValue(value: unknown): number | string | undefined {
+  if (value === undefined || value === null) {
+    return undefined
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined
+  }
+
+  if (typeof value === 'string') {
+    return truncateValue(value)
+  }
+
+  const cleaned = cleanProperties(value)
+  if (cleaned === undefined) {
+    return undefined
+  }
+
+  return truncateValue(JSON.stringify(cleaned))
+}
+
+function createTelemetryRequestBody(
+  event: string,
+  distinctId: string,
+  properties: TelemetryProperties,
+) {
+  const params = new URLSearchParams({
+    cid: distinctId,
+    en: event,
+    tid: TELEMETRY_PROPERTY_ID,
+    v: '2',
+  })
+
+  for (const [key, value] of Object.entries(properties)) {
+    const normalizedValue = normalizeParamValue(value)
+    if (normalizedValue === undefined) {
+      continue
+    }
+
+    const normalizedKey = normalizeParamKey(key)
+    const paramName =
+      typeof normalizedValue === 'number'
+        ? `${TELEMETRY_NUMERIC_PREFIX}${normalizedKey}`
+        : `${TELEMETRY_STRING_PREFIX}${normalizedKey}`
+    params.append(paramName, String(normalizedValue))
+  }
+
+  return params.toString()
 }
 
 function getErrorCode(error: unknown) {
@@ -106,17 +177,12 @@ async function postEvent(event: string, distinctId: string, properties: Telemetr
   }, TELEMETRY_TIMEOUT_MS)
 
   try {
-    await fetch(POSTHOG_CAPTURE_ENDPOINT, {
+    await fetch(TELEMETRY_TRANSPORT_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
       },
-      body: JSON.stringify({
-        api_key: POSTHOG_PROJECT_TOKEN,
-        distinct_id: distinctId,
-        event,
-        properties,
-      }),
+      body: createTelemetryRequestBody(event, distinctId, properties),
       signal: controller.signal,
     })
   } catch {
@@ -235,7 +301,7 @@ export class TelemetryClient {
 
   private baseProperties() {
     return {
-      $lib: 'tanstack-cli',
+      client_lib: 'tanstack-cli',
       disabled_by: this.disabledBy,
       node_major: getNodeMajorVersion(),
       os_arch: process.arch,

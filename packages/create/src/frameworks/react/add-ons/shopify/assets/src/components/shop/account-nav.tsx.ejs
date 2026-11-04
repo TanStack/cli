@@ -1,0 +1,41 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { Link } from '@tanstack/react-router'
+
+const ITEMS = [
+  { to: '/shop/account', label: 'Overview', exact: true },
+  { to: '/shop/account/orders', label: 'Orders', exact: false },
+  { to: '/shop/account/addresses', label: 'Addresses', exact: false },
+] as const
+
+export function AccountNav() {
+  return (
+    <nav className="flex flex-col gap-1 text-sm">
+      {ITEMS.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          activeOptions={{ exact: item.exact }}
+          className="rounded-md px-2 py-1.5 text-[var(--storefront-fg-muted)] hover:bg-[var(--storefront-line)]/40 hover:text-[var(--storefront-fg)]"
+          activeProps={{
+            className:
+              'rounded-md px-2 py-1.5 bg-[var(--storefront-line)]/60 text-[var(--storefront-fg)] font-medium',
+          }}
+        >
+          {item.label}
+        </Link>
+      ))}
+      <form
+        action="/shop/account/logout"
+        method="post"
+        className="mt-4 border-t border-[var(--storefront-line)] pt-4"
+      >
+        <button
+          type="submit"
+          className="rounded-md px-2 py-1.5 text-left text-sm text-[var(--storefront-fg-muted)] hover:text-[var(--storefront-fg)]"
+        >
+          Sign out
+        </button>
+      </form>
+    </nav>
+  )
+}

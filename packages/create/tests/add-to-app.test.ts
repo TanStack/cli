@@ -10,6 +10,7 @@ import {
   writeFiles,
 } from '../src/add-to-app.js'
 import {
+  getFrameworkById,
   __testClearFrameworks,
   __testRegisterFramework,
 } from '../src/frameworks.js'
@@ -52,6 +53,11 @@ beforeEach(() => {
     addOnsDirectories: [],
     basePackageJSON: {},
     optionalPackages: {},
+    bundlers: [
+      { id: 'vite', name: 'Vite', description: 'Build with Vite' },
+      { id: 'rsbuild', name: 'Rsbuild', description: 'Build with Rsbuild' },
+    ],
+    defaultBundler: 'vite',
     getAddOns: () => [
       {
         id: 'test',
@@ -61,6 +67,7 @@ beforeEach(() => {
         type: 'add-on',
         phase: 'add-on',
         modes: ['code-router', 'file-router'],
+        tailwind: true,
         command: {
           command: 'echo',
           args: ['baz'],
@@ -73,6 +80,36 @@ beforeEach(() => {
         dependsOn: [],
         getFiles: () => Promise.resolve(['jack.txt']),
         getFileContents: () => Promise.resolve('foo'),
+        getDeletedFiles: () => Promise.resolve([]),
+      },
+      {
+        id: 'eslint',
+        name: 'ESLint',
+        description: 'ESLint',
+        version: '1.0.0',
+        type: 'toolchain',
+        phase: 'setup',
+        modes: ['file-router'],
+        exclusive: ['linter'],
+        packageAdditions: {},
+        dependsOn: [],
+        getFiles: () => Promise.resolve([]),
+        getFileContents: () => Promise.resolve(''),
+        getDeletedFiles: () => Promise.resolve([]),
+      },
+      {
+        id: 'biome',
+        name: 'Biome',
+        description: 'Biome',
+        version: '1.0.0',
+        type: 'toolchain',
+        phase: 'setup',
+        modes: ['file-router'],
+        exclusive: ['linter'],
+        packageAdditions: {},
+        dependsOn: [],
+        getFiles: () => Promise.resolve([]),
+        getFileContents: () => Promise.resolve(''),
         getDeletedFiles: () => Promise.resolve([]),
       },
     ],
@@ -108,7 +145,7 @@ describe('getCurrentConfiguration', () => {
     environment.writeFile('/foo/.cta.json', JSON.stringify(configFile, null, 2))
 
     const out = await getCurrentConfiguration(environment, '/foo')
-    expect(out).toEqual(configFile)
+    expect(out).toEqual({ ...configFile, bundler: 'vite' })
   })
 })
 
@@ -284,6 +321,36 @@ describe('writeFiles', () => {
     })
   })
 
+  it.each(['.env', '.env.local', '.env.example'])(
+    'should preserve existing values when updating %s',
+    async (fileName) => {
+      const { environment, output } = createMemoryEnvironment('/foo')
+      environment.startRun()
+      await environment.writeFile(
+        `/foo/${fileName}`,
+        '# Existing configuration\nAPI_SECRET=keep-me\n',
+      )
+
+      await writeFiles(
+        environment,
+        '/foo',
+        {
+          files: {
+            [fileName]:
+              '# Generated configuration\nAPI_SECRET=\nNEW_VALUE=generated\n\n# Another integration\nANOTHER_VALUE=\n',
+          },
+          deletedFiles: [],
+        },
+        true,
+      )
+
+      environment.finishRun()
+      expect(output.files[fileName]).toBe(
+        '# Existing configuration\nAPI_SECRET=keep-me\n\n# Generated configuration\nNEW_VALUE=generated\n\n# Another integration\nANOTHER_VALUE=\n',
+      )
+    },
+  )
+
   it('should delete files', async () => {
     const { environment, output } = createMemoryEnvironment('/foo')
     environment.startRun()
@@ -296,6 +363,25 @@ describe('writeFiles', () => {
     )
     environment.finishRun()
     expect(output.deletedFiles).toEqual(['bloop.txt'])
+  })
+
+  it('should prompt before deleting existing files', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    await environment.writeFile('/foo/nixpacks.toml', '[start]')
+    const confirm = vi.fn(() => Promise.resolve(false))
+    environment.confirm = confirm
+
+    await expect(
+      writeFiles(
+        environment,
+        '/foo',
+        { files: {}, deletedFiles: ['nixpacks.toml'] },
+        false,
+      ),
+    ).rejects.toThrow('User cancelled')
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(environment.exists('/foo/nixpacks.toml')).toBe(true)
   })
 
   it('should normalize windows-style output paths before writing', async () => {
@@ -337,6 +423,27 @@ describe('writeFiles', () => {
 })
 
 describe('runNewCommands', () => {
+  it.each(['10.1.0', '10.2.0'])(
+    'does not rerun an existing approved command when planning for pnpm %s',
+    async (packageManagerVersion) => {
+      const framework = getFrameworkById('test')
+      if (!framework) throw new Error('Missing test framework')
+      const addOns = framework.getAddOns()
+      framework.getAddOns = () => addOns.map((addOn) => addOn.id === 'test'
+        ? { ...addOn, command: { command: 'npx', args: ['storybook', 'init'], allowBuilds: ['esbuild'] } }
+        : addOn)
+      const { environment, output } = createMemoryEnvironment('/foo')
+      const args = [
+        ...(packageManagerVersion === '10.2.0' ? ['--allow-build=esbuild'] : []),
+        'dlx', 'storybook', 'init',
+      ]
+      await runNewCommands(environment, {
+        ...fakeCTAJSON, packageManager: 'pnpm', chosenAddOns: ['test'],
+      }, '/foo', { commands: [{ command: 'pnpm', args }] }, packageManagerVersion)
+      expect(output.commands).toEqual([])
+    },
+  )
+
   it('should run new commands', async () => {
     const { environment, output } = createMemoryEnvironment('/foo')
     environment.startRun()
@@ -390,5 +497,62 @@ describe('addToApp', () => {
         2,
       ),
     })
+  })
+
+  it('enables Tailwind when an add-on requires it', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify({ ...fakeCTAJSON, tailwind: false }, null, 2),
+    )
+    environment.writeFile(
+      '/foo/package.json',
+      JSON.stringify(
+        {
+          name: 'test',
+          version: '1.0.0',
+          scripts: {},
+          dependencies: {},
+          devDependencies: {},
+        },
+        null,
+        2,
+      ),
+    )
+
+    await addToApp(environment, ['test'], '/foo', {
+      forced: true,
+    })
+
+    const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
+    expect(persisted.tailwind).toBe(true)
+  })
+
+  it('rejects a second exclusive Rsbuild toolchain', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify(
+        {
+          ...fakeCTAJSON,
+          mode: 'file-router',
+          bundler: 'rsbuild',
+          chosenAddOns: ['eslint'],
+        },
+        null,
+        2,
+      ),
+    )
+
+    await expect(
+      addToApp(environment, ['biome'], '/foo', { forced: true }),
+    ).rejects.toThrow(
+      'Cannot combine ESLint and Biome. Add-ons in the "linter" group are mutually exclusive.',
+    )
+
+    const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
+    expect(persisted.chosenAddOns).toEqual(['eslint'])
   })
 })
