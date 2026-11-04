@@ -73,6 +73,7 @@ test('@matrix keeps the default React Router-only scaffold lean', async ({ page 
   const guards = attachRuntimeGuards(page, fixture.url)
 
   try {
+    await optimizePageForFastE2E(page)
     await page.goto(fixture.url)
     await expect(page.getByRole('heading', { name: 'Welcome to TanStack Start' })).toBeVisible()
     await expect(page.getByRole('banner')).toHaveCount(0)
