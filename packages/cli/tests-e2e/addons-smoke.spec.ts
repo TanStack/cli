@@ -12,7 +12,10 @@ test('@blocking creates app with multiple add-ons and renders demo routes', asyn
   try {
     await optimizePageForFastE2E(page)
     await page.goto(`${fixture.url}/demo/form/simple`)
-    await expect(page.getByText('Title', { exact: true })).toBeVisible()
+    const title = page.getByRole('textbox', { name: 'Title', exact: true })
+    await expect(title).toBeVisible()
+    await page.getByText('Title', { exact: true }).click()
+    await expect(title).toBeFocused()
     await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible()
 
     await page.goto(`${fixture.url}/demo/tanstack-query`)
