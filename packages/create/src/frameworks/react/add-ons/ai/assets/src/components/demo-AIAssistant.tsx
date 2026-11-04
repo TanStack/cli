@@ -3,13 +3,15 @@ import { Store } from '@tanstack/store'
 
 import { X, ChevronRight, BotIcon } from 'lucide-react'
 
+import { chatOptions } from '#/lib/demo-ai-hook'
+
 import { useAppChat } from './ai/demo-chat-registry'
 
 export const showAIAssistant = new Store(false)
 
 export default function AIAssistant() {
   const isOpen = useStore(showAIAssistant, (state) => state)
-  const chat = useAppChat()
+  const chat = useAppChat({ threadId: chatOptions.threadId })
 
   return (
     <div className="relative z-50">

@@ -13,6 +13,9 @@ import {
   DEFAULT_PACKAGE_MANAGER,
   SUPPORTED_PACKAGE_MANAGERS,
   getAllAddOns,
+  getBundlers,
+  getDefaultBundler,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
@@ -23,6 +26,37 @@ import { orderAddOnsForPartnerPlacement } from './partner-placement.js'
 import type { AddOn, PackageManager } from '@tanstack/create'
 
 import type { Framework } from '@tanstack/create/dist/types/types.js'
+
+export async function selectBundler(
+  framework: Framework,
+  bundlerId?: string,
+): Promise<string> {
+  if (bundlerId) {
+    return resolveBundler(framework, bundlerId).id
+  }
+
+  const bundlers = getBundlers(framework)
+  if (bundlers.length === 1) {
+    return bundlers[0].id
+  }
+
+  const selected = await select({
+    message: 'Select build tool:',
+    options: bundlers.map((bundler) => ({
+      value: bundler.id,
+      label: bundler.name,
+      hint: bundler.description,
+    })),
+    initialValue: getDefaultBundler(framework).id,
+  })
+
+  if (isCancel(selected)) {
+    cancel('Operation cancelled.')
+    process.exit(0)
+  }
+
+  return resolveBundler(framework, selected).id
+}
 
 export async function selectFramework(
   frameworks: Array<Framework>,
@@ -147,8 +181,9 @@ export async function selectAddOns(
   message: string,
   forcedAddOns: Array<string> = [],
   allowMultiple: boolean = true,
+  bundlerId?: string,
 ): Promise<Array<string>> {
-  const allAddOns = await getAllAddOns(framework, mode)
+  const allAddOns = await getAllAddOns(framework, mode, bundlerId)
   const addOns = allAddOns.filter((addOn) => addOn.type === type)
   if (addOns.length === 0) {
     return []

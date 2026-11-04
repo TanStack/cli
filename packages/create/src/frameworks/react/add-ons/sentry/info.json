@@ -2,7 +2,7 @@
   "name": "Sentry",
   "phase": "setup",
   "description": "Add Sentry's TanStack Start SDK for server error monitoring and tracing.",
-  "link": "https://sentry.com/",
+  "link": "https://sentry.io/",
   "modes": ["file-router"],
   "type": "add-on",
   "category": "monitoring",
