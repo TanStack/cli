@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker'
+import { en, Faker, faker } from '@faker-js/faker'
 
 export type Person = {
   id: number
@@ -19,15 +19,15 @@ const range = (len: number) => {
   return arr
 }
 
-const newPerson = (num: number): Person => {
+const newPerson = (num: number, source: Faker): Person => {
   return {
     id: num,
-    firstName: faker.person.firstName(),
-    lastName: faker.person.lastName(),
-    age: faker.number.int(40),
-    visits: faker.number.int(1000),
-    progress: faker.number.int(100),
-    status: faker.helpers.shuffle<Person['status']>([
+    firstName: source.person.firstName(),
+    lastName: source.person.lastName(),
+    age: source.number.int(40),
+    visits: source.number.int(1000),
+    progress: source.number.int(100),
+    status: source.helpers.shuffle<Person['status']>([
       'relationship',
       'complicated',
       'single',
@@ -35,16 +35,26 @@ const newPerson = (num: number): Person => {
   }
 }
 
-export function makeData(...lens: number[]) {
+function makeDataWithFaker(source: Faker, lens: number[]) {
   const makeDataLevel = (depth = 0): Person[] => {
     const len = lens[depth]!
     return range(len).map((index): Person => {
       return {
-        ...newPerson(index),
+        ...newPerson(index, source),
         subRows: lens[depth + 1] ? makeDataLevel(depth + 1) : undefined,
       }
     })
   }
 
   return makeDataLevel()
+}
+
+export function makeData(...lens: number[]) {
+  return makeDataWithFaker(faker, lens)
+}
+
+export function makeInitialData(length: number) {
+  const source = new Faker({ locale: [en] })
+  source.seed(42)
+  return makeDataWithFaker(source, [length])
 }

@@ -2,6 +2,6 @@
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
     "@tanstack/match-sorter-utils": "latest",
-    "@tanstack/react-table": "latest"
+    "@tanstack/react-table": "^9.3.1"
   }
 }
