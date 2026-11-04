@@ -2,12 +2,14 @@ import { expect, test } from '@playwright/test'
 
 import { attachRuntimeGuards, createReactAppFixture, optimizePageForFastE2E } from './helpers'
 
-test('@matrix creates a React router-only app and navigates every internal link', async ({
+test('@matrix renders and navigates the React Router-only starter with examples', async ({
   page,
 }) => {
   const fixture = await createReactAppFixture({
     appName: 'react-router-only-smoke-app',
     routerOnly: true,
+    examples: true,
+    runQualityGatesChecks: true,
   })
   const guards = attachRuntimeGuards(page, fixture.url)
 
@@ -51,6 +53,30 @@ test('@matrix creates a React router-only app and navigates every internal link'
     await expect(
       page.getByRole('heading', { name: 'Start simple, ship quickly.' }),
     ).toBeVisible()
+  } finally {
+    try {
+      guards.assertClean()
+    } finally {
+      guards.dispose()
+      await fixture.stop()
+      await fixture.cleanup()
+    }
+  }
+})
+
+test('@matrix keeps the default React Router-only scaffold lean', async ({ page }) => {
+  const fixture = await createReactAppFixture({
+    appName: 'react-router-only-lean-app',
+    routerOnly: true,
+    runQualityGatesChecks: true,
+  })
+  const guards = attachRuntimeGuards(page, fixture.url)
+
+  try {
+    await page.goto(fixture.url)
+    await expect(page.getByRole('heading', { name: 'Welcome to TanStack Start' })).toBeVisible()
+    await expect(page.getByRole('banner')).toHaveCount(0)
+    await expect(page.getByRole('contentinfo')).toHaveCount(0)
   } finally {
     try {
       guards.assertClean()

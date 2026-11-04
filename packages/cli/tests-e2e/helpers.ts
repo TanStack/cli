@@ -27,6 +27,7 @@ type CreateAppFixtureOptions = {
   blank?: boolean
   deployment?: string
   routerOnly?: boolean
+  examples?: boolean
   template?: string
   addOns?: Array<string>
   postCreateAddOns?: Array<string>
@@ -372,6 +373,7 @@ export async function createAppFixture(
     bundler = 'vite',
     packageManager = 'pnpm',
     routerOnly = false,
+    examples,
   } = options
   const appDir = join(rootDir, appName)
   const cleanup = async () => {
@@ -393,6 +395,10 @@ export async function createAppFixture(
 
   if (routerOnly) {
     createArgs.push('--router-only')
+  }
+
+  if (examples !== undefined) {
+    createArgs.push(examples ? '--examples' : '--no-examples')
   }
 
   if (blank) {
