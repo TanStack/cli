@@ -491,7 +491,8 @@ describe('addToApp', () => {
           dependencies: {
             'test-package': '1.0.0',
           },
-          devDependencies: {},
+          devDependencies: { '@tanstack/intent': 'latest' },
+          intent: { skills: ['test-package'] },
         },
         null,
         2,
@@ -556,3 +557,31 @@ describe('addToApp', () => {
     expect(persisted.chosenAddOns).toEqual(['eslint'])
   })
 })
+
+
+it.each(['dependencies', 'devDependencies'] as const)(
+  'retains the real Intent pin and location in %s when adding an add-on',
+  async (field) => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    await environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify({ ...fakeCTAJSON, intent: true }),
+    )
+    const intent = { skills: [], exclude: ['private'] }
+    await environment.writeFile(
+      '/foo/package.json',
+      JSON.stringify({ intent, [field]: { '@tanstack/intent': '0.4.0' } }),
+    )
+    await addToApp(environment, ['test'], '/foo', {
+      forced: true,
+      intent: true,
+    })
+    const pkg = JSON.parse(await environment.readFile('/foo/package.json'))
+    expect(pkg[field]['@tanstack/intent']).toBe('0.4.0')
+    const other = field === 'dependencies' ? 'devDependencies' : 'dependencies'
+    expect(pkg[other]).not.toHaveProperty('@tanstack/intent')
+    expect(pkg.intent).toEqual(intent)
+    environment.finishRun()
+  },
+)

@@ -1,3 +1,4 @@
+import { configureIntentPolicy, ensureIntentPolicy, preserveIntentConfiguration } from './intent-policy.js'
 import { createPackageJSON } from './edge-package-json.js'
 import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { createTemplateFile } from './edge-template-file.js'
@@ -7,8 +8,8 @@ import { basenamePath, joinPaths, normalizePath } from './edge-path.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { writeConfigFileToEnvironment } from './edge-config-file.js'
 import {
-  INTENT_PACKAGE,
   detectPnpmVersion,
+  getIntentExecuteCommand,
   getPackageManagerExecuteCommand,
   getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
@@ -69,6 +70,11 @@ async function writeFiles(
   options: Options,
   context: { existingProject?: boolean } = {},
 ) {
+  const packageJsonPath = joinPaths(options.targetDir, 'package.json')
+  const existingPackageJSON =
+    options.intent && environment.exists(packageJsonPath)
+      ? JSON.parse(await environment.readFile(packageJsonPath))
+      : {}
   const workspaceWasPresent = environment.exists(
     joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
   )
@@ -139,7 +145,19 @@ async function writeFiles(
     type: 'file',
     message: 'Writing package.json...',
   })
-  const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  const generatedPackageJSON = createPackageJSON(options)
+  if (options.intent) {
+    preserveIntentConfiguration(generatedPackageJSON, existingPackageJSON)
+  }
+  const packageJSON = await resolvePackageJSONLatest(generatedPackageJSON)
+  if (options.intent) {
+    await configureIntentPolicy(
+      environment,
+      options.targetDir,
+      packageJSON,
+      { ...context, existingPackageJSON },
+    )
+  }
   await writePnpmWorkspace(
     environment,
     joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
@@ -295,26 +313,10 @@ async function setupIntent(
     message: 'Setting up TanStack Intent skill discovery...',
   })
 
-  const packageJsonPath = joinPaths(targetDir, 'package.json')
-  if (environment.exists(packageJsonPath)) {
-    const packageJSON = JSON.parse(await environment.readFile(packageJsonPath))
-    if (!packageJSON.intent?.skills) {
-      packageJSON.intent = {
-        ...packageJSON.intent,
-        skills: ['@tanstack/*'],
-      }
-      await environment.writeFile(
-        packageJsonPath,
-        JSON.stringify(packageJSON, null, 2),
-      )
-    }
-  }
-
-  const { command, args } = getPackageManagerExecuteCommand(
-    options.packageManager,
-    INTENT_PACKAGE,
-    ['install'],
-  )
+  await ensureIntentPolicy(environment, normalizePath(targetDir))
+  const { command, args } = getIntentExecuteCommand(options.packageManager, [
+    'install',
+  ])
   await environment.execute(command, args, normalizePath(targetDir))
   environment.finishStep('setup-intent', 'TanStack Intent configured')
 }
@@ -672,7 +674,14 @@ export async function createApp(
   await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
-  await runCommandsAndInstallDependencies(environment, effectiveOptions, context.packageManagerVersion)
+  await runCommandsAndInstallDependencies(
+    environment,
+    {
+      ...effectiveOptions,
+      intent: context.existingProject ? false : effectiveOptions.intent,
+    },
+    context.packageManagerVersion,
+  )
   environment.finishRun()
 
   report(environment, effectiveOptions)

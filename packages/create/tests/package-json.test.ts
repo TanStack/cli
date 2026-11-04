@@ -251,3 +251,28 @@ describe('createPackageJSON', () => {
     )
   })
 })
+
+
+it.each([createPackageJSON, createEdgePackageJSON])(
+  'retains the template Intent version and dependency location (%#)',
+  (create) => {
+    for (const field of ['dependencies', 'devDependencies']) {
+      const options = {
+        projectName: 'test',
+        packageManager: 'bun',
+        chosenAddOns: [],
+        addOnOptions: {},
+        intent: true,
+        framework: {
+          basePackageJSON: { [field]: { '@tanstack/intent': '0.4.0' } },
+          optionalPackages: {},
+        },
+      } as unknown as Options
+      const pkg = create(options) as Record<string, any>
+      expect(pkg[field]['@tanstack/intent']).toBe('0.4.0')
+      const other =
+        field === 'dependencies' ? 'devDependencies' : 'dependencies'
+      expect(pkg[other]).not.toHaveProperty('@tanstack/intent')
+    }
+  },
+)

@@ -16,6 +16,7 @@ import {
   recursivelyGatherFilesFromEnvironment,
 } from './file-helpers.js'
 import { mergePackageJSON } from './package-json.js'
+import { preserveIntentConfiguration } from './intent-policy.js'
 import {
   mergePnpmWorkspace,
   pnpmBuildDependencies,
@@ -305,6 +306,7 @@ export async function writeFiles(
         await environment.readFile(resolve(cwd, file)),
       )
       const newJSON = mergePackageJSON(currentJson, JSON.parse(contents))
+      preserveIntentConfiguration(newJSON, currentJson)
       await environment.writeFile(
         resolve(cwd, file),
         JSON.stringify(newJSON, null, 2),
@@ -387,6 +389,7 @@ export async function addToApp(
   })
 
   const newOptions = await createOptions(persistedOptions, addOns, cwd)
+  newOptions.intent = options?.intent ?? persistedOptions.intent ?? true
   const needsBuildApproval = newOptions.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) || newOptions.starter?.command?.allowBuilds?.length
   const packageManagerVersion = newOptions.packageManager === 'pnpm' && needsBuildApproval
     ? await detectPnpmVersion(environment, cwd)

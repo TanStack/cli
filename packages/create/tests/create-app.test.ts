@@ -1,3 +1,4 @@
+import { writeFiles as writeAddonFiles } from '../src/add-to-app.js'
 import { describe, expect, it } from 'vitest'
 import { resolve } from 'node:path'
 
@@ -141,12 +142,12 @@ describe('createApp', () => {
 
       expect(output.commands).not.toContainEqual({
         command: 'pnpm',
-        args: ['dlx', '@tanstack/intent', 'install'],
+        args: ['exec', 'intent', 'install'],
       })
       expect(outro).not.toContain('was wired up by TanStack Intent')
       expect(outro).toContain('TanStack Intent setup was skipped')
       expect(outro).toContain('pnpm install')
-      expect(outro).toContain('pnpm dlx @tanstack/intent install --map')
+      expect(outro).toContain('pnpm exec intent install --map')
     },
   )
 
@@ -166,7 +167,7 @@ describe('createApp', () => {
 
       expect(output.commands).toContainEqual({
         command: 'pnpm',
-        args: ['dlx', '@tanstack/intent', 'install'],
+        args: ['exec', 'intent', 'install'],
       })
       expect(outro).toContain('was wired up by TanStack Intent')
       expect(outro).not.toContain('TanStack Intent setup was skipped')
@@ -375,3 +376,117 @@ describe('createApp', () => {
     expect(occurrences.length).toBe(1)
   })
 })
+
+
+describe.each([createApp, createEdgeApp])(
+  'Intent scaffold policy (%#)',
+  (create) => {
+    it.each([true, false])(
+      'includes the local dependency and exact policy with install=%s',
+      async (install) => {
+        const { environment, output } = createMemoryEnvironment()
+        await create(environment, { ...simpleOptions, intent: true, install })
+        const pkg = JSON.parse(output.files['/package.json'])
+        expect(pkg.devDependencies['@tanstack/intent']).toBeDefined()
+        expect(pkg.intent.skills).toEqual([
+          'file-router',
+          'tailwindcss',
+          'typescript',
+        ])
+        expect(pkg.intent.skills).not.toContain('@tanstack/*')
+        expect(
+          output.commands.some(
+            (c) => c.args.join(' ') === 'exec intent install',
+          ),
+        ).toBe(install)
+      },
+    )
+    it.each([
+      { skills: [], exclude: ['private'] },
+      { skills: ['allowed#specific'], exclude: ['private'] },
+      { skills: 'malformed', exclude: ['private'] },
+    ])(
+      'preserves the startup policy before framework assets overwrite package.json: %j',
+      async (intent) => {
+        const { environment } = createMemoryEnvironment()
+        await environment.writeFile(
+          '/app/package.json',
+          JSON.stringify({ intent }),
+        )
+        await create(environment, {
+          ...simpleOptions,
+          targetDir: '/app',
+          intent: true,
+          install: false,
+          framework: {
+            ...simpleOptions.framework,
+            getFiles: async () => ['package.json'],
+            getFileContents: async () =>
+              JSON.stringify({ intent: { skills: ['*'] } }),
+          },
+        })
+        expect(
+          JSON.parse(await environment.readFile('/app/package.json')).intent,
+        ).toEqual(intent)
+      },
+    )
+    it.each(['dependencies', 'devDependencies'] as const)(
+      'preserves an existing Intent pin in %s while creating',
+      async (field) => {
+        const { environment } = createMemoryEnvironment()
+        await environment.writeFile(
+          '/app/package.json',
+          JSON.stringify({ [field]: { '@tanstack/intent': '0.4.0' } }),
+        )
+        await create(environment, {
+          ...simpleOptions,
+          targetDir: '/app',
+          intent: true,
+          install: false,
+        })
+        const pkg = JSON.parse(await environment.readFile('/app/package.json'))
+        expect(pkg[field]['@tanstack/intent']).toBe('0.4.0')
+        const other =
+          field === 'dependencies' ? 'devDependencies' : 'dependencies'
+        expect(pkg[other]).not.toHaveProperty('@tanstack/intent')
+      },
+    )
+    it('does not add Intent when disabled', async () => {
+      const { environment, output } = createMemoryEnvironment()
+      await create(environment, { ...simpleOptions, intent: false })
+      const pkg = JSON.parse(output.files['/package.json'])
+      expect(pkg.devDependencies).not.toHaveProperty('@tanstack/intent')
+      expect(pkg).not.toHaveProperty('intent')
+    })
+    it('keeps the existing policy through add-to-app generation and merge', async () => {
+      const generated = createMemoryEnvironment()
+      await create(
+        generated.environment,
+        { ...simpleOptions, targetDir: '/app', intent: true },
+        { existingProject: true },
+      )
+      const { environment, output } = createMemoryEnvironment()
+      environment.startRun()
+      const intent = { skills: [], exclude: ['private'] }
+      await environment.writeFile(
+        '/app/package.json',
+        JSON.stringify({ intent }),
+      )
+      await writeAddonFiles(
+        environment,
+        '/app',
+        {
+          files: {
+            '/app/package.json': generated.output.files['/app/package.json'],
+          },
+          deletedFiles: [],
+        },
+        true,
+      )
+      expect(
+        JSON.parse(await environment.readFile('/app/package.json')).intent,
+      ).toEqual(intent)
+      environment.finishRun()
+    })
+  },
+)

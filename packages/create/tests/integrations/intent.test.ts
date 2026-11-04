@@ -44,7 +44,7 @@ describe('intent', () => {
     await setupIntent(environment, '/test', options)
     environment.finishRun()
     expect(output.commands).toEqual([
-      { command: 'pnpm', args: ['dlx', '@tanstack/intent', 'install'] },
+      { command: 'pnpm', args: ['exec', 'intent', 'install'] },
     ])
   })
   it('skips the command and reports no configured step without dependencies', async () => {
@@ -61,4 +61,21 @@ describe('intent', () => {
       'TanStack Intent setup skipped: dependencies not installed',
     ])
   })
+})
+
+it.each([
+  { skills: [] },
+  { skills: ['allowed#specific'], exclude: ['denied'] },
+])('keeps existing policy during real-project setup %j', async (intent) => {
+  const { environment } = createMemoryEnvironment()
+  environment.startRun()
+  await environment.writeFile(
+    '/test/package.json',
+    JSON.stringify({ intent, dependencies: { 'new-package': '1.0.0' } }),
+  )
+  await setupIntent(environment, '/test', options)
+  expect(
+    JSON.parse(await environment.readFile('/test/package.json')).intent,
+  ).toEqual(intent)
+  environment.finishRun()
 })

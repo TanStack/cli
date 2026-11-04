@@ -1,4 +1,5 @@
 import { basename, resolve } from 'node:path'
+import { configureIntentPolicy, preserveIntentConfiguration } from './intent-policy.js'
 
 import { isBase64, isDemoFilePath } from './file-helpers.js'
 import { formatCommand } from './utils.js'
@@ -72,6 +73,11 @@ async function writeFiles(
   options: Options,
   context: { existingProject?: boolean } = {},
 ) {
+  const packageJsonPath = resolve(options.targetDir, 'package.json')
+  const existingPackageJSON =
+    options.intent && environment.exists(packageJsonPath)
+      ? JSON.parse(await environment.readFile(packageJsonPath))
+      : {}
   const workspaceWasPresent = environment.exists(
     resolve(options.targetDir, 'pnpm-workspace.yaml'),
   )
@@ -143,7 +149,19 @@ async function writeFiles(
     type: 'file',
     message: 'Writing package.json...',
   })
-  const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  const generatedPackageJSON = createPackageJSON(options)
+  if (options.intent) {
+    preserveIntentConfiguration(generatedPackageJSON, existingPackageJSON)
+  }
+  const packageJSON = await resolvePackageJSONLatest(generatedPackageJSON)
+  if (options.intent) {
+    await configureIntentPolicy(
+      environment,
+      resolve(options.targetDir),
+      packageJSON,
+      { ...context, existingPackageJSON },
+    )
+  }
   await writePnpmWorkspace(
     environment,
     resolve(options.targetDir, 'pnpm-workspace.yaml'),
@@ -528,7 +546,14 @@ export async function createApp(
   await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
-  await runCommandsAndInstallDependencies(environment, effectiveOptions, context.packageManagerVersion)
+  await runCommandsAndInstallDependencies(
+    environment,
+    {
+      ...effectiveOptions,
+      intent: context.existingProject ? false : effectiveOptions.intent,
+    },
+    context.packageManagerVersion,
+  )
   environment.finishRun()
 
   report(environment, effectiveOptions)

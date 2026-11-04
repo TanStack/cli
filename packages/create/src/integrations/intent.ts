@@ -1,10 +1,7 @@
 import { resolve } from 'node:path'
+import { ensureIntentPolicy } from '../intent-policy.js'
 
-import {
-  INTENT_PACKAGE,
-  intentCommand,
-  packageManagerExecute,
-} from '../package-manager.js'
+import { getIntentExecuteCommand, intentCommand } from '../package-manager.js'
 
 import type { Environment, Options } from '../types.js'
 
@@ -39,30 +36,11 @@ export async function setupIntent(
   })
 
   try {
-    const packageJsonPath = resolve(targetDir, 'package.json')
-    if (environment.exists(packageJsonPath)) {
-      const packageJSON = JSON.parse(
-        await environment.readFile(packageJsonPath),
-      )
-      if (!packageJSON.intent?.skills) {
-        packageJSON.intent = {
-          ...packageJSON.intent,
-          skills: ['@tanstack/*'],
-        }
-        await environment.writeFile(
-          packageJsonPath,
-          JSON.stringify(packageJSON, null, 2),
-        )
-      }
-    }
-
-    await packageManagerExecute(
-      environment,
-      resolve(targetDir),
-      options.packageManager,
-      INTENT_PACKAGE,
-      ['install'],
-    )
+    await ensureIntentPolicy(environment, resolve(targetDir))
+    const { command, args } = getIntentExecuteCommand(options.packageManager, [
+      'install',
+    ])
+    await environment.execute(command, args, resolve(targetDir))
     environment.finishStep('setup-intent', 'TanStack Intent configured')
     s.stop('TanStack Intent configured')
   } catch (error) {
