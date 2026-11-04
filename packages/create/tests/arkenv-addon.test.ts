@@ -34,10 +34,14 @@ function frameworkFromDefinition(definition: FrameworkDefinition): Framework {
   }
 }
 
-async function generateArkEnvApp(validator?: string) {
+async function generateArkEnvApp(
+  validator?: string,
+  routerOnly = false,
+  addOnIds = ['arkenv'],
+) {
   const definition = createFrameworkDefinition()
   const framework = frameworkFromDefinition(definition)
-  const chosenAddOns = await finalizeAddOns(framework, 'file-router', ['arkenv'])
+  const chosenAddOns = await finalizeAddOns(framework, 'file-router', addOnIds)
   const targetDir = '/arkenv-app'
   const { environment, output } = createMemoryEnvironment(targetDir)
 
@@ -58,6 +62,7 @@ async function generateArkEnvApp(validator?: string) {
       ...(validator ? { arkenv: { validator } } : {}),
     },
     includeExamples: true,
+    routerOnly,
   } satisfies Options)
 
   return output
@@ -82,11 +87,9 @@ describe('ArkEnv add-on', () => {
     const output = await generateArkEnvApp()
     const demo = output.files['src/routes/demo/arkenv.tsx']
 
-    expect(output.files['vite.config.ts']).toContain(
-      "import arkenv from '@arkenv/vite-plugin'",
-    )
-    expect(output.files['vite.config.ts']).not.toContain(
-      '@arkenv/vite-plugin/standard',
+    expect(output.files['vite.config.ts']).toContain('arkenv-vite-plugin.ts')
+    expect(output.files['arkenv-vite-plugin.ts']).toContain(
+      "from '@arkenv/vite-plugin'",
     )
     expect(output.files['src/env.ts']).toContain("from '@arkenv/core'")
     expect(demo).toContain("host: 'localhost:5432'")
@@ -100,12 +103,28 @@ describe('ArkEnv add-on', () => {
     async (validator) => {
       const output = await generateArkEnvApp(validator)
 
-      expect(output.files['vite.config.ts']).toContain(
-        "import arkenv from '@arkenv/vite-plugin/standard'",
+      expect(output.files['vite.config.ts']).toContain('arkenv-vite-plugin.ts')
+      expect(output.files['arkenv-vite-plugin.ts']).toContain(
+        "from '@arkenv/vite-plugin/standard'",
       )
-      expect(output.files['src/env.ts']).toContain("from '@arkenv/standard'")
+      expect(output.files['src/env.ts']).toContain(
+        validator === 'valibot'
+          ? "from '@arkenv/standard/valibot'"
+          : "from '@arkenv/standard'",
+      )
     },
   )
+
+  it('rejects ArkEnv and T3Env before either can write src/env.ts', async () => {
+    await expect(
+      generateArkEnvApp(undefined, false, ['arkenv', 't3env']),
+    ).rejects.toThrow('Add-ons in the "env" group are mutually exclusive.')
+  })
+
+  it('omits the Start demo in a Router-only project', async () => {
+    const output = await generateArkEnvApp('arktype', true)
+    expect(output.files['src/routes/demo/arkenv.tsx']).toBeUndefined()
+  })
 
   it('rejects out-of-range ports in the Valibot schema', async () => {
     const output = await generateArkEnvApp('valibot')
@@ -143,8 +162,9 @@ describe('ArkEnv add-on', () => {
       includeExamples: false,
     } satisfies Options)
 
-    expect(edgeOutput.files['vite.config.ts']).toContain(
-      "import arkenv from '@arkenv/vite-plugin/standard'",
+    expect(edgeOutput.files['vite.config.ts']).toContain('arkenv-vite-plugin.ts')
+    expect(edgeOutput.files['arkenv-vite-plugin.ts']).toContain(
+      "from '@arkenv/vite-plugin/standard'",
     )
 
     const workerCreate = createWorkerCreate(createBundledWorkerManifestLoader())
@@ -176,8 +196,9 @@ describe('ArkEnv add-on', () => {
       includeExamples: false,
     } satisfies Options)
 
-    expect(workerOutput.files['vite.config.ts']).toContain(
-      "import arkenv from '@arkenv/vite-plugin/standard'",
+    expect(workerOutput.files['vite.config.ts']).toContain('arkenv-vite-plugin.ts')
+    expect(workerOutput.files['arkenv-vite-plugin.ts']).toContain(
+      "from '@arkenv/vite-plugin/standard'",
     )
   })
 })

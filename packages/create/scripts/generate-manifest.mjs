@@ -130,15 +130,6 @@ function scanCatalogDirectory(addOnsBase) {
     const addOnDir = join(addOnsBase, entry.name)
     const info = readJson(join(addOnDir, 'info.json'))
 
-    for (const integration of info.integrations ?? []) {
-      if (
-        typeof integration.import === 'string' &&
-        integration.import.includes('<%')
-      ) {
-        registerTemplate(integration.import)
-      }
-    }
-
     let packageAdditions = {}
     let packageTemplate
     const packageJsonPath = join(addOnDir, 'package.json')
@@ -449,18 +440,6 @@ function createTemplateRenderersForAddOn(addOn) {
 
   if (addOn.readmeIsEjs && addOn.readme) {
     renderers.set(getTemplateKey(addOn.readme), compileTemplate(addOn.readme))
-  }
-
-  for (const integration of addOn.integrations ?? []) {
-    if (
-      typeof integration.import === 'string' &&
-      integration.import.includes('<%')
-    ) {
-      renderers.set(
-        getTemplateKey(integration.import),
-        compileTemplate(integration.import),
-      )
-    }
   }
 
   return renderers

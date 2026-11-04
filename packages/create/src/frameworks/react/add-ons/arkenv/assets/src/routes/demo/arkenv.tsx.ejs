@@ -1,4 +1,4 @@
-<% if (!includeExamples) { ignoreFile(); return; } %>
+<% if (!includeExamples || routerOnly || !fileRouter) { ignoreFile(); return; } %>
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
