@@ -465,6 +465,12 @@ describe('partner add-on scaffolds', () => {
       '@sentry/tanstackstart-react',
       '^10.67.0',
     )
+    expect(packageJSON.scripts.build).toBe(
+      'vite build && cp instrument.server.mjs .output/server',
+    )
+    expect(packageJSON.scripts.dev).toBe(
+      `dotenv -e .env.local -- sh -c "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000"`,
+    )
     expect(packageJSON.pnpm.onlyBuiltDependencies).toContain('@sentry/cli')
     expect(output.files['pnpm-workspace.yaml']).toContain("'@sentry/cli': true")
     expect(instrumentation).toContain('userInfo: false')
