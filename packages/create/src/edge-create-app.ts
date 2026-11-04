@@ -10,6 +10,7 @@ import {
   INTENT_PACKAGE,
   detectPnpmVersion,
   getPackageManagerExecuteCommand,
+  getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
   intentCommand,
   packageManagerInstall,
@@ -272,6 +273,19 @@ async function setupIntent(
   options: Options,
 ) {
   if (!options.intent) {
+    return
+  }
+
+  if (options.install === false) {
+    environment.startStep({
+      id: 'setup-intent',
+      type: 'info',
+      message: 'Skipping TanStack Intent setup...',
+    })
+    environment.finishStep(
+      'setup-intent',
+      'TanStack Intent setup skipped: dependencies not installed',
+    )
     return
   }
 
@@ -565,9 +579,18 @@ function buildNextSteps(options: Options): string {
     sections.push(`Docs for the integrations you picked:\n${docLines.join('\n')}`)
   }
   if (options.intent) {
-    sections.push(
-      `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  - ${intentCommand(options.packageManager, ['list'])}\n  - ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
-    )
+    if (options.install === false) {
+      const installCommand = formatCommand(
+        getPackageManagerInstallCommand(options.packageManager),
+      )
+      sections.push(
+        `TanStack Intent setup was skipped because dependency installation was skipped.\nInstall dependencies, then generate agent guidance:\n  % ${installCommand}\n  % ${intentCommand(options.packageManager, ['install', '--map'])}`,
+      )
+    } else {
+      sections.push(
+        `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  - ${intentCommand(options.packageManager, ['list'])}\n  - ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  - "migrate this Next.js page to TanStack Start"\n  - "add a protected /dashboard route"\n  - "show me how to use TanStack Router search params"`,
+      )
+    }
   }
 
   return sections.length > 0 ? `\nNext steps:\n\n${sections.join('\n\n')}\n` : ''

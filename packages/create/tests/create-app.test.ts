@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { resolve } from 'node:path'
 
 import { createApp } from '../src/create-app.js'
+import { createApp as createEdgeApp } from '../src/edge-create-app.js'
 
 import { createMemoryEnvironment } from '../src/environment.js'
 import type { AddOn, Options, Starter } from '../src/types.js'
+
+// Memory output uses absolute paths with forward slashes on every platform.
+const memoryPath = (path: string) => resolve(process.cwd(), path).replace(/\\/g, '/')
 
 const simpleOptions = {
   projectName: 'test',
@@ -51,7 +55,7 @@ describe('createApp', () => {
     const { environment, output } = createMemoryEnvironment()
     await createApp(environment, simpleOptions)
 
-    expect(output.files['/src/test.txt']).toEqual('Hello')
+    expect(output.files[memoryPath('/src/test.txt')]).toEqual('Hello')
   })
 
   it('should create an app - not silent', async () => {
@@ -61,14 +65,7 @@ describe('createApp', () => {
       targetDir: '/foo/bar/baz',
     })
 
-    const cwd = process.cwd()
-
-    // Memory output normalizes separators while preserving the drive.
-    const expectedPath = resolve(cwd, '/foo/bar/baz/src/test.txt').replace(
-      /\\/g,
-      '/',
-    )
-    expect(output.files[expectedPath]).toEqual('Hello')
+    expect(output.files[memoryPath('/foo/bar/baz/src/test.txt')]).toEqual('Hello')
   })
 
   it('should create an app - with a starter', async () => {
@@ -86,7 +83,7 @@ describe('createApp', () => {
       } as unknown as Starter,
     })
 
-    expect(output.files['/src/test2.txt']).toEqual('Hello-2')
+    expect(output.files[memoryPath('/src/test2.txt')]).toEqual('Hello-2')
     expect(output.commands.some(({ command }) => command === 'echo')).toBe(true)
   })
 
@@ -127,6 +124,54 @@ describe('createApp', () => {
     })
   })
 
+  it.each([createApp, createEdgeApp])(
+    'skips intent setup and reports the follow-up when dependency install is skipped (%#)',
+    async (create) => {
+      const { environment, output } = createMemoryEnvironment()
+      let outro = ''
+      environment.outro = (message: string) => {
+        outro = message
+      }
+      await create(environment, {
+        ...simpleOptions,
+        intent: true,
+        install: false,
+      })
+
+      expect(output.commands).not.toContainEqual({
+        command: 'pnpm',
+        args: ['dlx', '@tanstack/intent', 'install'],
+      })
+      expect(outro).not.toContain('was wired up by TanStack Intent')
+      expect(outro).toContain('TanStack Intent setup was skipped')
+      expect(outro).toContain('pnpm install')
+      expect(outro).toContain('pnpm dlx @tanstack/intent install --map')
+    },
+  )
+
+  it.each([createApp, createEdgeApp])(
+    'sets up intent and reports the agent config when dependencies are installed (%#)',
+    async (create) => {
+      const { environment, output } = createMemoryEnvironment()
+      let outro = ''
+      environment.outro = (message: string) => {
+        outro = message
+      }
+      await create(environment, {
+        ...simpleOptions,
+        intent: true,
+        install: true,
+      })
+
+      expect(output.commands).toContainEqual({
+        command: 'pnpm',
+        args: ['dlx', '@tanstack/intent', 'install'],
+      })
+      expect(outro).toContain('was wired up by TanStack Intent')
+      expect(outro).not.toContain('TanStack Intent setup was skipped')
+    },
+  )
+
   it('should create an app - with a add-on', async () => {
     const { environment, output } = createMemoryEnvironment()
     await createApp(environment, {
@@ -153,7 +198,7 @@ describe('createApp', () => {
     })
 
     // This is ok, we convert to binary right at the end of the process
-    expect(output.files['/src/test2.txt']).toEqual('base64::aGVsbG8=')
+    expect(output.files[memoryPath('/src/test2.txt')]).toEqual('base64::aGVsbG8=')
     expect(output.commands.some(({ command }) => command === 'echo')).toBe(true)
   })
 
@@ -203,10 +248,10 @@ describe('createApp', () => {
     } as Options)
 
     for (const file of demoFiles) {
-      expect(output.files[`/${file}`]).toBeUndefined()
+      expect(output.files[memoryPath(`/${file}`)]).toBeUndefined()
     }
     for (const file of keepFiles) {
-      expect(output.files[`/${file}`]).toBeDefined()
+      expect(output.files[memoryPath(`/${file}`)]).toBeDefined()
     }
   })
 
@@ -231,7 +276,9 @@ describe('createApp', () => {
       ],
     } as Options)
 
-    expect(output.files['/src/components/demo-AIAssistant.tsx']).toBeDefined()
+    expect(
+      output.files[memoryPath('/src/components/demo-AIAssistant.tsx')],
+    ).toBeDefined()
   })
 
   it('writes .env.example from add-on envVars metadata', async () => {
@@ -267,7 +314,7 @@ describe('createApp', () => {
       ],
     } as Options)
 
-    const envExample = output.files['/.env.example']
+    const envExample = output.files[memoryPath('/.env.example')]
     expect(envExample).toBeDefined()
     expect(envExample).toContain('# Fake Auth')
     expect(envExample).toContain(
@@ -286,7 +333,7 @@ describe('createApp', () => {
       chosenAddOns: [],
     } as Options)
 
-    expect(output.files['/.env.example']).toBeUndefined()
+    expect(output.files[memoryPath('/.env.example')]).toBeUndefined()
   })
 
   it('dedupes env vars across add-ons in .env.example', async () => {
@@ -324,7 +371,7 @@ describe('createApp', () => {
       ],
     } as Options)
 
-    const envExample = output.files['/.env.example'] || ''
+    const envExample = output.files[memoryPath('/.env.example')] || ''
     const occurrences = envExample.match(/^SHARED_KEY=/gm) || []
     expect(occurrences.length).toBe(1)
   })
