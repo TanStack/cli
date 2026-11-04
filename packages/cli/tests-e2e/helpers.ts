@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Page } from '@playwright/test'
 
@@ -22,6 +22,7 @@ export type E2EApp = {
 type CreateAppFixtureOptions = {
   appName: string
   framework?: 'react' | 'solid'
+  bundler?: 'vite' | 'rsbuild'
   packageManager?: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'deno'
   blank?: boolean
   deployment?: string
@@ -48,12 +49,19 @@ function runCommand(
   },
 ) {
   return new Promise<void>((resolvePromise, rejectPromise) => {
+    const env = {
+      ...process.env,
+      // Verify npm's default peer checks even when the developer opts out globally.
+      npm_config_legacy_peer_deps: 'false',
+      ...opts.env,
+    }
+    env.PATH = [dirname(process.execPath), env.PATH]
+      .filter(Boolean)
+      .join(delimiter)
+
     const child = spawn(command, args, {
       cwd: opts.cwd,
-      env: {
-        ...process.env,
-        ...opts.env,
-      },
+      env,
       stdio: 'pipe',
     })
 
@@ -361,6 +369,7 @@ export async function createAppFixture(
     skipDevServer,
     runQualityGatesChecks = false,
     framework = 'react',
+    bundler = 'vite',
     packageManager = 'pnpm',
     routerOnly = false,
   } = options
@@ -375,6 +384,8 @@ export async function createAppFixture(
     appName,
     '--framework',
     framework,
+    '--build-tool',
+    bundler,
     '--package-manager',
     packageManager,
     '--no-git',
@@ -403,7 +414,7 @@ export async function createAppFixture(
   try {
     const createStartedAt = now()
     await runCommand(
-      'node',
+      process.execPath,
       createArgs,
       {
         cwd: rootDir,
@@ -420,7 +431,7 @@ export async function createAppFixture(
 
     if (postCreateAddOns?.length) {
       const postAddOnsStartedAt = now()
-      await runCommand('node', [cliDistPath, 'add', ...postCreateAddOns], {
+      await runCommand(process.execPath, [cliDistPath, 'add', ...postCreateAddOns, '--forced'], {
         cwd: appDir,
         env: {
           CI: '1',
@@ -463,6 +474,9 @@ export async function createAppFixture(
     env: {
       ...process.env,
       CI: '1',
+      PATH: [dirname(process.execPath), process.env.PATH]
+        .filter(Boolean)
+        .join(delimiter),
     },
     stdio: 'pipe',
     detached: true,

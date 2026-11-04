@@ -64,6 +64,14 @@ describe('createMemoryEnvironment', () => {
 })
 
 describe('createDefaultEnvironment', () => {
+  it('treats an unavailable version probe as unknown without recording a command error', async () => {
+    const environment = createDefaultEnvironment()
+    await expect(environment.getPackageManagerVersion?.(
+      'pnpm', '/unavailable-pnpm-version-probe-fixture',
+    )).resolves.toBeUndefined()
+    expect(environment.getErrors()).toEqual([])
+  })
+
   it('should create a default environment', async () => {
     const environment = createDefaultEnvironment()
     expect(environment).toBeDefined()

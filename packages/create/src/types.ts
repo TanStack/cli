@@ -75,6 +75,7 @@ export const AddOnBaseSchema = z.object({
     .object({
       command: z.string(),
       args: z.array(z.string()).optional(),
+      allowBuilds: z.array(z.string()).optional(),
     })
     .optional(),
   routes: z
@@ -193,6 +194,12 @@ export type AddOn = AddOnCompiled & FileBundleHandler
 
 export type Starter = StarterCompiled & FileBundleHandler
 
+export type BundlerDefinition = {
+  id: string
+  name: string
+  description: string
+}
+
 export type FrameworkDefinition = {
   id: string
   name: string
@@ -203,6 +210,9 @@ export type FrameworkDefinition = {
   addOns: Array<AddOn>
   basePackageJSON: Record<string, any>
   optionalPackages: Record<string, any>
+
+  bundlers?: Array<BundlerDefinition>
+  defaultBundler?: string
 
   supportedModes: Record<
     string,
@@ -225,6 +235,7 @@ export interface Options {
 
   framework: Framework
   mode: string
+  bundler?: string
 
   typescript: boolean
   tailwind: boolean
@@ -259,6 +270,7 @@ type ProjectEnvironment = {
 }
 
 type FileEnvironment = {
+  getPackageManagerVersion?: (packageManager: PackageManager, cwd: string) => Promise<string | undefined>
   appendFile: (path: string, contents: string) => Promise<void>
   copyFile: (from: string, to: string) => Promise<void>
   writeFile: (path: string, contents: string) => Promise<void>
