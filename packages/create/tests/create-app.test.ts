@@ -173,6 +173,36 @@ describe('createApp', () => {
     },
   )
 
+  it.each([createApp, createEdgeApp])(
+    'does not report successful Intent setup when the install command fails (%#)',
+    async (create) => {
+      const { environment } = createMemoryEnvironment()
+      const execute = environment.execute
+      environment.execute = (command, args, cwd, options) =>
+        args.includes('@tanstack/intent')
+          ? Promise.resolve({ stdout: '', failed: true })
+          : execute(command, args, cwd, options)
+      let outro = ''
+      const steps: Array<string> = []
+      environment.outro = (message) => {
+        outro = message
+      }
+      environment.finishStep = (_id, message) => {
+        steps.push(message)
+      }
+      await create(environment, {
+        ...simpleOptions,
+        intent: true,
+        install: true,
+      })
+
+      expect(steps).toContain('TanStack Intent setup failed')
+      expect(steps).not.toContain('TanStack Intent configured')
+      expect(outro).not.toContain('was wired up by TanStack Intent')
+      expect(outro).toContain('To retry, run pnpm dlx @tanstack/intent install')
+    },
+  )
+
   it('should create an app - with a add-on', async () => {
     const { environment, output } = createMemoryEnvironment()
     await createApp(environment, {

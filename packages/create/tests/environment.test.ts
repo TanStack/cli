@@ -99,7 +99,12 @@ describe('createDefaultEnvironment', () => {
   it('should record errors', async () => {
     const environment = createDefaultEnvironment()
     environment.startRun()
-    await environment.execute('command-that-does-not-exist', ['test'], '')
+    const result = await environment.execute(
+      'command-that-does-not-exist',
+      ['test'],
+      '',
+    )
+    expect(result).toEqual({ stdout: '', failed: true })
     environment.finishRun()
     expect(environment.getErrors()).toEqual([
       'Command "command-that-does-not-exist test" did not run successfully. Please run this manually in your project.',
