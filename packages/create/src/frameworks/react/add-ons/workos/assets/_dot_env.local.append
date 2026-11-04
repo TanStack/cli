@@ -1,4 +1,10 @@
-VITE_WORKOS_CLIENT_ID=
+# WorkOS configuration: https://dashboard.workos.com/api-keys
+WORKOS_CLIENT_ID=
+WORKOS_API_KEY=
+WORKOS_REDIRECT_URI=http://localhost:3000/api/auth/callback
 
-# This should be your Custom Authentication Domain in production
-VITE_WORKOS_API_HOSTNAME=api.workos.com
+# Generate a random value at least 32 characters long.
+WORKOS_COOKIE_PASSWORD=
+
+# Use your custom authentication domain in production, if configured.
+WORKOS_API_HOSTNAME=api.workos.com

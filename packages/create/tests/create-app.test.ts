@@ -6,10 +6,6 @@ import { createApp } from '../src/create-app.js'
 import { createMemoryEnvironment } from '../src/environment.js'
 import type { AddOn, Options, Starter } from '../src/types.js'
 
-function toPosixPath(path: string) {
-  return path.replace(/\\/g, '/').replace(/^[A-Z]:/i, '')
-}
-
 const simpleOptions = {
   projectName: 'test',
   targetDir: '/',
@@ -67,16 +63,12 @@ describe('createApp', () => {
 
     const cwd = process.cwd()
 
-    const normalizedFiles = Object.fromEntries(
-      Object.entries(output.files).map(([path, contents]) => [
-        toPosixPath(path),
-        contents,
-      ]),
+    // Memory output normalizes separators while preserving the drive.
+    const expectedPath = resolve(cwd, '/foo/bar/baz/src/test.txt').replace(
+      /\\/g,
+      '/',
     )
-
-    expect(
-      normalizedFiles[toPosixPath(resolve(cwd, '/foo/bar/baz/src/test.txt'))],
-    ).toEqual('Hello')
+    expect(output.files[expectedPath]).toEqual('Hello')
   })
 
   it('should create an app - with a starter', async () => {

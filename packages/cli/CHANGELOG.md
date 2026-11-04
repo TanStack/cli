@@ -1,5 +1,204 @@
 # @tanstack/cli
 
+## 0.72.15
+
+### Patch Changes
+
+- Updated dependencies [[`517c9ef`](https://github.com/TanStack/cli/commit/517c9ef88ce5d5417c914b50bb0d7821bcf18321)]:
+  - @tanstack/create@0.71.14
+
+## 0.72.14
+
+### Patch Changes
+
+- Change temp directory creation to use built-in Node utilities. ([#536](https://github.com/TanStack/cli/pull/536))
+
+## 0.72.13
+
+### Patch Changes
+
+- Updated dependencies [[`8afa460`](https://github.com/TanStack/cli/commit/8afa460e27558ef83088f988fef400de2b1cb580)]:
+  - @tanstack/create@0.71.13
+
+## 0.72.12
+
+### Patch Changes
+
+- Refresh the registered framework on each dev-watch rebuild so later edits reach the generated app without accumulating stale framework entries. ([#546](https://github.com/TanStack/cli/pull/546))
+
+- Updated dependencies [[`22371df`](https://github.com/TanStack/cli/commit/22371df49d00c9480e310e3167f9ab9a9e1b72e7)]:
+  - @tanstack/create@0.71.12
+
+## 0.72.11
+
+### Patch Changes
+
+- Updated dependencies [[`63266c8`](https://github.com/TanStack/cli/commit/63266c82c833af9d1602c3d9d314fcfcbc304eb0), [`0c25fcc`](https://github.com/TanStack/cli/commit/0c25fccf4162d16191c0e02651ce3ec90d77da00)]:
+  - @tanstack/create@0.71.11
+
+## 0.72.10
+
+### Patch Changes
+
+- Updated dependencies [[`84c5cb2`](https://github.com/TanStack/cli/commit/84c5cb2566e9c6467acd42ed668a716d76b95797)]:
+  - @tanstack/create@0.71.10
+
+## 0.72.9
+
+### Patch Changes
+
+- Updated dependencies [[`dbd9449`](https://github.com/TanStack/cli/commit/dbd9449c14381550888eeec68690aaf824db2ef1)]:
+  - @tanstack/create@0.71.9
+
+## 0.72.8
+
+### Patch Changes
+
+- Updated dependencies [[`5f9705e`](https://github.com/TanStack/cli/commit/5f9705e62dacf6b6878cb424d38e85c324592205)]:
+  - @tanstack/create@0.71.8
+
+## 0.72.7
+
+### Patch Changes
+
+- Updated dependencies [[`6f6aa46`](https://github.com/TanStack/cli/commit/6f6aa4685220fd544df3a063dc57e29d60448c26)]:
+  - @tanstack/create@0.71.7
+
+## 0.72.6
+
+### Patch Changes
+
+- Updated dependencies [[`10c4ed5`](https://github.com/TanStack/cli/commit/10c4ed558f51c5392b3b31809f74ba3839900ec4)]:
+  - @tanstack/create@0.71.6
+
+## 0.72.5
+
+### Patch Changes
+
+- Updated dependencies [[`fcff1bf`](https://github.com/TanStack/cli/commit/fcff1bfc904063942f472fd190bd7e6d024375bc)]:
+  - @tanstack/create@0.71.5
+
+## 0.72.4
+
+### Patch Changes
+
+- Updated dependencies [[`fb4f148`](https://github.com/TanStack/cli/commit/fb4f1487c115718c5e67ff586ac799b80776cc68)]:
+  - @tanstack/create@0.71.4
+
+## 0.72.3
+
+### Patch Changes
+
+- Updated dependencies [[`46ea770`](https://github.com/TanStack/cli/commit/46ea770d6dbb7c3ccecc04b1c002e6ab06c799f5)]:
+  - @tanstack/create@0.71.3
+
+## 0.72.2
+
+### Patch Changes
+
+- Updated dependencies [[`6e3e869`](https://github.com/TanStack/cli/commit/6e3e869fd33e792b58b243ec369d4d66ec13eaba)]:
+  - @tanstack/create@0.71.2
+
+## 0.72.1
+
+### Patch Changes
+
+- Updated dependencies [[`0db921b`](https://github.com/TanStack/cli/commit/0db921b6b4e9eb9da95dd9310d6a48b0578ba68e), [`d795831`](https://github.com/TanStack/cli/commit/d795831612fdc4bdac659529f0d07e5f09c8ca3a)]:
+  - @tanstack/create@0.71.1
+
+## 0.72.0
+
+### Minor Changes
+
+- Add first-class Rsbuild build tool support for React and Solid TanStack Start and ([#505](https://github.com/TanStack/cli/pull/505))
+  router-only scaffolds, including Tailwind and ESLint/Biome toolchains.
+
+### Patch Changes
+
+- Updated dependencies [[`da2abe2`](https://github.com/TanStack/cli/commit/da2abe21470a0bfdd1be528c35b2c5874e59a4d2)]:
+  - @tanstack/create@0.71.0
+
+## 0.71.1
+
+### Patch Changes
+
+- Updated dependencies [[`1378ada`](https://github.com/TanStack/cli/commit/1378adaea7e45ef9a4f050b87f3616b2c62b1df3)]:
+  - @tanstack/create@0.70.1
+
+## 0.71.0
+
+### Minor Changes
+
+- Add Gold partner deployment targets for Render and Vercel to React and Solid ([#507](https://github.com/TanStack/cli/pull/507))
+  scaffolds. Render generates package-manager-aware Blueprint commands, while
+  Vercel generates explicit framework detection and Nitro Build Output API
+  support.
+
+### Patch Changes
+
+- Updated dependencies [[`f537073`](https://github.com/TanStack/cli/commit/f537073fc4ee24b44f3aad545a2ce48b7b48c3cc), [`8863bee`](https://github.com/TanStack/cli/commit/8863bee76fa2e19e14e38fd34278eca01e946c16), [`6f16a8b`](https://github.com/TanStack/cli/commit/6f16a8bb91a7807f3322d3efdb264da1ea82bb18), [`6f16a8b`](https://github.com/TanStack/cli/commit/6f16a8bb91a7807f3322d3efdb264da1ea82bb18)]:
+  - @tanstack/create@0.70.0
+
+## 0.70.2
+
+### Patch Changes
+
+- Updated dependencies [[`944f20f`](https://github.com/TanStack/cli/commit/944f20f37d2e3f1433a7a35b50fa8453b595ccf2)]:
+  - @tanstack/create@0.69.2
+
+## 0.70.1
+
+### Patch Changes
+
+- Updated dependencies [[`4bb1384`](https://github.com/TanStack/cli/commit/4bb13849454f5dbe126f2f67e87b0367be28bcd7)]:
+  - @tanstack/create@0.69.1
+
+## 0.70.0
+
+### Minor Changes
+
+- Add a `--blank` project preset that creates a production-ready one-route app ([#488](https://github.com/TanStack/cli/pull/488))
+  without starter UI, Tailwind, devtools, test tooling, Intent setup, or unused
+  public assets. Pass `--intent` to opt local coding-agent skill mappings back in.
+  Also move integration-specific dependencies to their owning add-ons and stop
+  shipping an unused test stack in standard Start projects. Explicit styling and
+  deployment add-ons remain composable with the blank preset, including when
+  added later.
+
+### Patch Changes
+
+- Updated dependencies [[`75db7e8`](https://github.com/TanStack/cli/commit/75db7e89a0a1125683bc75cca81acb700ef73eff), [`fb59492`](https://github.com/TanStack/cli/commit/fb59492f68aa005fbab9afad0a61aa75e90258bb)]:
+  - @tanstack/create@0.69.0
+
+## 0.69.6
+
+### Patch Changes
+
+- Order partner integrations by sponsorship tier and rotate integrations within each tier for every CLI run. ([#486](https://github.com/TanStack/cli/pull/486))
+
+- Updated dependencies [[`0c2c22b`](https://github.com/TanStack/cli/commit/0c2c22bfbbcd5cc65611a9741e13c30365166b82)]:
+  - @tanstack/create@0.68.5
+
+## 0.69.5
+
+### Patch Changes
+
+- Updated dependencies [[`f4220b5`](https://github.com/TanStack/cli/commit/f4220b5f05c30342908b0597542f5025a4d9974b)]:
+  - @tanstack/create@0.68.4
+
+## 0.69.4
+
+### Patch Changes
+
+- Updated dependencies [[`87c718d`](https://github.com/TanStack/cli/commit/87c718d589c93fd77423693980573c982c53f019)]:
+  - @tanstack/create@0.68.3
+
+## 0.69.3
+
+### Patch Changes
+
+- Fix blank project name submissions in interactive create prompts. ([#472](https://github.com/TanStack/cli/pull/472))
+
 ## 0.69.2
 
 ### Patch Changes

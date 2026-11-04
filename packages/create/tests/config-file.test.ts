@@ -33,6 +33,9 @@ describe('writeConfigFile', () => {
         } as AddOn,
       ],
       targetDir,
+      envVarValues: {
+        API_SECRET: 'do-not-persist',
+      },
     } as unknown as Options
     const persistedOptions = {
       version: 1,
@@ -63,7 +66,7 @@ describe('readConfigFileFromEnvironment', () => {
       JSON.stringify(persistedOptions, null, 2),
     )
     const config = await readConfigFileFromEnvironment(environment, targetDir)
-    expect(config).toEqual(persistedOptions)
+    expect(config).toEqual({ ...persistedOptions, bundler: 'vite' })
   })
 
   it('should upgrade old config files', async () => {
@@ -78,6 +81,9 @@ describe('readConfigFileFromEnvironment', () => {
       mode: 'code-router',
       git: true,
       variableValues: {},
+      envVarValues: {
+        API_SECRET: 'legacy-secret',
+      },
       version: 1,
       existingAddOns: [],
     }
@@ -92,6 +98,7 @@ describe('readConfigFileFromEnvironment', () => {
 
     expect(config).toEqual({
       framework: 'react',
+      bundler: 'vite',
       projectName: 'foo',
       typescript: false,
       tailwind: false,
