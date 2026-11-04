@@ -454,6 +454,23 @@ describe('partner add-on scaffolds', () => {
     },
   )
 
+  it('uses Workers instrumentation instead of Node preload for Sentry on Cloudflare', async () => {
+    const output = await generateApp(createReactFrameworkDefinition(), [
+      'sentry',
+      'cloudflare',
+    ])
+    const manifest = JSON.parse(output.files['package.json'])
+
+    expect(manifest.dependencies).toHaveProperty('@sentry/cloudflare', '^10.67.0')
+    expect(manifest.scripts.build).toBe('vite build')
+    expect(manifest.scripts.dev).not.toContain('NODE_OPTIONS')
+    expect(manifest.scripts.start).toBe('vite preview')
+    expect(JSON.parse(output.files['wrangler.jsonc']).main).toBe('./src/worker.ts')
+    expect(output.files['src/worker.ts']).toContain('withSentry(')
+    expect(output.files['src/worker.ts']).toContain('wrapFetchWithSentry(')
+    expect(output.files['instrument.server.mjs']).toBeUndefined()
+  })
+
   it('generates Sentry with privacy-conscious sampling defaults', async () => {
     const output = await generateApp(createReactFrameworkDefinition(), [
       'sentry',
