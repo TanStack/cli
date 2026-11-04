@@ -5,10 +5,11 @@ import { createApp } from '../src/create-app.js'
 import { createApp as createEdgeApp } from '../src/edge-create-app.js'
 
 import { createMemoryEnvironment } from '../src/environment.js'
+import { normalizePath } from '../src/edge-path.js'
 import type { AddOn, Options, Starter } from '../src/types.js'
 
 // Memory output uses absolute paths with forward slashes on every platform.
-const memoryPath = (path: string) => resolve(process.cwd(), path).replace(/\\/g, '/')
+const memoryPath = (path: string) => normalizePath(resolve(process.cwd(), path))
 
 const simpleOptions = {
   projectName: 'test',
