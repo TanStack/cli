@@ -58,31 +58,21 @@ export function mergePackageJSON(
 
 export function createPackageJSON(options: Options) {
   const packageManager = options.packageManager
+  const bundler = options.bundler ?? 'vite'
+  const blank = options.projectPreset === 'blank'
+  const includeDevtools =
+    !blank ||
+    options.chosenAddOns.some((addOn) =>
+      addOn.integrations?.some(
+        (integration) => integration.type === 'devtools',
+      ),
+    )
 
   function getPackageManagerExecuteScript(
     pkg: string,
     args: Array<string> = [],
   ) {
     return formatCommand(getPackageManagerExecuteCommand(packageManager, pkg, args))
-  }
-
-  function applyRouterOnlyPackageJSONCompat() {
-    const routerPluginVersion =
-      packageJSON.devDependencies?.['@tanstack/router-plugin'] ??
-      packageJSON.dependencies?.['@tanstack/router-plugin'] ??
-      'latest'
-
-    delete packageJSON.dependencies?.['@tanstack/router-plugin']
-
-    packageJSON.devDependencies = {
-      ...(packageJSON.devDependencies ?? {}),
-      '@tanstack/router-plugin': routerPluginVersion,
-    }
-    packageJSON.dependencies = {
-      ...(packageJSON.dependencies ?? {}),
-      '@tanstack/router-core':
-        packageJSON.dependencies?.['@tanstack/router-core'] ?? 'latest',
-    }
   }
 
   let packageJSON = {
@@ -92,8 +82,29 @@ export function createPackageJSON(options: Options) {
 
   const additions: Array<Record<string, any> | undefined> = [
     options.framework.optionalPackages.typescript,
-    options.framework.optionalPackages.tailwindcss,
+    options.framework.optionalPackages.bundlers?.[bundler],
+    includeDevtools ? options.framework.optionalPackages.devtools : undefined,
+    includeDevtools
+      ? options.framework.optionalPackages.bundlerDevtools?.[bundler]
+      : undefined,
+    !blank && options.includeExamples !== false
+      ? options.framework.optionalPackages.examples
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.tailwindcss
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.bundlerTailwindcss?.[bundler]
+      : undefined,
     options.mode ? options.framework.optionalPackages[options.mode] : undefined,
+    options.mode === 'file-router'
+      ? options.framework.optionalPackages.bundlerFileRouter?.[bundler]
+      : undefined,
+    options.mode === 'file-router' && options.routerOnly
+      ? options.framework.optionalPackages.bundlerRouterOnlyFileRouter?.[
+          bundler
+        ]
+      : undefined,
   ]
   for (const addition of additions.filter(Boolean)) {
     packageJSON = mergePackageJSON(packageJSON, addition)
@@ -107,8 +118,10 @@ export function createPackageJSON(options: Options) {
       const templateValues = {
         packageManager: options.packageManager,
         projectName: options.projectName,
+        bundler,
         typescript: true,
-        tailwind: true,
+        tailwind: options.tailwind,
+        blank,
         js: 'ts',
         jsx: 'tsx',
         fileRouter: options.mode === 'file-router',
@@ -149,17 +162,27 @@ export function createPackageJSON(options: Options) {
   }
 
   if (options.routerOnly) {
+    delete packageJSON.dependencies?.srvx
+    delete packageJSON.scripts?.start
+
     if (options.framework.id === 'react') {
       delete packageJSON.dependencies?.['@tanstack/react-start']
       delete packageJSON.dependencies?.['@tanstack/react-router-ssr-query']
-      applyRouterOnlyPackageJSONCompat()
+      packageJSON.devDependencies = {
+        ...(packageJSON.devDependencies ?? {}),
+        '@tanstack/router-plugin':
+          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
+      }
     }
 
     if (options.framework.id === 'solid') {
       delete packageJSON.dependencies?.['@tanstack/solid-start']
       delete packageJSON.dependencies?.['@tanstack/solid-router-ssr-query']
-      delete packageJSON.scripts?.start
-      applyRouterOnlyPackageJSONCompat()
+      packageJSON.devDependencies = {
+        ...(packageJSON.devDependencies ?? {}),
+        '@tanstack/router-plugin':
+          packageJSON.devDependencies?.['@tanstack/router-plugin'] ?? 'latest',
+      }
     }
   }
 

@@ -13,7 +13,8 @@ interface SpeakerCardProps {
 export default function SpeakerCard({ speaker, featured = false }: SpeakerCardProps) {
   return (
     <Link
-      to={`/speakers/${speaker.slug}`}
+      to="/speakers/$slug"
+      params={{ slug: speaker.slug }}
       className="group relative block"
     >
       <Card

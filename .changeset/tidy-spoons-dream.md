@@ -3,4 +3,4 @@
 "@tanstack/cli": patch
 ---
 
-Fix router-only package manifests by providing `@tanstack/router-core` for devtools under strict package managers and keeping `@tanstack/router-plugin` in devDependencies only.
+Declare the router core peer dependency when React or Solid router devtools are included in a generated app.

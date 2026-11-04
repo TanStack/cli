@@ -9,6 +9,7 @@
   "exclusive": ["deploy"],
   "color": "#F38020",
   "priority": 200,
+  "partner": { "id": "cloudflare", "tier": "gold" },
   "integrations": [
     {
       "type": "vite-plugin",
