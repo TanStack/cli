@@ -8,6 +8,5 @@
     "@tanstack/solid-start": "latest",
     "solid-js": "^1.9.12"
   },
-  "devDependencies": {},
-  "pnpm": {}
+  "devDependencies": {}
 }

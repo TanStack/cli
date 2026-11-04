@@ -1,10 +1,13 @@
 {
   "name": "@tanstack/create",
-  "version": "0.71.2",
+  "version": "0.71.15",
   "description": "TanStack Application Builder Engine",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
@@ -76,6 +79,7 @@
     "parse-gitignore": "^2.0.0",
     "prettier": "^3.5.0",
     "rimraf": "^6.0.1",
+    "yaml": "^2.8.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {

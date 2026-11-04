@@ -11,7 +11,8 @@
   },
   "devtools": {
     "dependencies": {
-      "@tanstack/solid-router-devtools": "latest"
+      "@tanstack/solid-router-devtools": "latest",
+      "@tanstack/router-core": "latest"
     }
   },
   "bundlers": {

@@ -116,6 +116,11 @@ async function verifyPackage(pkg, { registry, fetchImpl, requestTimeoutMs }) {
     if (packed.name !== pkg.name || packed.version !== pkg.version) {
       throw new Error(`Packed identity mismatch for ${pkg.name}@${pkg.version}`)
     }
+    for (const [name, version] of Object.entries(pkg.dependencies ?? {})) {
+      if (packed.dependencies?.[name] !== version) {
+        throw new Error(`Packed dependency mismatch for ${pkg.name}: ${name}@${version}`)
+      }
+    }
     return { ...pkg, integrity, bytes }
   } finally {
     await rm(directory, { recursive: true, force: true })

@@ -242,3 +242,17 @@ test('retries a metadata response whose body was interrupted', async (t) => {
   assert.equal(reads, 2)
   assert.deepEqual(opts.sleeps, [10])
 })
+
+test('rejects a public archive with the wrong exact internal dependency', async (t) => {
+  const fixture = await archive(t, { ...pkg, dependencies: { '@tanstack/create': '0.71.14' } })
+  const { sleeps, ...config } = options(async (url) =>
+    String(url) === tarball
+      ? new Response(fixture.bytes)
+      : Response.json({ ...pkg, dist: { tarball, integrity: fixture.integrity } }),
+  )
+  await assert.rejects(
+    verifyReleaseArtifacts([{ ...pkg, dependencies: { '@tanstack/create': '0.71.15' } }], config),
+    /Packed dependency mismatch/,
+  )
+  assert.deepEqual(sleeps, [])
+})

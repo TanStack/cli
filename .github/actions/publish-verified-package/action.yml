@@ -1,0 +1,39 @@
+name: Publish and verify one stable package
+description: Publish one package once and wait for its verified public archive.
+inputs:
+  directory:
+    description: Release package workspace directory.
+    required: true
+  plan:
+    description: Version and dependency manifest from the checked-out release commit.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check registry and prior upload attempt
+      id: inspect
+      shell: bash
+      run: node scripts/release-publish-plan.mjs inspect
+      env:
+        GH_TOKEN: ${{ github.token }}
+        STABLE_RELEASE_PLAN: ${{ inputs.plan }}
+        RELEASE_PACKAGE_DIR: ${{ inputs.directory }}
+    - name: Persist upload attempt before publishing
+      if: steps.inspect.outputs.publish == 'true'
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ steps.inspect.outputs.marker }}
+        path: ${{ steps.inspect.outputs.receipt }}
+        if-no-files-found: error
+    - name: Publish exact package
+      if: steps.inspect.outputs.publish == 'true'
+      shell: bash
+      run: pnpm --dir "$RELEASE_PACKAGE_DIR" publish --json --no-git-checks --access public --tag latest
+      env:
+        RELEASE_PACKAGE_DIR: ${{ inputs.directory }}
+        npm_config_registry: https://registry.npmjs.org
+    - name: Verify exact public archive
+      shell: bash
+      run: node scripts/verify-release-artifacts.mjs
+      env:
+        PUBLISHED_PACKAGES: ${{ steps.inspect.outputs.package }}
