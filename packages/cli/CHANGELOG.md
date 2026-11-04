@@ -1,5 +1,16 @@
 # @tanstack/cli
 
+## 0.72.16
+
+### Patch Changes
+
+- Use built-in `styleText` for terminal colouring. ([#535](https://github.com/TanStack/cli/pull/535))
+
+- Remove temporary generation directories after failed dev-watch rebuilds as well as successful rebuilds. ([#556](https://github.com/TanStack/cli/pull/556))
+
+- Updated dependencies [[`71e52e4`](https://github.com/TanStack/cli/commit/71e52e4f5d622555b6687a1ba6295e418a9d5469), [`f63f296`](https://github.com/TanStack/cli/commit/f63f296d5ba120c46082d67849e3834f77c4ffc0), [`fac419e`](https://github.com/TanStack/cli/commit/fac419e75086fe64418ed432181b1c387d5c3221)]:
+  - @tanstack/create@0.71.15
+
 ## 0.72.15
 
 ### Patch Changes
