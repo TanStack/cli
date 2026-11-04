@@ -2,12 +2,11 @@ import { config } from "dotenv";
 import { defineConfig } from 'drizzle-kit';
 
 config({ path: ['.env.local', '.env'] });
+const databaseUrl = process.env.DATABASE_URL;
 
 export default defineConfig({
   out: "./drizzle",
   schema: "./src/db/schema.ts",
   dialect: '<%= addOnOption.drizzle.database %>',
-  dbCredentials: {
-    url: process.env.DATABASE_URL,
-  },
+  ...(databaseUrl ? { dbCredentials: { url: databaseUrl } } : {}),
 });
