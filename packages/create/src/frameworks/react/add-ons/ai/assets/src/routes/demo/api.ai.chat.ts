@@ -59,7 +59,7 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
             model = 'gpt-4o'
           } else if (process.env.GEMINI_API_KEY) {
             provider = 'gemini'
-            model = 'gemini-2.0-flash-exp'
+            model = 'gemini-3.8-flash'
           }
 
           // Adapter factory pattern for multi-vendor support
@@ -67,7 +67,7 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
             anthropic: () =>
               anthropicText((model || 'claude-haiku-4-5') as any),
             openai: () => openaiText((model || 'gpt-4o') as any),
-            gemini: () => geminiText((model || 'gemini-2.0-flash-exp') as any),
+            gemini: () => geminiText((model || 'gemini-3.8-flash') as any),
             ollama: () => ollamaText((model || 'mistral:7b') as any),
           }
 
