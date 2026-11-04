@@ -44,6 +44,7 @@ export const Route = createFileRoute('/demo/api/ai/tts')({
 
           const result = await generateSpeech({
             adapter,
+            threadId: crypto.randomUUID(),
             text,
             voice,
             format,

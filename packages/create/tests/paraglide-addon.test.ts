@@ -70,11 +70,9 @@ describe('Paraglide add-on', () => {
     expect(server).toContain(
       "import { paraglideMiddleware } from './paraglide/server.js'",
     )
+    expect(server).toContain("from '@tanstack/react-start/server-entry'")
     expect(server).toContain(
-      "import handler from '@tanstack/react-start/server-entry'",
-    )
-    expect(server).toContain(
-      'return paraglideMiddleware(req, () => handler.fetch(req))',
+      'return paraglideMiddleware(request, () => handler.fetch(request, options))',
     )
   })
 })

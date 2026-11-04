@@ -1,0 +1,45 @@
+<% if (bundler !== 'rsbuild') { ignoreFile() } -%>
+import { defineConfig } from '@rsbuild/core'
+import { pluginReact } from '@rsbuild/plugin-react'
+<% if (tailwind) { -%>
+import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss'
+<% } -%>
+<% if (routerOnly) { -%>
+import { tanstackRouter } from '@tanstack/router-plugin/rspack'
+<% } else { -%>
+import { tanstackStart } from '@tanstack/react-start/plugin/rsbuild'
+<% } -%>
+
+export default defineConfig({
+  server: {
+    port: 3000,
+  },
+  <% if (routerOnly) { -%>
+  source: {
+    entry: {
+      index: './src/main.tsx',
+    },
+  },
+  html: {
+    mountId: 'app',
+    title: '<%= projectName %>',
+  },
+  <% } -%>
+  plugins: [
+    pluginReact(),
+    <% if (tailwind) { %>pluginTailwindcss(),<% } %>
+    <% if (!routerOnly) { %>tanstackStart(),<% } %>
+  ],
+  <% if (routerOnly) { -%>
+  tools: {
+    rspack: {
+      plugins: [
+        tanstackRouter({
+          target: 'react',
+          autoCodeSplitting: true,
+        }),
+      ],
+    },
+  },
+  <% } -%>
+})

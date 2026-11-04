@@ -1,14 +1,14 @@
 ---
 name: create-app-scaffold
 description: >
-  Scaffold a TanStack app with tanstack create using --framework, --template,
+  Scaffold a TanStack app with tanstack create using --framework, --build-tool, --template,
   --toolchain, --deployment, --add-ons, --blank, and --router-only. Covers flag
   compatibility, non-interactive defaults, and intent-preserving command
   construction.
 metadata:
   type: core
   library: tanstack-cli
-  library_version: "0.70.0"
+  library_version: "0.71.0"
 ---
 
 # Create App Scaffold
@@ -27,6 +27,19 @@ npx @tanstack/cli create acme-web \
 ```
 
 ## Core Patterns
+
+### Choose Vite or Rsbuild explicitly
+
+Vite is the default. Use Rsbuild for React or Solid when the requested project
+fits its initial compatibility surface.
+
+```bash
+npx @tanstack/cli create acme-web \
+  --framework react \
+  --build-tool rsbuild \
+  --toolchain biome \
+  -y
+```
 
 ### Build a deterministic non-interactive scaffold
 
@@ -162,5 +175,6 @@ See also: query-docs-library-metadata/SKILL.md § Common Mistakes
 
 - [Create flag compatibility matrix](references/create-flag-compatibility-matrix.md)
 - [Framework adapter options](references/framework-adapters.md)
+- [Build tool options](references/bundlers.md)
 - [Deployment provider options](references/deployment-providers.md)
 - [Toolchain options](references/toolchains.md)
