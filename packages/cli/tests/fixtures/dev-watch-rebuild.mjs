@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import fs from 'node:fs/promises'
 import fsSync from 'node:fs'
+import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
@@ -120,16 +121,49 @@ if (process.argv[3] === 'fail') {
     await manager.stop()
     return await new Promise(() => {})
   }
+  let allocatedDirectory
+  let writing = false
+  let observed = false
+  let releaseWrite
+  const writeGate = new Promise((resolve) => {
+    releaseWrite = resolve
+  })
   const originalSync = fsSync.mkdtempSync
   fsSync.mkdtempSync = (...args) => {
-    const directory = originalSync(...args)
-    fsSync.writeFileSync(receipt, directory)
-    setImmediate(() => manager.stop())
-    return directory
+    allocatedDirectory = originalSync(...args)
+    fsSync.writeFileSync(receipt, allocatedDirectory)
+    return allocatedDirectory
+  }
+  const originalMkdir = fs.mkdir
+  fs.mkdir = async (directory, ...args) => {
+    if (allocatedDirectory && directory.startsWith(allocatedDirectory) && !observed) {
+      observed = true
+      writing = true
+      void manager.stop()
+      await writeGate
+      try {
+        return await originalMkdir(directory, ...args)
+      } finally {
+        writing = false
+      }
+    }
+    return originalMkdir(directory, ...args)
+  }
+  syncBuiltinESMExports()
+  const originalExit = process.exit
+  process.exit = (code) => {
+    assert.equal(observed, true, 'shutdown must exercise an in-flight write')
+    assert.equal(writing, false, 'shutdown must let the in-flight write finish')
+    originalExit(code)
   }
   await manager.start()
   await once(manager.watcher, 'ready')
-  await fs.writeFile(source, 'cancel during allocation')
+  const closeWatcher = manager.watcher.close.bind(manager.watcher)
+  manager.watcher.close = async () => {
+    await closeWatcher()
+    setImmediate(releaseWrite)
+  }
+  await fs.writeFile(source, 'cancel during a temporary directory write')
 } else {
   try {
     await manager.start()
