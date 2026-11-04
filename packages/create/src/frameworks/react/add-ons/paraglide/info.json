@@ -1,6 +1,6 @@
 {
   "name": "Paraglide (i18n)",
-  "description": "i18n with localized routing",
+  "description": "Type-safe i18n with localized routing and message bundles.",
   "phase": "add-on",
   "modes": ["file-router"],
   "type": "add-on",

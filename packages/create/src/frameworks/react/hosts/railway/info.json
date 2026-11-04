@@ -1,6 +1,6 @@
 {
   "name": "Railway",
-  "description": "Railway deployment setup",
+  "description": "Deploy to Railway (full-stack PaaS for Node + databases).",
   "link": "https://railway.com/",
   "phase": "add-on",
   "modes": ["file-router", "code-router"],
@@ -9,6 +9,8 @@
   "exclusive": ["deploy"],
   "color": "#9B4DCA",
   "priority": 160,
+  "partner": { "id": "railway", "tier": "gold" },
+  "deletedFiles": ["nixpacks.toml"],
   "integrations": [
     {
       "type": "vite-plugin",

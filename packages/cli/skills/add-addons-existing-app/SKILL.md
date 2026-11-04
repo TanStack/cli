@@ -4,9 +4,10 @@ description: >
   Apply integrations to existing projects with tanstack add, including
   add-on id resolution, dependency chains, option prompts, and .cta.json
   project metadata preconditions.
-type: core
-library: tanstack-cli
-library_version: "0.62.1"
+metadata:
+  type: core
+  library: tanstack-cli
+  library_version: "0.62.1"
 ---
 
 # Add Add-ons To Existing App

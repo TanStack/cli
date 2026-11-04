@@ -1,7 +1,7 @@
 {
   "name": "Compiler",
   "phase": "setup",
-  "description": "Add React Compiler",
+  "description": "Auto-memoize components and hooks (fewer re-renders, no manual useMemo/useCallback).",
   "link": "https://react.dev/learn/react-compiler",
   "modes": ["code-router", "file-router"],
   "type": "add-on",

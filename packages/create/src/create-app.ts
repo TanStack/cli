@@ -1,35 +1,34 @@
 import { basename, resolve } from 'node:path'
 
-import { isBase64 } from './file-helpers.js'
+import { isBase64, isDemoFilePath } from './file-helpers.js'
 import { formatCommand } from './utils.js'
 import { writeConfigFileToEnvironment } from './config-file.js'
 import {
+  detectPnpmVersion,
+  getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
+  intentCommand,
   packageManagerInstall,
   translateExecuteCommand,
+  validatePackageManagerSupport,
 } from './package-manager.js'
 import { createPackageJSON } from './package-json.js'
+import { writePnpmWorkspace } from './pnpm-workspace.js'
 import { resolvePackageJSONLatest } from './npm-resolver.js'
 import { createTemplateFile } from './template-file.js'
 import { installShadcnComponents } from './integrations/shadcn.js'
 import { setupGit } from './integrations/git.js'
+import { setupIntent } from './integrations/intent.js'
 import { runSpecialSteps } from './special-steps/index.js'
+import { normalizeAndValidateBundlerOptions } from './build-tools.js'
 
 import type { Environment, FileBundleHandler, Options } from './types.js'
 
-function isDemoRoutePath(path?: string) {
-  if (!path) return false
-  const normalized = path.replace(/\\/g, '/')
-  return (
-    normalized.includes('/routes/demo/') ||
-    normalized.includes('/routes/demo.') ||
-    normalized.includes('/routes/example/') ||
-    normalized.includes('/routes/example.')
-  )
-}
-
 function stripExamplesFromOptions(options: Options): Options {
-  if (options.includeExamples !== false) {
+  const includeExamples =
+    options.projectPreset !== 'blank' && options.includeExamples !== false
+
+  if (includeExamples) {
     return options
   }
 
@@ -38,31 +37,44 @@ function stripExamplesFromOptions(options: Options): Options {
     .map((addOn) => {
       const filteredRoutes = (addOn.routes || []).filter(
         (route) =>
-          !isDemoRoutePath(route.path) &&
+          !isDemoFilePath(route.path) &&
           !(route.url && route.url.startsWith('/demo')),
+      )
+
+      const filteredIntegrations = (addOn.integrations || []).filter(
+        (integration) => !isDemoFilePath(integration.path)
       )
 
       return {
         ...addOn,
         routes: filteredRoutes,
+        integrations: filteredIntegrations,
         getFiles: async () => {
           const files = await addOn.getFiles()
-          return files.filter((file) => !isDemoRoutePath(file))
+          return files.filter((file) => !isDemoFilePath(file))
         },
         getDeletedFiles: async () => {
           const deletedFiles = await addOn.getDeletedFiles()
-          return deletedFiles.filter((file) => !isDemoRoutePath(file))
+          return deletedFiles.filter((file) => !isDemoFilePath(file))
         },
       }
     })
 
   return {
     ...options,
+    includeExamples: false,
     chosenAddOns,
   }
 }
 
-async function writeFiles(environment: Environment, options: Options) {
+async function writeFiles(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean } = {},
+) {
+  const workspaceWasPresent = environment.exists(
+    resolve(options.targetDir, 'pnpm-workspace.yaml'),
+  )
   const templateFileFromContent = createTemplateFile(environment, options)
 
   async function writeFileBundle(bundle: FileBundleHandler) {
@@ -132,6 +144,13 @@ async function writeFiles(environment: Environment, options: Options) {
     message: 'Writing package.json...',
   })
   const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  await writePnpmWorkspace(
+    environment,
+    resolve(options.targetDir, 'pnpm-workspace.yaml'),
+    options.packageManager,
+    packageJSON,
+    { ...context, workspaceWasPresent },
+  )
   await environment.writeFile(
     resolve(options.targetDir, './package.json'),
     JSON.stringify(packageJSON, null, 2),
@@ -150,7 +169,19 @@ async function writeFiles(environment: Environment, options: Options) {
 async function runCommandsAndInstallDependencies(
   environment: Environment,
   options: Options,
+  packageManagerVersion?: string,
 ) {
+  const needsBuildApproval =
+    options.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) ||
+    options.starter?.command?.allowBuilds?.length
+  if (
+    options.packageManager === 'pnpm' &&
+    needsBuildApproval &&
+    packageManagerVersion === undefined
+  ) {
+    packageManagerVersion = await detectPnpmVersion(environment, options.targetDir)
+  }
+
   const s = environment.spinner()
 
   // Setup git
@@ -232,7 +263,8 @@ async function runCommandsAndInstallDependencies(
       const translated = translateExecuteCommand(options.packageManager, {
         command: addOn.command!.command,
         args: addOn.command!.args || [],
-      })
+        allowBuilds: addOn.command!.allowBuilds,
+      }, packageManagerVersion)
       const cmd = formatCommand(translated)
       environment.startStep({
         id: 'run-commands',
@@ -260,7 +292,8 @@ async function runCommandsAndInstallDependencies(
     const starterTranslated = translateExecuteCommand(options.packageManager, {
       command: options.starter.command.command,
       args: options.starter.command.args || [],
-    })
+      allowBuilds: options.starter.command.allowBuilds,
+    }, packageManagerVersion)
     const cmd = formatCommand(starterTranslated)
     environment.startStep({
       id: 'run-starter-command',
@@ -280,6 +313,41 @@ async function runCommandsAndInstallDependencies(
   }
 
   await installShadcnComponents(environment, options.targetDir, options)
+
+  const intentConfigured = await setupIntent(environment, options.targetDir, options)
+
+  if (shouldGenerateRoutes(options)) {
+    s.start(`Generating route tree...`)
+    const command = getPackageManagerScriptCommand(options.packageManager, [
+      'generate-routes',
+    ])
+    const cmd = formatCommand(command)
+    environment.startStep({
+      id: 'generate-routes',
+      type: 'command',
+      message: cmd,
+    })
+    await environment.execute(
+      command.command,
+      command.args,
+      options.targetDir,
+      {
+        inherit: true,
+      },
+    )
+    environment.finishStep('generate-routes', 'Route tree generated')
+    s.stop(`Route tree generated`)
+  }
+
+  return intentConfigured
+}
+
+function shouldGenerateRoutes(options: Options) {
+  return (
+    options.install !== false &&
+    options.mode === 'file-router' &&
+    (options.framework.id === 'react' || options.framework.id === 'solid')
+  )
 }
 
 async function seedEnvValues(environment: Environment, options: Options) {
@@ -308,7 +376,101 @@ async function seedEnvValues(environment: Environment, options: Options) {
   await environment.writeFile(envLocalPath, envContents)
 }
 
-function report(environment: Environment, options: Options) {
+async function writeEnvExample(environment: Environment, options: Options) {
+  const envExamplePath = resolve(options.targetDir, '.env.example')
+  const existing = environment.exists(envExamplePath)
+    ? await environment.readFile(envExamplePath)
+    : ''
+
+  const declared = new Set<string>()
+  for (const match of existing.matchAll(/^([A-Z_][A-Z0-9_]*)=/gm)) {
+    declared.add(match[1])
+  }
+
+  const sections: Array<string> = []
+  for (const addOn of options.chosenAddOns) {
+    const lines: Array<string> = []
+    for (const envVar of addOn.envVars || []) {
+      if (declared.has(envVar.name)) continue
+      declared.add(envVar.name)
+      if (envVar.description) {
+        const required = envVar.required ? ' (required)' : ''
+        lines.push(`# ${envVar.description}${required}`)
+      }
+      lines.push(`${envVar.name}=`)
+    }
+    if (lines.length > 0) {
+      sections.push(`# ${addOn.name}\n${lines.join('\n')}`)
+    }
+  }
+
+  if (sections.length === 0) return
+
+  const additions = sections.join('\n\n')
+  const newContent = existing
+    ? `${existing.trimEnd()}\n\n${additions}\n`
+    : `${additions}\n`
+
+  await environment.writeFile(envExamplePath, newContent)
+}
+
+const SHIPPING_CATEGORIES = new Set(['auth', 'database', 'orm', 'deploy'])
+
+function buildNextSteps(options: Options, intentConfigured: boolean): string {
+  const collectedEnv = new Set(Object.keys(options.envVarValues || {}))
+  const listedEnvVars = new Set<string>()
+  const envVarLines: Array<string> = []
+  const docLines: Array<string> = []
+
+  for (const addOn of options.chosenAddOns) {
+    if (addOn.link && addOn.category && SHIPPING_CATEGORIES.has(addOn.category)) {
+      docLines.push(`  • ${addOn.name} (${addOn.category}) — ${addOn.link}`)
+    }
+
+    for (const envVar of addOn.envVars || []) {
+      if (listedEnvVars.has(envVar.name)) continue
+      listedEnvVars.add(envVar.name)
+      const required = envVar.required ? ' (required)' : ''
+      const status = collectedEnv.has(envVar.name)
+        ? ' — already set from your input'
+        : ' — needs a value'
+      const desc = envVar.description ? ` — ${envVar.description}` : ''
+      envVarLines.push(`  • ${envVar.name}${required}${desc}${status}`)
+    }
+  }
+
+  const sections: Array<string> = []
+  if (envVarLines.length > 0) {
+    sections.push(
+      `Environment variables (review/fill in .env.local before deploying):\n${envVarLines.join('\n')}`,
+    )
+  }
+  if (docLines.length > 0) {
+    sections.push(`Docs for the integrations you picked:\n${docLines.join('\n')}`)
+  }
+  if (options.intent) {
+    if (options.install === false) {
+      const installCommand = formatCommand(
+        getPackageManagerInstallCommand(options.packageManager),
+      )
+      sections.push(
+        `TanStack Intent setup was skipped because dependency installation was skipped.\nInstall dependencies, then generate agent guidance:\n  % ${installCommand}\n  % ${intentCommand(options.packageManager, ['install', '--map'])}`,
+      )
+    } else if (intentConfigured) {
+      sections.push(
+        `Working with an AI agent? Your agent config (AGENTS.md / CLAUDE.md) was wired up by TanStack Intent\nso your agent can discover skills for the libraries you installed, on demand:\n  • ${intentCommand(options.packageManager, ['list'])}\n  • ${intentCommand(options.packageManager, ['load', '<package>#<skill>'])}\nTry asking your agent:\n  • "migrate this Next.js page to TanStack Start"\n  • "add a protected /dashboard route"\n  • "show me how to use TanStack Router search params"`,
+      )
+    }
+  }
+
+  return sections.length > 0 ? `\nNext steps:\n\n${sections.join('\n\n')}\n` : ''
+}
+
+function report(
+  environment: Environment,
+  options: Options,
+  intentConfigured: boolean,
+) {
   const warnings: Array<string> = []
   for (const addOn of options.chosenAddOns) {
     if (addOn.warning) {
@@ -321,13 +483,20 @@ function report(environment: Environment, options: Options) {
   }
 
   // Format errors
+  const errors = [...environment.getErrors()]
+  if (options.intent && options.install !== false && !intentConfigured) {
+    const retryCommand = intentCommand(options.packageManager, ['install'])
+    if (!errors.some((error) => error.includes(retryCommand))) {
+      errors.push(`TanStack Intent setup failed. To retry, run ${retryCommand} in your project.`)
+    }
+  }
   let errorStatement = ''
-  if (environment.getErrors().length) {
+  if (errors.length) {
     errorStatement = `
 
 Errors were encountered during the creation of your app:
 
-${environment.getErrors().join('\n')}`
+${errors.join('\n')}`
   }
 
   // Check if we created in current directory (user specified ".")
@@ -341,6 +510,12 @@ ${environment.getErrors().join('\n')}`
     : `% cd ${options.projectName}
 `
 
+  const nextSteps = buildNextSteps(options, intentConfigured)
+  const readmeDescription =
+    options.projectPreset === 'blank'
+      ? 'running, building, adding routes, and selected integrations.'
+      : 'testing, styling, adding routes, etc.'
+
   // Use the force luke! :)
   environment.outro(
     `${locationMessage}
@@ -349,19 +524,29 @@ Use the following commands to start your app:
 ${cdInstruction}% ${formatCommand(
       getPackageManagerScriptCommand(options.packageManager, ['dev']),
     )}
-
-Please read the README.md file for information on testing, styling, adding routes, etc.${errorStatement}`,
+${nextSteps}
+Please read the README.md file for information on ${readmeDescription}${errorStatement}`,
   )
 }
 
-export async function createApp(environment: Environment, options: Options) {
-  const effectiveOptions = stripExamplesFromOptions(options)
+export async function createApp(
+  environment: Environment,
+  options: Options,
+  context: { existingProject?: boolean; packageManagerVersion?: string } = {},
+) {
+  validatePackageManagerSupport(options.packageManager, options.chosenAddOns)
+  const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions)
+  await writeFiles(environment, effectiveOptions, context)
   await seedEnvValues(environment, effectiveOptions)
-  await runCommandsAndInstallDependencies(environment, effectiveOptions)
+  await writeEnvExample(environment, effectiveOptions)
+  const intentConfigured = await runCommandsAndInstallDependencies(
+    environment,
+    effectiveOptions,
+    context.packageManagerVersion,
+  )
   environment.finishRun()
 
-  report(environment, effectiveOptions)
+  report(environment, effectiveOptions, intentConfigured)
 }

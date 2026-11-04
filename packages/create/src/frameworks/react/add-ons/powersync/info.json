@@ -1,0 +1,46 @@
+{
+  "name": "PowerSync",
+  "description": "Add PowerSync offline sync to your application.",
+  "phase": "add-on",
+  "type": "add-on",
+  "category": "database",
+  "color": "#2563EB",
+  "priority": 55,
+  "link": "https://docs.powersync.com/client-sdk-references/js-web",
+  "modes": ["file-router"],
+  "envVars": [
+    {
+      "name": "VITE_POWERSYNC_URL",
+      "description": "PowerSync instance URL",
+      "required": true,
+      "file": ".env.local"
+    },
+    {
+      "name": "VITE_POWERSYNC_TOKEN",
+      "description": "Client-visible development token for local testing; VITE_* env vars are exposed to the browser",
+      "required": false,
+      "file": ".env.local"
+    }
+  ],
+  "integrations": [
+    {
+      "type": "vite-plugin",
+      "path": "powersync-vite-plugin.ts",
+      "jsName": "powersyncVite",
+      "code": "powersyncVite()"
+    },
+    {
+      "type": "provider",
+      "path": "src/integrations/powersync/provider.tsx",
+      "jsName": "PowerSyncProvider"
+    }
+  ],
+  "routes": [
+    {
+      "url": "/demo/powersync",
+      "name": "PowerSync",
+      "path": "src/routes/demo/powersync.tsx",
+      "jsName": "PowerSyncDemo"
+    }
+  ]
+}

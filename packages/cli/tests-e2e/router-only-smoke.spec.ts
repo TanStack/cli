@@ -18,6 +18,11 @@ test('@matrix creates a React router-only app and navigates every internal link'
       page.getByRole('heading', { name: 'Start simple, ship quickly.' }),
     ).toBeVisible()
 
+    const header = page.getByRole('banner')
+    const footer = page.getByRole('contentinfo')
+    await expect(header).toBeVisible()
+    await expect(footer).toBeVisible()
+
     const homeLinks = await page
       .locator('a[href^="/"]')
       .evaluateAll((anchors) =>
@@ -28,11 +33,14 @@ test('@matrix creates a React router-only app and navigates every internal link'
 
     expect(homeLinks).toContain('/about')
 
-    await page.locator('a[href="/about"]').first().click()
+    await header.getByRole('link', { name: 'About', exact: true }).click()
     await expect(page).toHaveURL(/\/about\/?$/)
     await expect(
       page.getByRole('heading', { name: 'A small starter with room to grow.' }),
     ).toBeVisible()
+
+    await expect(header).toBeVisible()
+    await expect(footer).toBeVisible()
 
     await page.goto(`${fixture.url}/about`)
     await expect(

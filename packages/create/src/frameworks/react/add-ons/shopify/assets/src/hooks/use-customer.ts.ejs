@@ -1,0 +1,22 @@
+<% if (addOnOption.shopify.customerAccount !== 'enabled') { ignoreFile(); return; } %>
+import { useQuery } from '@tanstack/react-query'
+
+import { getCustomer } from '#/server/shopify/customer.functions'
+import type { CustomerProfile } from '#/lib/shopify/customer-queries'
+
+export const CUSTOMER_QUERY_KEY = ['shopify', 'customer'] as const
+
+export function useCustomer() {
+  const query = useQuery<CustomerProfile | null>({
+    queryKey: CUSTOMER_QUERY_KEY,
+    queryFn: () => getCustomer(),
+    staleTime: 60_000,
+  })
+  return {
+    customer: query.data ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isError: query.isError,
+    error: query.error,
+  }
+}

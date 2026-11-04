@@ -16,22 +16,24 @@ on:
     types: [published]
   workflow_dispatch: {}
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   check:
     name: Check for stale skills
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: true # review job pushes a generated branch
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
 
@@ -108,8 +110,11 @@ jobs:
         if: steps.stale.outputs.has_stale == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROMPT: ${{ steps.summary.outputs.prompt }}
+          RELEASE_VERSION: ${{ github.event.release.tag_name || 'manual' }}
+          SUMMARY: ${{ steps.summary.outputs.summary }}
         run: |
-          VERSION="${{ github.event.release.tag_name || 'manual' }}"
+          VERSION="$RELEASE_VERSION"
           BRANCH="skills/review-${VERSION}"
 
           git config user.name "github-actions[bot]"
@@ -118,26 +123,20 @@ jobs:
           git commit --allow-empty -m "chore: review stale skills for ${VERSION}"
           git push origin "$BRANCH"
 
+          {
+            printf '%s\n\n' '## Stale Skills Detected'
+            printf '%s\n\n' 'The following skills may need updates after the latest release:'
+            printf '%s\n\n' "$SUMMARY"
+            printf '%s\n\n' '---'
+            printf '%s\n\n' '### Update Prompt'
+            printf '%s\n\n' 'Paste this into your coding agent (Claude Code, Cursor, etc.):'
+            printf '%s\n' '~~~'
+            printf '%s\n' "$PROMPT"
+            printf '%s\n' '~~~'
+          } > pr-body.md
+
           gh pr create \
             --title "Review stale skills (${VERSION})" \
-            --body "$(cat <<'PREOF'
-          ## Stale Skills Detected
-
-          The following skills may need updates after the latest release:
-
-          ${{ steps.summary.outputs.summary }}
-
-          ---
-
-          ### Update Prompt
-
-          Paste this into your coding agent (Claude Code, Cursor, etc.):
-
-          ~~~
-          ${{ steps.summary.outputs.prompt }}
-          ~~~
-
-          PREOF
-          )" \
+            --body-file pr-body.md \
             --head "$BRANCH" \
             --base main

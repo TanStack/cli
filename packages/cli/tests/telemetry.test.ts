@@ -5,18 +5,46 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getTelemetryStatus, setTelemetryEnabled } from '../src/telemetry-config.js'
 import {
+  getCreateTelemetryProperties,
+  getResolvedCreateTelemetryProperties,
+} from '../src/cli.js'
+import {
   createTelemetryClient,
   resetTelemetryStateForTests,
 } from '../src/telemetry.js'
 import { createUIEnvironment } from '../src/ui-environment.js'
 
+import type { Framework, Options } from '@tanstack/create'
+
+const TELEMETRY_NUMERIC_PREFIX = 'epn.'
+const TELEMETRY_STRING_PREFIX = 'ep.'
+const TELEMETRY_TRANSPORT_PATH = '/g/collect'
+
 function getCapturedEvent(index: number) {
   const mockedFetch = <typeof fetch & {
     mock: { calls: Array<Array<unknown>> }
   }>fetch
+  const requestUrl = String(mockedFetch.mock.calls[index]?.[0])
   const requestInit = <RequestInit | undefined>mockedFetch.mock.calls[index]?.[1]
+  const params = new URLSearchParams(String(requestInit?.body || ''))
 
-  return JSON.parse(String(requestInit?.body))
+  const properties: Record<string, string | number> = {}
+  for (const [key, value] of params.entries()) {
+    if (key.startsWith(TELEMETRY_NUMERIC_PREFIX)) {
+      properties[key.slice(TELEMETRY_NUMERIC_PREFIX.length)] = Number(value)
+      continue
+    }
+
+    if (key.startsWith(TELEMETRY_STRING_PREFIX)) {
+      properties[key.slice(TELEMETRY_STRING_PREFIX.length)] = value
+    }
+  }
+
+  return {
+    event: params.get('en'),
+    properties,
+    url: requestUrl,
+  }
 }
 
 describe('telemetry', () => {
@@ -91,6 +119,7 @@ describe('telemetry', () => {
       cli_version: '0.62.3',
       framework: 'react',
       install: true,
+      invoked_by_agent: true,
     })
     await telemetry.captureCommandCompleted('create', 125)
 
@@ -98,15 +127,39 @@ describe('telemetry', () => {
     const completedEvent = getCapturedEvent(1)
 
     expect(startedEvent.event).toBe('command_started')
+    expect(startedEvent.url).toContain(TELEMETRY_TRANSPORT_PATH)
     expect(startedEvent.properties.command).toBe('create')
     expect(startedEvent.properties.framework).toBe('react')
-    expect(startedEvent.properties.install).toBe(true)
+    expect(startedEvent.properties.install).toBe(1)
+    expect(startedEvent.properties.invoked_by_agent).toBe(1)
     expect(startedEvent.properties.cli_version).toBe('0.62.3')
 
     expect(completedEvent.event).toBe('command_completed')
     expect(completedEvent.properties.command).toBe('create')
     expect(completedEvent.properties.duration_ms).toBe(125)
+    expect(completedEvent.properties.invoked_by_agent).toBe(1)
     expect(completedEvent.properties.result).toBe('success')
+  })
+
+  it('records raw and resolved bundler selections', () => {
+    expect(
+      getCreateTelemetryProperties('app', { buildTool: 'rsbuild' }).bundler,
+    ).toBe('rsbuild')
+
+    const finalOptions = {
+      framework: { id: 'react' } as Framework,
+      bundler: 'rsbuild',
+      chosenAddOns: [],
+      projectPreset: 'default',
+      git: false,
+      install: false,
+      intent: false,
+      packageManager: 'pnpm',
+    } as Options
+
+    expect(getResolvedCreateTelemetryProperties(finalOptions, {}).bundler).toBe(
+      'rsbuild',
+    )
   })
 
   it('captures failure events with a coarse error code', async () => {
@@ -201,15 +254,17 @@ describe('telemetry', () => {
     expect(lastCall).toBeDefined()
 
     const requestInit = <RequestInit | undefined>lastCall?.[1]
-    const body = JSON.parse(String(requestInit?.body))
-    expect(body.event).toBe('command_completed')
-    expect(body.properties.steps).toEqual([
-      {
-        duration_ms: 250,
-        id: 'install-dependencies',
-        type: 'package-manager',
-      },
-    ])
+    const params = new URLSearchParams(String(requestInit?.body || ''))
+    expect(params.get('en')).toBe('command_completed')
+    expect(params.get(`${TELEMETRY_STRING_PREFIX}steps`)).toBe(
+      JSON.stringify([
+        {
+          duration_ms: 250,
+          id: 'install-dependencies',
+          type: 'package-manager',
+        },
+      ]),
+    )
     expect(consoleError).not.toHaveBeenCalled()
   })
 })
