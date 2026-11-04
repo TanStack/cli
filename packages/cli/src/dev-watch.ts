@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process'
 import chokidar from 'chokidar'
 import {
   createApp,
+  createDefaultEnvironment,
   finalizeAddOns,
   getFrameworkById,
   registerFramework,
@@ -14,7 +15,6 @@ import {
 } from '@tanstack/create'
 import { styleText } from './terminal-style.js'
 import { FileSyncer } from './file-syncer.js'
-import { createUIEnvironment } from './ui-environment.js'
 import type {
   Environment,
   Framework,
@@ -86,13 +86,23 @@ export class DevWatchManager {
   private syncer: FileSyncer
   private tempDir: string | null = null
   private isBuilding = false
+  private activeBuild: Promise<void> | undefined
+  private stopping = false
+  private stopController = new AbortController()
   private buildCount = 0
   private appDevProcess: ReturnType<typeof spawn> | null = null
   private lastSyncedSourceFiles: Set<string> | null = null
 
   constructor(private options: DevWatchOptions) {
     this.syncer = new FileSyncer()
-    this.debounceQueue = new DebounceQueue((changes) => this.rebuild(changes))
+    this.debounceQueue = new DebounceQueue((changes) => {
+      if (this.stopping) return
+      if (this.isBuilding) {
+        this.log.warning('Build already in progress, skipping...')
+        return
+      }
+      this.activeBuild = this.rebuild(changes)
+    })
   }
 
   async start(): Promise<void> {
@@ -123,8 +133,8 @@ export class DevWatchManager {
     this.log.tree('', 'ready', true)
 
     // Setup signal handlers
-    process.on('SIGINT', () => this.cleanup())
-    process.on('SIGTERM', () => this.cleanup())
+    process.on('SIGINT', () => void this.stop())
+    process.on('SIGTERM', () => void this.stop())
 
     // Start watching
     this.startWatcher()
@@ -135,6 +145,11 @@ export class DevWatchManager {
   }
 
   async stop(): Promise<void> {
+    if (this.stopping) return
+    this.stopping = true
+    this.stopController.abort()
+    this.debounceQueue.clear()
+
     console.log()
     this.log.info('Stopping dev watch mode...')
 
@@ -143,7 +158,7 @@ export class DevWatchManager {
       this.watcher = null
     }
 
-    this.debounceQueue.clear()
+    await this.activeBuild
     this.cleanup()
   }
 
@@ -197,11 +212,6 @@ export class DevWatchManager {
   }
 
   private async rebuild(changes: Set<string>): Promise<void> {
-    if (this.isBuilding) {
-      this.log.warning('Build already in progress, skipping...')
-      return
-    }
-
     this.isBuilding = true
     this.buildCount++
     const buildId = this.buildCount
@@ -287,11 +297,10 @@ export class DevWatchManager {
       }
 
       // Create app in temp directory with silent environment
-      const silentEnvironment = createUIEnvironment(
-        this.options.environment.appName,
-        true,
-      )
+      const silentEnvironment = createDefaultEnvironment(this.stopController.signal)
+      silentEnvironment.appName = this.options.environment.appName
       await createApp(silentEnvironment, updatedOptions)
+      if (this.stopping) return
 
       // Sync files to target directory
       const syncResult = await this.syncer.sync(

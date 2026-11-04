@@ -19,7 +19,7 @@ import type { Environment } from './types.js'
 
 export type { MemoryEnvironmentOutput } from './edge-environment.js'
 
-export function createDefaultEnvironment(): Environment {
+export function createDefaultEnvironment(cancelSignal?: AbortSignal): Environment {
   let errors: Array<string> = []
   return {
     startRun: () => {
@@ -46,7 +46,7 @@ export function createDefaultEnvironment(): Environment {
     },
     getPackageManagerVersion: async (packageManager, cwd) => {
       try {
-        const result = await execa(packageManager, ['--version'], { cwd })
+        const result = await execa(packageManager, ['--version'], { cwd, cancelSignal })
         return result.stdout.trim()
       } catch {
         return undefined
@@ -63,6 +63,7 @@ export function createDefaultEnvironment(): Environment {
           // For commands that should show output directly to the user
           await execa(command, args, {
             cwd,
+            cancelSignal,
             stdio: 'inherit',
           })
           return { stdout: '' }
@@ -70,6 +71,7 @@ export function createDefaultEnvironment(): Environment {
           // For commands where we need to capture output
           const result = await execa(command, args, {
             cwd,
+            cancelSignal,
           })
           return { stdout: result.stdout }
         }
@@ -77,7 +79,7 @@ export function createDefaultEnvironment(): Environment {
         errors.push(
           `Command "${command} ${args.join(' ')}" did not run successfully. Please run this manually in your project.`,
         )
-        return { stdout: '' }
+        return { stdout: '', failed: true }
       }
     },
     deleteFile: async (path: string) => {

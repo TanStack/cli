@@ -102,18 +102,3 @@ export async function configureIntentPolicy(
     .sort()
   packageJSON.intent = { ...localIntent, skills: packages }
 }
-
-/** Configure the real project after add-to-app has merged its generated files. */
-export async function ensureIntentPolicy(
-  environment: Environment,
-  targetDir: string,
-) {
-  const path = joinPaths(targetDir, 'package.json')
-  if (!environment.exists(path)) return
-  const packageJSON = JSON.parse(await environment.readFile(path))
-  const previous = JSON.stringify(packageJSON.intent)
-  await configureIntentPolicy(environment, targetDir, packageJSON)
-  if (JSON.stringify(packageJSON.intent) !== previous) {
-    await environment.writeFile(path, JSON.stringify(packageJSON, null, 2))
-  }
-}

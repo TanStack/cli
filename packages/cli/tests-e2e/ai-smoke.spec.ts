@@ -17,22 +17,45 @@ test('@blocking builds the AI scaffold and streams a mocked chat without provide
     })
     expect(invalid.status()).toBe(400)
     await optimizePageForFastE2E(page)
-    let threadId: unknown
+    const threadIds: Array<unknown> = []
     await page.route('**/demo/api/ai/chat', async (route) => {
-      threadId = route.request().postDataJSON().threadId
+      const { threadId } = route.request().postDataJSON()
+      threadIds.push(threadId)
+      const floating = threadIds.length === 2
+      const reply = floating ? 'Floating assistant reply' : 'Local mock reply'
+      const messageId = `mock-message-${threadIds.length}`
+      const toolCallId = 'mock-guitar'
       const events = [
         { type: 'RUN_STARTED', threadId, runId: 'mock-run' },
         {
           type: 'TEXT_MESSAGE_START',
-          messageId: 'mock-message',
+          messageId,
           role: 'assistant',
         },
         {
           type: 'TEXT_MESSAGE_CONTENT',
-          messageId: 'mock-message',
-          delta: 'Local mock reply',
+          messageId,
+          delta: reply,
         },
-        { type: 'TEXT_MESSAGE_END', messageId: 'mock-message' },
+        { type: 'TEXT_MESSAGE_END', messageId },
+        ...(floating
+          ? [
+              {
+                type: 'TOOL_CALL_START',
+                toolCallId,
+                toolCallName: 'recommendGuitar',
+                parentMessageId: messageId,
+              },
+              { type: 'TOOL_CALL_ARGS', toolCallId, delta: '{"id":2}' },
+              { type: 'TOOL_CALL_END', toolCallId },
+              {
+                type: 'TOOL_CALL_RESULT',
+                messageId: 'mock-guitar-result',
+                toolCallId,
+                content: '{"id":2}',
+              },
+            ]
+          : []),
         { type: 'RUN_FINISHED', threadId, runId: 'mock-run' },
       ]
       await route.fulfill({
@@ -57,7 +80,26 @@ test('@blocking builds the AI scaffold and streams a mocked chat without provide
     await expect(
       page.getByText('Local mock reply', { exact: true }),
     ).toBeVisible()
-    expect(threadId).toBe('guitar-recommendations')
+    await page.getByRole('link', { name: 'Home', exact: true }).click()
+    await expect(page).toHaveURL(new URL('/', fixture.url).href)
+    await page
+      .getByRole('button', { name: 'AI Assistant', exact: true })
+      .click({ timeout: 7_000 })
+    const assistantInput = page.getByPlaceholder('Type your message...')
+    await assistantInput.fill('Hello from the floating assistant', {
+      timeout: 7_000,
+    })
+    await assistantInput.press('Enter', { timeout: 7_000 })
+    await expect(
+      page.getByText('Floating assistant reply', { exact: true }),
+    ).toBeVisible()
+    expect(threadIds).toEqual([
+      'guitar-recommendations',
+      'guitar-recommendations',
+    ])
+    await expect(
+      page.getByRole('heading', { name: 'Video Game Guitar', exact: true }),
+    ).toBeVisible()
   } finally {
     await fixture.stop()
     await fixture.cleanup()
