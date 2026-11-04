@@ -9,7 +9,7 @@ export default withSentry(
     dataCollection: {
       userInfo: false,
       cookies: false,
-      httpHeaders: false,
+      httpHeaders: { request: false, response: false },
       httpBodies: [],
     },
     integrations: [httpServerIntegration({ maxRequestBodySize: 'none' })],
