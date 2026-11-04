@@ -584,7 +584,7 @@ function buildNextSteps(options: Options): string {
         getPackageManagerInstallCommand(options.packageManager),
       )
       sections.push(
-        `TanStack Intent setup was skipped because dependency installation was skipped.\nInstall dependencies, then generate agent guidance:\n  % ${installCommand}\n  % ${intentCommand(options.packageManager, ['install'])}`,
+        `TanStack Intent setup was skipped because dependency installation was skipped.\nInstall dependencies, then generate agent guidance:\n  % ${installCommand}\n  % ${intentCommand(options.packageManager, ['install', '--map'])}`,
       )
     } else {
       sections.push(

@@ -146,7 +146,7 @@ describe('createApp', () => {
       expect(outro).not.toContain('was wired up by TanStack Intent')
       expect(outro).toContain('TanStack Intent setup was skipped')
       expect(outro).toContain('pnpm install')
-      expect(outro).toContain('pnpm dlx @tanstack/intent install')
+      expect(outro).toContain('pnpm dlx @tanstack/intent install --map')
     },
   )
 
