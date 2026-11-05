@@ -196,6 +196,7 @@ export function getCreateTelemetryProperties(projectName: string, options: CliOp
     package_manager: options.packageManager,
     project_name_provided: Boolean(projectName),
     router_only: !!options.routerOnly,
+    router_and_start: !!options.routerAndStart,
     target_dir_flag: Boolean(options.targetDir),
     toolchain:
       typeof options.toolchain === 'string' ? sanitizeId(options.toolchain) : undefined,
@@ -233,6 +234,7 @@ export function getResolvedCreateTelemetryProperties(
     intent: finalOptions.intent,
     package_manager: finalOptions.packageManager,
     router_only: !!cliOptions.routerOnly,
+    router_and_start: !!cliOptions.routerAndStart,
     toolchain: toolchain ? sanitizeId(toolchain.id) : undefined,
   }
 }
@@ -826,6 +828,28 @@ export function cli({
             ...options,
           } as CliOptions
 
+          if (cliOptions.routerAndStart) {
+            if (cliOptions.routerOnly) {
+              throw new Error(
+                'Cannot combine --router-only with --router-and-start.',
+              )
+            }
+            if (
+              cliOptions.template &&
+              ['typescript', 'tsx', 'javascript', 'js', 'jsx'].includes(
+                cliOptions.template.toLowerCase(),
+              )
+            ) {
+              console.warn(
+                chalk.yellow(
+                  'Ignoring --template in favor of --router-and-start (TanStack Start).',
+                ),
+              )
+              cliOptions.template = undefined
+            }
+            cliOptions.routerOnly = false
+          }
+
           if (defaultRouterOnly && cliOptions.routerOnly === undefined) {
             cliOptions.routerOnly = true
           }
@@ -1024,6 +1048,10 @@ export function cli({
       .option(
         '--router-only',
         'Use router-only compatibility mode (file-based routing without TanStack Start)',
+      )
+      .option(
+        '--router-and-start',
+        'Use TanStack Start explicitly (skips the interactive router-only prompt)',
       )
       .option(
         '--blank',
