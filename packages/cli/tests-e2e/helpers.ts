@@ -33,10 +33,8 @@ type CreateAppFixtureOptions = {
   afterCreate?: (appDir: string) => Promise<void>
   skipDevServer?: boolean
   runQualityGatesChecks?: boolean
-  /** Serve the production build with the `preview` script instead of `dev`. */
-  server?: 'dev' | 'preview'
-  /** Extra environment variables for the app server process. */
-  serverEnv?: NodeJS.ProcessEnv
+  serverScript?: 'dev' | 'preview'
+  serverEnv?: Record<string, string>
 }
 
 export type RuntimeGuards = {
@@ -376,12 +374,9 @@ export async function createAppFixture(
     bundler = 'vite',
     packageManager = 'pnpm',
     routerOnly = false,
-    server: serverMode = 'dev',
+    serverScript = 'dev',
     serverEnv,
   } = options
-  if (serverMode === 'preview' && !runQualityGatesChecks) {
-    throw new Error('server: "preview" requires runQualityGatesChecks to build the app')
-  }
   const appDir = join(rootDir, appName)
   const cleanup = async () => {
     await rm(rootDir, { recursive: true, force: true })
@@ -475,10 +470,13 @@ export async function createAppFixture(
     }
   }
 
-  const dev = getPackageManagerCommandForScript(packageManager, serverMode)
+  const serverCommand = getPackageManagerCommandForScript(
+    packageManager,
+    serverScript,
+  )
 
-  const devServerStartedAt = now()
-  const server = spawn(dev.command, dev.args, {
+  const serverStartedAt = now()
+  const server = spawn(serverCommand.command, serverCommand.args, {
     cwd: appDir,
     env: {
       ...process.env,
@@ -506,7 +504,7 @@ export async function createAppFixture(
   try {
     url = await waitForDevServerURL(() => serverStdout)
     await waitForServer(url)
-    mark('dev-server-ready', devServerStartedAt)
+    mark('server-ready', serverStartedAt)
   } catch (error) {
     await stopChild(server)
     await cleanup().catch(() => undefined)

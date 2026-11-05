@@ -12,8 +12,7 @@ const sendHelloEvent = createServerFn({ method: 'POST' })
     return trimmed
   })
   .handler(async ({ data: name }) => {
-    // This demo sender is public, so only allow it in development. The signed
-    // /api/inngest callback route stays available in production.
+    // This demo sender is public, so only allow it in development.
     if (!import.meta.env.DEV) {
       throw new Error('The Inngest demo sender is disabled in production.')
     }
@@ -83,12 +82,6 @@ function RouteComponent() {
           >
             {sending ? 'Sending…' : 'Send demo/hello.world'}
           </button>
-
-          {!import.meta.env.DEV && (
-            <p className="text-sm text-[var(--sea-ink-soft)]">
-              Sending demo events is disabled in production builds.
-            </p>
-          )}
 
           {result && (
             <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">

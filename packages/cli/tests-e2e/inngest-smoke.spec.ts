@@ -1,18 +1,19 @@
 import { createHmac } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { expect, test, type Locator } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { createReactAppFixture, optimizePageForFastE2E } from './helpers'
 
 const SIGNING_KEY = `signkey-test-${'ab'.repeat(32)}`
 
 // Stands in for the Inngest API so no test can send a real event.
 async function startMockInngest() {
-  const hits: Array<string> = []
+  const requests: Array<{ method?: string; url?: string; body: string }> = []
   const server = createServer((req, res) => {
-    hits.push(`${req.method} ${req.url}`)
-    req.resume()
+    let body = ''
+    req.on('data', (chunk) => (body += chunk))
     req.on('end', () => {
+      requests.push({ method: req.method, url: req.url, body })
       res.setHeader('content-type', 'application/json')
       res.end(JSON.stringify({ ids: ['01MOCKEVENTID'], status: 200 }))
     })
@@ -21,7 +22,7 @@ async function startMockInngest() {
   const { port } = server.address() as AddressInfo
   return {
     url: `http://127.0.0.1:${port}`,
-    hits,
+    requests,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   }
 }
@@ -33,14 +34,6 @@ function signRequest(body: string) {
   return `t=${ts}&s=${sig}`
 }
 
-// Clicks before hydration are no-ops, so retry until the result shows up.
-async function clickUntilHydrated(button: Locator, result: Locator) {
-  await expect(async () => {
-    await button.click()
-    await expect(result).toBeVisible({ timeout: 2_000 })
-  }).toPass({ timeout: 30_000 })
-}
-
 test('@blocking production Inngest app rejects the demo sender and serves the signed callback', async ({
   page,
 }) => {
@@ -49,13 +42,12 @@ test('@blocking production Inngest app rejects the demo sender and serves the si
     appName: 'react-inngest-prod-app',
     addOns: ['inngest'],
     runQualityGatesChecks: true,
-    server: 'preview',
+    serverScript: 'preview',
     serverEnv: {
       INNGEST_DEV: '',
       INNGEST_SIGNING_KEY: SIGNING_KEY,
       INNGEST_EVENT_KEY: 'test-event-key',
       INNGEST_BASE_URL: inngestApi.url,
-      INNGEST_EVENT_API_BASE_URL: inngestApi.url,
     },
   })
   try {
@@ -74,21 +66,11 @@ test('@blocking production Inngest app rejects the demo sender and serves the si
 
     await optimizePageForFastE2E(page)
     await page.goto(`${fixture.url}/demo/inngest`)
-    await expect(
-      page.getByText('Sending demo events is disabled in production builds.'),
-    ).toBeVisible()
-    // The button still calls the server function so the server-side guard is
-    // what rejects the send.
-    await clickUntilHydrated(
-      page.getByRole('button', { name: 'Send demo/hello.world' }),
-      page.getByRole('alert'),
-    )
-    await expect(page.getByRole('alert')).toContainText(
+    await page.getByRole('button', { name: 'Send demo/hello.world' }).click()
+    await expect(page.getByRole('alert')).toHaveText(
       'The Inngest demo sender is disabled in production.',
     )
-    await expect(page.getByText('Event sent')).toHaveCount(0)
-
-    expect(inngestApi.hits).toEqual([])
+    expect(inngestApi.requests).toEqual([])
   } finally {
     await fixture.stop()
     await fixture.cleanup()
@@ -106,20 +88,20 @@ test('@blocking development Inngest app sends the demo event to the local Innges
     serverEnv: {
       INNGEST_DEV: '1',
       INNGEST_BASE_URL: inngestApi.url,
-      INNGEST_EVENT_API_BASE_URL: inngestApi.url,
     },
   })
   try {
     await optimizePageForFastE2E(page)
     await page.goto(`${fixture.url}/demo/inngest`)
-    await clickUntilHydrated(
-      page.getByRole('button', { name: 'Send demo/hello.world' }),
-      page.getByText('01MOCKEVENTID'),
-    )
-    expect(inngestApi.hits.length).toBeGreaterThan(0)
-    for (const hit of inngestApi.hits) {
-      expect(hit).toMatch(/^POST \/e\//)
-    }
+    await page.getByRole('button', { name: 'Send demo/hello.world' }).click()
+    await expect(page.getByText('01MOCKEVENTID')).toBeVisible()
+    expect(inngestApi.requests).toHaveLength(1)
+    const [sent] = inngestApi.requests
+    expect(sent.method).toBe('POST')
+    expect(sent.url).toMatch(/^\/e\//)
+    expect(JSON.parse(sent.body)).toMatchObject([
+      { name: 'demo/hello.world', data: { name: 'world' } },
+    ])
   } finally {
     await fixture.stop()
     await fixture.cleanup()
