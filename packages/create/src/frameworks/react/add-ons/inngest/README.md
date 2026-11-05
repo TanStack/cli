@@ -25,7 +25,7 @@ Open [http://localhost:3000/demo/inngest](http://localhost:3000/demo/inngest), c
 | `src/inngest/client.ts`       | Shared `inngest` client                                                 |
 | `src/inngest/functions.ts`    | Events + functions — ships with a `helloWorld` event and `helloWorldFn` |
 | `src/routes/api/inngest.ts`   | The `serve()` handler mounted at `/api/inngest` (GET/POST/PUT)          |
-| `src/routes/demo/inngest.tsx` | Demo page at `/demo/inngest` that sends the sample event                |
+| `src/routes/demo/inngest.tsx` | Demo page at `/demo/inngest` that sends the sample event (dev only)     |
 | `.env.local`                  | Commented `INNGEST_DEV=1` and placeholders for production keys          |
 
 ### Add your own function
@@ -71,6 +71,8 @@ Open [http://localhost:3000/demo/inngest](http://localhost:3000/demo/inngest), c
    - `INNGEST_EVENT_KEY` — authorizes `inngest.send()` to deliver events
    - `INNGEST_SIGNING_KEY` — lets the `serve()` handler verify requests from Inngest
 3. Make sure `INNGEST_DEV` is **not** set.
+
+The demo page's sender is public, so its server function only runs in development. Production builds reject it, while the signed `/api/inngest` route keeps serving Inngest.
 
 > Running on serverless (Vercel, Netlify, etc.)? Set `checkpointing: { maxRuntime: '50s' }` on the client (~80% of your platform's max duration) so checkpointed steps don't get cut off mid-run. [More on checkpointing here](https://www.inngest.com/docs/setup/checkpointing).
 

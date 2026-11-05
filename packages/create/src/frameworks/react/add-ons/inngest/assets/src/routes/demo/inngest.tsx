@@ -5,13 +5,18 @@ import { inngest } from '../../inngest/client'
 import { helloWorld } from '../../inngest/functions'
 
 const sendHelloEvent = createServerFn({ method: 'POST' })
-  .inputValidator((name: unknown) => {
+  .validator((name: unknown) => {
     if (typeof name !== 'string') throw new Error('Name must be a string')
     const trimmed = name.trim()
     if (!trimmed) throw new Error('Name is required')
     return trimmed
   })
   .handler(async ({ data: name }) => {
+    // This demo sender is public, so only allow it in development. The signed
+    // /api/inngest callback route stays available in production.
+    if (!import.meta.env.DEV) {
+      throw new Error('The Inngest demo sender is disabled in production.')
+    }
     const { ids } = await inngest.send(helloWorld.create({ name }))
     const eventId = ids[0]
     if (!eventId) throw new Error('Inngest did not return an event ID')
@@ -78,6 +83,12 @@ function RouteComponent() {
           >
             {sending ? 'Sending…' : 'Send demo/hello.world'}
           </button>
+
+          {!import.meta.env.DEV && (
+            <p className="text-sm text-[var(--sea-ink-soft)]">
+              Sending demo events is disabled in production builds.
+            </p>
+          )}
 
           {result && (
             <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
