@@ -672,3 +672,88 @@ describe.each([createApp, createEdgeApp])('Intent recovery error isolation (%#)'
     expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(true)
   })
 })
+
+describe.each([createApp, createEdgeApp])('Invalid existing Intent manifest (%#)', (create) => {
+  it.each(['{ broken', 'null', '[]', '"manifest"', '42', 'true'].flatMap((manifest) =>
+    [true, false].flatMap((intent) => [true, false].map((install) => ({ manifest, intent, install }))),
+  ))('finishes replacement without trusting invalid policy: %j', async ({ manifest, intent, install }) => {
+    const { environment, output } = createMemoryEnvironment()
+    const target = '/parent/app/package.json'
+    await environment.writeFile(target, manifest)
+    const readFile = environment.readFile
+    environment.readFile = (path) => {
+      if (!intent && path === target) throw new Error('Disabled Intent must not read existing policy')
+      return readFile(path)
+    }
+    const steps: Array<string> = []
+    const warnings: Array<string> = []
+    let outro = ''
+    environment.finishStep = (_id, message) => { steps.push(message) }
+    environment.warn = (title, message) => { warnings.push(`${title}: ${message}`) }
+    environment.outro = (message) => { outro = message }
+    await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent, install })
+    const pkg = JSON.parse(await readFile(target))
+    expect(pkg.name).toBe('test')
+    expect(pkg.scripts.dev).toBe('react-scripts start')
+    expect(pkg.dependencies['file-router']).toBe('^1.0.0')
+    expect(pkg.intent?.skills).toBeUndefined()
+    expect(output.files['/parent/app/src/test.txt']).toBe('Hello')
+    expect(JSON.parse(output.files['/parent/app/.cta.json']).intent).toBe(intent)
+    expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(false)
+    expect(output.commands.some((entry) => entry.command === 'pnpm' && entry.args[0] === 'install')).toBe(install)
+    expect(steps).toContain('Package.json written')
+    expect(steps).not.toContain('TanStack Intent configured')
+    expect(outro).not.toContain('was wired up by TanStack Intent')
+    expect(outro).not.toContain('TanStack Intent setup was skipped')
+    if (intent) {
+      expect(pkg.devDependencies['@tanstack/intent']).toBeDefined()
+      expect(steps).toContain('TanStack Intent setup failed')
+      expect(warnings.join('\n')).toContain('Skill permissions were not initialized:')
+      expect(outro).toContain('TanStack Intent setup failed')
+      if (manifest !== '{ broken') expect(warnings.join('\n')).toContain('expected a JSON object')
+    } else {
+      expect(pkg.devDependencies).not.toHaveProperty('@tanstack/intent')
+      expect(warnings).toEqual([])
+      expect(outro).not.toContain('TanStack Intent setup failed')
+    }
+  })
+  it('retains the target error and leaves a broken parent unchanged', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await environment.writeFile('/parent/package.json', '{ broken parent')
+    await environment.writeFile('/parent/app/package.json', 'null')
+    const readFile = environment.readFile
+    environment.readFile = (path) => {
+      if (path === '/parent/package.json') throw new Error('Must not discover after target failure')
+      return readFile(path)
+    }
+    const warnings: Array<string> = []
+    environment.warn = (title, message) => { warnings.push(`${title}: ${message}`) }
+    await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: true, install: false })
+    expect(warnings.join('\n')).toContain('/parent/app/package.json: expected a JSON object')
+    expect(JSON.parse(output.files['/parent/app/package.json']).intent?.skills).toBeUndefined()
+    expect(await readFile('/parent/package.json')).toBe('{ broken parent')
+  })
+  it('recovers from an unreadable target without granting permissions', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await environment.writeFile('/app/package.json', '{}')
+    const readFile = environment.readFile
+    environment.readFile = (path) => path === '/app/package.json'
+      ? Promise.reject(new Error('EACCES: existing target manifest'))
+      : readFile(path)
+    const warnings: Array<string> = []
+    environment.warn = (title, message) => { warnings.push(`${title}: ${message}`) }
+    await create(environment, { ...simpleOptions, targetDir: '/app', intent: true })
+    expect(warnings.join('\n')).toContain('EACCES: existing target manifest')
+    expect(JSON.parse(output.files['/app/package.json']).intent?.skills).toBeUndefined()
+    expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(false)
+  })
+  it('does not swallow a write failure when the existing target manifest is invalid', async () => {
+    const { environment } = createMemoryEnvironment()
+    await environment.writeFile('/app/package.json', 'null')
+    const writeFile = environment.writeFile
+    environment.writeFile = (path, content) => path === '/app/package.json'
+      ? Promise.reject(new Error('ENOSPC: target write failed'))
+      : writeFile(path, content)
+    await expect(create(environment, { ...simpleOptions, targetDir: '/app', intent: true })).rejects.toThrow('ENOSPC: target write failed')
+  })
+})

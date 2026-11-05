@@ -71,10 +71,23 @@ async function writeFiles(
   context: { existingProject?: boolean } = {},
 ) {
   const packageJsonPath = joinPaths(options.targetDir, 'package.json')
-  const existingPackageJSON =
-    options.intent && environment.exists(packageJsonPath)
-      ? JSON.parse(await environment.readFile(packageJsonPath))
-      : {}
+  let existingPackageJSON: Record<string, any> = {}
+  let intentPolicyError: string | undefined
+  if (options.intent && environment.exists(packageJsonPath)) {
+    try {
+      const parsed: unknown = JSON.parse(
+        await environment.readFile(packageJsonPath),
+      )
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(
+          `Invalid Intent policy manifest ${packageJsonPath}: expected a JSON object.`,
+        )
+      }
+      existingPackageJSON = parsed
+    } catch (error) {
+      intentPolicyError = error instanceof Error ? error.message : String(error)
+    }
+  }
   const workspaceWasPresent = environment.exists(
     joinPaths(options.targetDir, 'pnpm-workspace.yaml'),
   )
@@ -150,8 +163,7 @@ async function writeFiles(
     preserveIntentConfiguration(generatedPackageJSON, existingPackageJSON)
   }
   const packageJSON = await resolvePackageJSONLatest(generatedPackageJSON)
-  let intentPolicyError: string | undefined
-  if (options.intent) {
+  if (options.intent && intentPolicyError === undefined) {
     try {
       await configureIntentPolicy(
         environment,
