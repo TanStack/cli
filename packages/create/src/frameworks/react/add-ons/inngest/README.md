@@ -13,7 +13,7 @@ First, uncomment `INNGEST_DEV=1` in `.env.local`. In v4 the SDK defaults to **cl
 npm run dev # or INNGEST_DEV=1 npm run dev
 
 # Terminal 2 — Inngest Dev Server (UI at http://localhost:8288)
-npx inngest-cli@latest dev
+npx --ignore-scripts=false inngest-cli@latest dev
 ```
 
 Open [http://localhost:3000/demo/inngest](http://localhost:3000/demo/inngest), click the button to send an event, and watch it run in the [Dev Server UI](http://localhost:8288).

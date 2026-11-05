@@ -115,7 +115,7 @@ function RouteComponent() {
           </li>
           <li>
             Run the Dev Server in a second terminal:{' '}
-            <code>npx inngest-cli@latest dev</code>.
+            <code>npx --ignore-scripts=false inngest-cli@latest dev</code>.
           </li>
           <li>
             View traces and runs at{' '}
