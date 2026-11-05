@@ -8,8 +8,23 @@ export async function setupIntent(
   environment: Environment,
   targetDir: string,
   options: Options,
+  intentPolicyError?: string,
 ) {
   if (!options.intent) {
+    return false
+  }
+
+  if (intentPolicyError !== undefined) {
+    environment.startStep({
+      id: 'setup-intent',
+      type: 'info',
+      message: 'TanStack Intent setup failed',
+    })
+    environment.finishStep('setup-intent', 'TanStack Intent setup failed')
+    environment.warn(
+      'TanStack Intent setup failed',
+      `Skill permissions were not initialized: ${intentPolicyError}`,
+    )
     return false
   }
 

@@ -146,6 +146,7 @@ describe('createApp', () => {
       })
       expect(outro).not.toContain('was wired up by TanStack Intent')
       expect(outro).toContain('TanStack Intent setup was skipped')
+      expect(outro).not.toContain('TanStack Intent setup failed')
       expect(outro).toContain('pnpm install')
       expect(outro).toContain('pnpm exec intent install --map')
     },
@@ -520,3 +521,154 @@ describe.each([createApp, createEdgeApp])(
     })
   },
 )
+
+// A strict policy-discovery failure must not leave a partial scaffold behind.
+describe.each([createApp, createEdgeApp])('Intent policy failure during create (%#)', (create) => {
+  it.each([
+    { unreadable: false, install: true },
+    { unreadable: false, install: false },
+    { unreadable: true, install: true },
+    { unreadable: true, install: false },
+  ])('finishes the app without granting permissions: %j', async ({ unreadable, install }) => {
+    const { environment, output } = createMemoryEnvironment()
+    const parentPath = '/parent/package.json'
+    const parent = unreadable ? '{"name":"parent"}' : '{ malformed parent'
+    await environment.writeFile(parentPath, parent)
+    const readFile = environment.readFile
+    if (unreadable) environment.readFile = (path) => path === parentPath
+      ? Promise.reject(new Error('EACCES: parent package.json'))
+      : readFile(path)
+    const steps: Array<string> = []
+    const warnings: Array<string> = []
+    let outro = ''
+    environment.finishStep = (_id, message) => { steps.push(message) }
+    environment.warn = (title, message) => { warnings.push(`${title}: ${message}`) }
+    environment.outro = (message) => { outro = message }
+    await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: true, install })
+    const pkg = JSON.parse(await readFile('/parent/app/package.json'))
+    expect(pkg).toMatchObject({
+      name: 'test',
+      scripts: { dev: 'react-scripts start' },
+      dependencies: { 'file-router': '^1.0.0', tailwindcss: '^3.0.0' },
+      devDependencies: { typescript: '^5.0.0' },
+    })
+    expect(pkg.devDependencies['@tanstack/intent']).toBeDefined()
+    expect(pkg.intent?.skills).toBeUndefined()
+    expect(await readFile('/parent/app/src/test.txt')).toBe('Hello')
+    expect(JSON.parse(await readFile('/parent/app/.cta.json')).intent).toBe(true)
+    expect(await readFile(parentPath)).toBe(parent)
+    expect(steps).toContain('Package.json written')
+    expect(steps).toContain('TanStack Intent setup failed')
+    expect(steps).not.toContain('TanStack Intent configured')
+    expect(steps).not.toContain('TanStack Intent setup skipped: dependencies not installed')
+    expect(warnings.join('\n')).toContain('Skill permissions were not initialized:')
+    if (unreadable) expect(warnings.join('\n')).toContain('EACCES')
+    expect(outro).not.toContain('was wired up by TanStack Intent')
+    expect(outro).not.toContain('TanStack Intent configured')
+    expect(outro).toContain('TanStack Intent setup failed')
+    expect(outro).not.toContain('TanStack Intent setup was skipped')
+    expect(outro).toContain('Fix the policy error above')
+    if (!install) expect(outro).toContain(', install dependencies,')
+    expect(outro.match(/TanStack Intent setup failed/g)).toHaveLength(1)
+    expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(false)
+    expect(output.commands.some((entry) => entry.command === 'pnpm' && entry.args[0] === 'install')).toBe(install)
+  })
+})
+
+describe.each([createApp, createEdgeApp])('Intent recovery adjacent create paths (%#)', (create) => {
+  it.each([undefined, '{"name":"unrelated-parent"}'])(
+    'configures the fresh app when the parent manifest is absent or unrelated (%s)',
+    async (parent) => {
+      const { environment, output } = createMemoryEnvironment()
+      if (parent !== undefined) await environment.writeFile('/parent/package.json', parent)
+      const steps: Array<string> = []
+      environment.finishStep = (_id, message) => { steps.push(message) }
+      await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: true })
+      const pkg = JSON.parse(output.files['/parent/app/package.json'])
+      expect(pkg.intent.skills).toEqual(['file-router', 'tailwindcss', 'typescript'])
+      expect(steps).toContain('TanStack Intent configured')
+      expect(steps).not.toContain('TanStack Intent setup failed')
+      if (parent !== undefined) expect(await environment.readFile('/parent/package.json')).toBe(parent)
+    },
+  )
+  it('preserves an inherited deny policy while completing the fresh app', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const parent = JSON.stringify({ workspaces: ['app'], intent: { skills: [], exclude: ['private'] } })
+    await environment.writeFile('/parent/package.json', parent)
+    await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: true })
+    expect(JSON.parse(output.files['/parent/app/package.json'])).not.toHaveProperty('intent')
+    expect(output.files['/parent/app/src/test.txt']).toBe('Hello')
+    expect(await environment.readFile('/parent/package.json')).toBe(parent)
+  })
+  it('keeps existing policy and version pins when ancestor discovery fails', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const intent = { skills: [], exclude: ['private'] }
+    await environment.writeFile('/parent/package.json', '{ malformed parent')
+    await environment.writeFile('/parent/app/package.json', JSON.stringify({ intent, devDependencies: { '@tanstack/intent': '0.5.6' } }))
+    const steps: Array<string> = []
+    environment.finishStep = (_id, message) => { steps.push(message) }
+    await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: true })
+    const pkg = JSON.parse(output.files['/parent/app/package.json'])
+    expect(pkg.intent).toEqual(intent)
+    expect(pkg.devDependencies['@tanstack/intent']).toBe('0.5.6')
+    expect(steps).toContain('TanStack Intent setup failed')
+    expect(steps).not.toContain('TanStack Intent configured')
+    expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(false)
+    expect(await environment.readFile('/parent/package.json')).toBe('{ malformed parent')
+  })
+  it('does not discover ancestor policy when Intent is disabled', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await environment.writeFile('/parent/package.json', '{ malformed parent')
+    const readFile = environment.readFile
+    environment.readFile = (path) => {
+      if (path === '/parent/package.json') throw new Error('Ancestor policy must not be read')
+      return readFile(path)
+    }
+    const steps: Array<string> = []
+    const warnings: Array<string> = []
+    environment.warn = (title, message) => { warnings.push(`${title}: ${message}`) }
+    environment.finishStep = (_id, message) => { steps.push(message) }
+    await create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: false })
+    const pkg = JSON.parse(output.files['/parent/app/package.json'])
+    expect(pkg).not.toHaveProperty('intent')
+    expect(pkg.devDependencies).not.toHaveProperty('@tanstack/intent')
+    expect(output.files['/parent/app/src/test.txt']).toBe('Hello')
+    expect(steps).not.toContain('TanStack Intent setup failed')
+    expect(warnings).toEqual([])
+    expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(false)
+  })
+})
+
+
+describe.each([createApp, createEdgeApp])('Intent recovery error isolation (%#)', (create) => {
+  it.each([false, true])('does not swallow a real manifest write failure (policy failure=%s)', async (policyFails) => {
+    const { environment } = createMemoryEnvironment()
+    if (policyFails) await environment.writeFile('/parent/package.json', '{ malformed parent')
+    const writeFile = environment.writeFile
+    environment.writeFile = (path, content) => path === '/parent/app/package.json'
+      ? Promise.reject(new Error('ENOSPC: project manifest write failed'))
+      : writeFile(path, content)
+    await expect(create(environment, { ...simpleOptions, targetDir: '/parent/app', intent: true })).rejects.toThrow('ENOSPC: project manifest write failed')
+  })
+  it('does not retain a previous policy error after the parent is repaired', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    const steps: Array<string> = []
+    const warnings: Array<string> = []
+    environment.finishStep = (_id, message) => { steps.push(message) }
+    environment.warn = (title, message) => { warnings.push(`${title}: ${message}`) }
+    await environment.writeFile('/parent/package.json', '{ malformed parent')
+    await create(environment, { ...simpleOptions, targetDir: '/parent/first-app', intent: true })
+    expect(steps).toContain('TanStack Intent setup failed')
+    // Simulate the user fixing the parent, then creating a second app in the same environment.
+    await environment.writeFile('/parent/package.json', '{"name":"parent"}')
+    steps.length = 0
+    warnings.length = 0
+    await create(environment, { ...simpleOptions, targetDir: '/parent/second-app', intent: true })
+    const pkg = JSON.parse(output.files['/parent/second-app/package.json'])
+    expect(pkg.intent.skills).toEqual(['file-router', 'tailwindcss', 'typescript'])
+    expect(steps).toContain('TanStack Intent configured')
+    expect(steps).not.toContain('TanStack Intent setup failed')
+    expect(warnings).toEqual([])
+    expect(output.commands.some((entry) => entry.args.includes('intent'))).toBe(true)
+  })
+})
