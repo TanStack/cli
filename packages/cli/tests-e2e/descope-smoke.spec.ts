@@ -32,12 +32,12 @@ test('@blocking handles Descope initialization failure, retry, and session event
         assets = path.resolve(dir, '..', 'descope-ui-fixture')
         fs.mkdirSync(assets)
         let archive: Buffer
+        let response: Response
         try {
-          const response = await fetch(
+          response = await fetch(
             'https://registry.npmjs.org/@descope/web-components-ui/-/web-components-ui-3.27.2.tgz',
             { signal: AbortSignal.timeout(30_000) },
           )
-          assert.ok(response.ok, `Registry returned ${response.status}`)
           archive = Buffer.from(await response.arrayBuffer())
         } catch (cause) {
           throw new Error(
@@ -45,6 +45,7 @@ test('@blocking handles Descope initialization failure, retry, and session event
             { cause },
           )
         }
+        assert.ok(response.ok, `Registry returned ${response.status}`)
         assert.equal(
           'sha512-' + createHash('sha512').update(archive).digest('base64'),
           UI_INTEGRITY,
