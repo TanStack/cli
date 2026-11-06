@@ -17,12 +17,12 @@ importers:
 
   .:
     devDependencies:
+      '@changesets/changelog-github':
+        specifier: ^0.7.0
+        version: 0.7.0
       '@changesets/cli':
         specifier: ^2.29.8
         version: 2.29.8(@types/node@24.6.0)
-      '@svitejs/changesets-changelog-github-compact':
-        specifier: ^1.2.0
-        version: 1.2.0
       '@tanstack/eslint-config':
         specifier: ^0.3.4
         version: 0.3.4(@typescript-eslint/utils@8.49.0(eslint@9.25.1(jiti@2.6.1))(typescript@6.0.2))(eslint-import-resolver-node@0.3.9)(eslint@9.25.1(jiti@2.6.1))(typescript@6.0.2)
@@ -349,6 +349,9 @@ packages:
   '@changesets/changelog-git@0.2.1':
     resolution: {integrity: sha512-x/xEleCFLH28c3bQeQIyeZf8lFXyDFVn1SgcBiR2Tw/r4IAWlk1fzxCEZ6NxQAjF2Nwtczoen3OA2qR+UawQ8Q==}
 
+  '@changesets/changelog-github@0.7.0':
+    resolution: {integrity: sha512-rBsbRvc4TVn+FvFnOVM3LxlFJfTXXCp8gfVJ+0BubxWNSVnLuAzowi5j+IEraLLP52w8AAs9QfKbPS3MMiXQJA==}
+
   '@changesets/cli@2.29.8':
     resolution: {integrity: sha512-1weuGZpP63YWUYjay/E84qqwcnt5yJMM0tep10Up7Q5cS/DGe2IZ0Uj3HNMxGhCINZuR7aO9WBMdKnPit5ZDPA==}
     hasBin: true
@@ -364,6 +367,9 @@ packages:
 
   '@changesets/get-github-info@0.6.0':
     resolution: {integrity: sha512-v/TSnFVXI8vzX9/w3DU2Ol+UlTZcu3m0kXTjTT4KlAdwSvwutcByYwyYn9hwerPWfPkT2JfpoX0KgvCEi8Q/SA==}
+
+  '@changesets/get-github-info@0.8.0':
+    resolution: {integrity: sha512-cRnC+xdF0JIik7coko3iUP9qbnfi1iJQ3sAa6dE+Tx3+ET8bjFEm63PA4WEohgjYcmsOikPHWzPsMWWiZmntOQ==}
 
   '@changesets/get-release-plan@4.0.14':
     resolution: {integrity: sha512-yjZMHpUHgl4Xl5gRlolVuxDkm4HgSJqT93Ri1Uz8kGrQb+5iJ8dkXJ20M2j/Y4iV5QzS2c5SeTxVSKX+2eMI0g==}
@@ -995,10 +1001,6 @@ packages:
     peerDependencies:
       eslint: '>=9.0.0'
 
-  '@svitejs/changesets-changelog-github-compact@1.2.0':
-    resolution: {integrity: sha512-08eKiDAjj4zLug1taXSIJ0kGL5cawjVCyJkBb6EWSg5fEPX6L+Wtr0CH2If4j5KYylz85iaZiFlUItvgJvll5g==}
-    engines: {node: ^14.13.1 || ^16.0.0 || >=18}
-
   '@tanstack/config@0.16.3':
     resolution: {integrity: sha512-TPABDiaaSmwV/FMYhfeaHuHSQ4YJ3qUY4D4d5+JgWlsaueiLMB6bw7rRhK2AyhYVJfiS2nYhNiFYfOPKFYH5UQ==}
     engines: {node: '>=18'}
@@ -1624,6 +1626,10 @@ packages:
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
+
+  dotenv@8.6.0:
+    resolution: {integrity: sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==}
+    engines: {node: '>=10'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -3513,6 +3519,14 @@ snapshots:
     dependencies:
       '@changesets/types': 6.1.0
 
+  '@changesets/changelog-github@0.7.0':
+    dependencies:
+      '@changesets/get-github-info': 0.8.0
+      '@changesets/types': 6.1.0
+      dotenv: 8.6.0
+    transitivePeerDependencies:
+      - encoding
+
   '@changesets/cli@2.29.8(@types/node@24.6.0)':
     dependencies:
       '@changesets/apply-release-plan': 7.0.14
@@ -3568,6 +3582,13 @@ snapshots:
       semver: 7.7.3
 
   '@changesets/get-github-info@0.6.0':
+    dependencies:
+      dataloader: 1.4.0
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
+
+  '@changesets/get-github-info@0.8.0':
     dependencies:
       dataloader: 1.4.0
       node-fetch: 2.7.0
@@ -4156,13 +4177,6 @@ snapshots:
       espree: 10.4.0
       estraverse: 5.3.0
       picomatch: 4.0.3
-
-  '@svitejs/changesets-changelog-github-compact@1.2.0':
-    dependencies:
-      '@changesets/get-github-info': 0.6.0
-      dotenv: 16.4.7
-    transitivePeerDependencies:
-      - encoding
 
   '@tanstack/config@0.16.3(@types/node@22.15.3)(@typescript-eslint/utils@8.49.0(eslint@9.25.1(jiti@2.6.1))(typescript@6.0.2))(esbuild@0.25.12)(eslint-import-resolver-node@0.3.9)(eslint@9.25.1(jiti@2.6.1))(rollup@4.46.2)(typescript@6.0.2)(vite@7.1.7(@types/node@22.15.3)(jiti@2.6.1)(lightningcss@1.29.2)(terser@5.39.0)(tsx@4.19.4)(yaml@2.8.2))':
     dependencies:
@@ -4829,6 +4843,8 @@ snapshots:
       dotenv: 16.4.7
 
   dotenv@16.4.7: {}
+
+  dotenv@8.6.0: {}
 
   dunder-proto@1.0.1:
     dependencies:
