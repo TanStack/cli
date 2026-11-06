@@ -1,0 +1,16 @@
+{
+  "name": "Prettier",
+  "description": "Format code without adding a linter.",
+  "phase": "setup",
+  "type": "toolchain",
+  "category": "tooling",
+  "exclusive": [
+    "linter"
+  ],
+  "color": "#F7B93E",
+  "modes": [
+    "code-router",
+    "file-router"
+  ],
+  "link": "https://prettier.io"
+}
