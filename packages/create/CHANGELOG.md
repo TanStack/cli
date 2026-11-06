@@ -1,5 +1,52 @@
 # @tanstack/create
 
+## 0.72.0
+
+### Minor Changes
+
+- Add a React Elysia and Eden Treaty integration with a same-origin typed API route and greeting demo. ([#573](https://github.com/TanStack/cli/pull/573))
+
+- Add the optional Themer integration for React Start, preserving saved light, dark and system preferences before hydration and across browser tabs. ([#569](https://github.com/TanStack/cli/pull/569))
+
+- Add a standalone Prettier toolchain for React and Solid apps, available with `--toolchain prettier` or `tanstack add prettier`. ([#571](https://github.com/TanStack/cli/pull/571))
+
+### Patch Changes
+
+- Rebuild the React AI add-on's floating "AI Assistant" on the ([#509](https://github.com/TanStack/cli/pull/509))
+  `@tanstack/ai-react/ui` `createChatHook` registry pattern. The assistant now
+  registers layout/message/input chrome plus text and `recommendGuitar` tool
+  components instead of hand-rolling message rendering, matching the newer
+  react-ui chat architecture. Behaviour and styling are unchanged; the guitar
+  recommendation card still renders inline.
+
+- Generate Better Auth tables and configure its adapter when Drizzle or Prisma is selected. ([#568](https://github.com/TanStack/cli/pull/568))
+
+  Require Better Auth 1.7.18 or newer so newly generated auth setups exclude the known vulnerable older versions.
+
+- Generate React and Solid starters that pass their Biome lint checks. Use Router's nonce-aware theme script helper in React and set the default document language in Solid. ([#570](https://github.com/TanStack/cli/pull/570))
+
+- Finish pending rebuild writes before dev watch removes its temporary directory during shutdown. ([#563](https://github.com/TanStack/cli/pull/563))
+
+- Fix generated Drizzle configuration types and use the current Start server function validator API. ([#566](https://github.com/TanStack/cli/pull/566))
+
+- Associate the generated React Form demo text field with its label so clicking the label focuses the input. ([#559](https://github.com/TanStack/cli/pull/559))
+
+- Use `gemini-3.8-flash` instead of the retired `gemini-2.0-flash-exp` in the generated AI chat routes (AI add-on, resume and events examples). ([#562](https://github.com/TanStack/cli/pull/562))
+
+- Report a failed TanStack Intent setup without claiming that agent guidance was written. ([#561](https://github.com/TanStack/cli/pull/561))
+
+- Match the React Biome configuration schema to the installed Biome version. ([#427](https://github.com/TanStack/cli/pull/427))
+
+- Generate a Workers server entry for the React Sentry add-on when targeting Cloudflare. Update the Neon demo to use the current Start validator API. ([#567](https://github.com/TanStack/cli/pull/567))
+
+- Generate valid build and development scripts for React apps with the Sentry add-on and fix the demo route’s error type. ([#560](https://github.com/TanStack/cli/pull/560))
+
+- Update the generated React Table demo to use the v9 APIs for filtering, sorting, and pagination. ([#565](https://github.com/TanStack/cli/pull/565))
+
+- Allow Tailwind box-sizing utilities to override the default reset in generated React and Solid apps. ([#564](https://github.com/TanStack/cli/pull/564))
+
+- Declare the router core peer dependency when React or Solid router devtools are included in a generated app. ([#482](https://github.com/TanStack/cli/pull/482))
+
 ## 0.71.15
 
 ### Patch Changes
