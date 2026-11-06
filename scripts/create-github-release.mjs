@@ -3,6 +3,7 @@ import { execFileSync, execSync } from 'node:child_process'
 import fs, { globSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { findReleaseForCommit, latestReleaseFlag } from './release-identity.mjs'
 
 const rootDir = path.join(import.meta.dirname, '..')
 const ghToken = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
@@ -63,6 +64,57 @@ const releaseLogs = execSync(
 
 const currentRelease = releaseLogs[0] || 'HEAD'
 const previousRelease = releaseLogs[1]
+
+const releaseHead = execFileSync('git', ['rev-parse', 'HEAD'], {
+  encoding: 'utf8',
+}).trim()
+const releases = JSON.parse(
+  execFileSync(
+    'gh',
+    [
+      'api',
+      '--paginate',
+      '--slurp',
+      'repos/TanStack/cli/releases?per_page=100',
+    ],
+    { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 },
+  ),
+).flat()
+const resolveTagCommit = (tag) => {
+  try {
+    return execFileSync('git', ['rev-parse', '--verify', `${tag}^{commit}`], {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return execFileSync(
+      'gh',
+      [
+        'api',
+        `repos/TanStack/cli/commits/${encodeURIComponent(tag)}`,
+        '--jq',
+        '.sha',
+      ],
+      { encoding: 'utf8' },
+    ).trim()
+  }
+}
+const existingRelease = await findReleaseForCommit(
+  releases,
+  releaseHead,
+  resolveTagCommit,
+)
+if (existingRelease) {
+  if (existingRelease.draft) {
+    throw new Error(
+      `A draft release already exists for ${releaseHead}: ${existingRelease.html_url}`,
+    )
+  }
+  console.info(
+    `Release already exists for ${releaseHead}: ${existingRelease.html_url}`,
+  )
+  process.exit(0)
+}
 
 const bumpedPackages = []
 for (const workspaceDir of workspaceDirs) {
@@ -224,6 +276,40 @@ ${changelogMd}
 ${bumpedPackages.map((pkg) => `- ${pkg.name}@${pkg.version}`).join('\n')}
 `
 
+let latestHead
+if (
+  isLatest &&
+  releases.some((release) => !release.draft && !release.prerelease)
+) {
+  const latestRelease = JSON.parse(
+    execFileSync('gh', ['api', 'repos/TanStack/cli/releases/latest'], {
+      encoding: 'utf8',
+    }),
+  )
+  latestHead = resolveTagCommit(latestRelease.tag_name)
+}
+const latestOption = latestReleaseFlag({
+  requested: process.argv.includes('--latest=false')
+    ? 'false'
+    : isLatest
+      ? 'true'
+      : undefined,
+  releaseHead,
+  latestHead,
+  isAncestor: (older, newer) => {
+    try {
+      execFileSync('git', ['merge-base', '--is-ancestor', older, newer], {
+        stdio: 'ignore',
+      })
+      return true
+    } catch (error) {
+      if (error.status === 1) return false
+      throw error
+    }
+  },
+})
+const latestFlag = latestOption ? ` ${latestOption}` : ''
+
 let tagExists = false
 try {
   execSync(`git rev-parse ${tagName}`, { stdio: 'ignore' })
@@ -238,7 +324,6 @@ if (!tagExists) {
 }
 
 const prereleaseFlag = isPrerelease ? '--prerelease' : ''
-const latestFlag = isLatest ? ' --latest' : ''
 const tmpFile = path.join(tmpdir(), `release-notes-${tagName}.md`)
 fs.writeFileSync(tmpFile, body)
 

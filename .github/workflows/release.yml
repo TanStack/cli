@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  queue: max
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -22,7 +22,13 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      actions: read
       pull-requests: write
+    outputs:
+      published: ${{ steps.changesets.outputs.published == 'true' || steps.stable-tags.outputs.published == 'true' }}
+      packages: ${{ steps.changesets.outputs.publishedPackages }}
+      prerelease: ${{ steps.dist-tag.outputs.prerelease }}
+      latest: ${{ steps.dist-tag.outputs.latest }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -72,16 +78,93 @@ jobs:
         uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
         with:
           version: pnpm run changeset:version
-          publish: pnpm run changeset:publish ${{ steps.dist-tag.outputs.tag && format('--tag {0}', steps.dist-tag.outputs.tag) }}
+          publish: ${{ github.ref_name != 'main' && format('pnpm run changeset:publish --tag {0}', steps.dist-tag.outputs.tag) || '' }}
           title: 'ci: Version Packages'
           commit: 'ci: changeset release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Plan stable publication
+        id: stable-plan
+        if: github.ref_name == 'main' && steps.changesets.outputs.hasChangesets == 'false'
+        run: node scripts/release-publish-plan.mjs plan
+      - name: Publish and verify create
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: packages/create
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Publish and verify cli
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: packages/cli
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Publish and verify create-start-app
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: cli-aliases/create-start-app
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Publish and verify create-tanstack
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: cli-aliases/create-tanstack
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Publish and verify create-tanstack-app
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: cli-aliases/create-tanstack-app
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Publish and verify create-tsrouter-app
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: cli-aliases/create-tsrouter-app
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Publish and verify ts-create-start
+        if: steps.stable-plan.outputs.active == 'true'
+        uses: ./.github/actions/publish-verified-package
+        with:
+          directory: cli-aliases/ts-create-start
+          plan: ${{ steps.stable-plan.outputs.packages }}
+      - name: Tag verified stable packages
+        id: stable-tags
+        if: steps.stable-plan.outputs.active == 'true'
+        run: node scripts/release-publish-plan.mjs tags
+        env:
+          STABLE_RELEASE_PLAN: ${{ steps.stable-plan.outputs.packages }}
+  verify-release:
+    name: Verify Published Release
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Verify Package Availability and Integrity
+        if: needs.release.outputs.latest != 'true'
+        run: node scripts/verify-release-artifacts.mjs
+        env:
+          PUBLISHED_PACKAGES: ${{ needs.release.outputs.packages }}
       - name: Create GitHub Release
-        if: steps.changesets.outputs.published == 'true'
-        run: node scripts/create-github-release.mjs ${PRERELEASE_FLAG} ${LATEST_FLAG}
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/create-github-release.mjs ${PRERELEASE_FLAG} ${LATEST_FLAG}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PRERELEASE_FLAG: ${{ steps.dist-tag.outputs.prerelease == 'true' && '--prerelease' }}
-          LATEST_FLAG: ${{ steps.dist-tag.outputs.latest == 'true' && '--latest' }}
+          PRERELEASE_FLAG: ${{ needs.release.outputs.prerelease == 'true' && '--prerelease' }}
+          LATEST_FLAG: ${{ needs.release.outputs.latest == 'true' && '--latest' }}
