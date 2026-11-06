@@ -1,0 +1,47 @@
+.elysia-demo {
+  max-width: 36rem;
+  margin: 3rem auto;
+  padding: 1.5rem;
+  color: var(--sea-ink, #1f2937);
+}
+.elysia-demo h1 {
+  font-size: 1.75rem;
+  margin: 0 0 1.5rem;
+}
+.elysia-demo form {
+  display: grid;
+  gap: 0.75rem;
+}
+.elysia-demo input {
+  padding: 0.65rem;
+  border: 1px solid var(--line, #94a3b8);
+  border-radius: 0.4rem;
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+.elysia-demo button {
+  justify-self: start;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--line, #94a3b8);
+  border-radius: 0.4rem;
+  background: color-mix(
+    in oklab,
+    var(--lagoon, #4fb8b2) 22%,
+    var(--surface-strong, #fff)
+  );
+  color: var(--sea-ink, #173a40);
+  font: inherit;
+  cursor: pointer;
+}
+.elysia-demo button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.elysia-demo output {
+  display: block;
+  margin-top: 1.5rem;
+}
+.elysia-demo [role='alert'] {
+  margin-top: 1.5rem;
+}
