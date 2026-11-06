@@ -1,9 +1,23 @@
-<% if (!includeExamples) { %>
-@import "tailwindcss";
+<% if (blank) { %>
+<% if (tailwind) { %>@import "tailwindcss";
 
+<% } else { %>
 * {
   box-sizing: border-box;
 }
+<% } %>
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  width: min(42rem, calc(100% - 2rem));
+  margin: 4rem auto;
+}
+<% } else if (!includeExamples) { %>
+@import "tailwindcss";
 
 html,
 body,
@@ -89,10 +103,6 @@ body {
     --hero-a: rgba(96, 215, 207, 0.18);
     --hero-b: rgba(110, 200, 154, 0.12);
   }
-}
-
-* {
-  box-sizing: border-box;
 }
 
 html,

@@ -9,6 +9,7 @@ import {
   getRawRegistry,
   loadStarter,
   populateAddOnOptionsDefaults,
+  resolveBundler,
 } from '@tanstack/create'
 
 import {
@@ -320,6 +321,61 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
 } {
   const warnings: Array<string> = []
   const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
+  const isSupportedLegacyTemplate =
+    legacyTemplate !== undefined &&
+    SUPPORTED_LEGACY_TEMPLATES.has(legacyTemplate)
+
+  if (cliOptions.buildTool?.toLowerCase() === 'rsbuild') {
+    if (
+      cliOptions.starter ||
+      (cliOptions.template && !isSupportedLegacyTemplate) ||
+      cliOptions.templateId
+    ) {
+      return {
+        warnings,
+        error:
+          'Rsbuild does not currently support --starter, --template, or --template-id.',
+      }
+    }
+    if (cliOptions.deployment) {
+      return {
+        warnings,
+        error: 'Rsbuild does not currently support --deployment.',
+      }
+    }
+    if (cliOptions.addOns) {
+      return {
+        warnings,
+        error:
+          'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+      }
+    }
+  }
+
+  if (
+    cliOptions.blank &&
+    (cliOptions.starter || cliOptions.template || cliOptions.templateId)
+  ) {
+    return {
+      warnings,
+      error:
+        '--blank cannot be combined with --starter, --template, or --template-id.',
+    }
+  }
+
+  if (cliOptions.blank && cliOptions.examples === true) {
+    return {
+      warnings,
+      error: '--blank cannot be combined with --examples.',
+    }
+  }
+
+  if (cliOptions.blank && cliOptions.tailwind === true) {
+    return {
+      warnings,
+      error: '--blank cannot be combined with --tailwind.',
+    }
+  }
 
   if (cliOptions.starter) {
     warnings.push(
@@ -361,13 +417,13 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
 
   if (cliOptions.tailwind === true) {
     warnings.push(
-      'The --tailwind flag is deprecated and ignored. Tailwind is always enabled in TanStack Start scaffolds.',
+      'The --tailwind flag is deprecated and ignored. Tailwind is enabled in standard TanStack Start scaffolds.',
     )
   }
 
-  if (cliOptions.tailwind === false) {
+  if (cliOptions.tailwind === false && !cliOptions.blank) {
     warnings.push(
-      'The --no-tailwind flag is deprecated and ignored. Tailwind opt-out is intentionally unsupported to keep add-on permutations maintainable; remove Tailwind after scaffolding if needed.',
+      'The --no-tailwind flag is deprecated and ignored for standard scaffolds. Use --blank to create a minimal project without Tailwind.',
     )
   }
 
@@ -428,8 +484,12 @@ export async function normalizeOptions(
   // Mode is always file-router (TanStack Start)
   let mode = 'file-router'
   let routerOnly = !!cliOptions.routerOnly
+  const blank = cliOptions.blank === true
 
   const legacyTemplate = getLegacyTemplateValue(cliOptions.template)
+  const isSupportedLegacyTemplate =
+    legacyTemplate !== undefined &&
+    SUPPORTED_LEGACY_TEMPLATES.has(legacyTemplate)
 
   if (!cliOptions.starter) {
     if (cliOptions.template && !legacyTemplate) {
@@ -450,22 +510,49 @@ export async function normalizeOptions(
 
   const preferredFramework = (cliOptions.framework || 'react').toLowerCase()
 
-  const starter = !routerOnly && cliOptions.starter
+  const initialFramework = getFrameworkById(preferredFramework)
+  let framework = initialFramework!
+  const bundler = initialFramework
+    ? resolveBundler(initialFramework, cliOptions.buildTool).id
+    : (cliOptions.buildTool ?? 'vite')
+
+  if (bundler === 'rsbuild') {
+    if (
+      cliOptions.starter ||
+      (cliOptions.template && !isSupportedLegacyTemplate) ||
+      cliOptions.templateId
+    ) {
+      throw new Error('Rsbuild does not currently support templates.')
+    }
+    if (cliOptions.deployment || opts?.forcedDeployment) {
+      throw new Error('Rsbuild does not currently support deployments.')
+    }
+    if (forcedAddOns?.length || cliOptions.addOns) {
+      throw new Error(
+        'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+      )
+    }
+  }
+
+  const starter = !routerOnly && !blank && cliOptions.starter
     ? await loadStarter(
         await resolveStarterSpecifier(cliOptions.starter, preferredFramework),
       )
     : undefined
 
-  // TypeScript and Tailwind are always enabled with TanStack Start
+  // TypeScript is always enabled with TanStack Start.
   const typescript = true
-  const tailwind = true
 
   if (starter) {
     cliOptions.framework = starter.framework
     mode = starter.mode
   }
 
-  const framework = getFrameworkById(cliOptions.framework || 'react')!
+  const resolvedFramework = getFrameworkById(cliOptions.framework || 'react')
+  if (resolvedFramework) {
+    resolveBundler(resolvedFramework, bundler)
+  }
+  framework = resolvedFramework!
 
   async function selectAddOns() {
     // Edge case for Windows Powershell
@@ -506,17 +593,19 @@ export async function normalizeOptions(
         selectedAddOns.add(opts.forcedDeployment)
       }
 
-      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns))
+      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns), bundler)
     }
 
     return []
   }
 
-  const includeExamples = cliOptions.examples ?? !routerOnly
+  const includeExamples = blank ? false : (cliOptions.examples ?? !routerOnly)
   const chosenAddOnsRaw = await selectAddOns()
   const chosenAddOns = includeExamples
     ? chosenAddOnsRaw
     : chosenAddOnsRaw.filter((addOn) => addOn.type !== 'example')
+  const tailwind =
+    !blank || chosenAddOns.some((addOn) => addOn.tailwind === true)
 
   // Handle add-on configuration option
   let addOnOptionsFromCLI = {}
@@ -529,11 +618,12 @@ export async function normalizeOptions(
     }
   }
 
-  const normalized = {
+  const normalized: Options = {
     projectName: projectName,
     targetDir,
     framework,
     mode,
+    bundler,
     typescript,
     tailwind,
     packageManager:
@@ -542,13 +632,15 @@ export async function normalizeOptions(
       DEFAULT_PACKAGE_MANAGER,
     git: cliOptions.git ?? true,
     install: cliOptions.install,
-    intent: cliOptions.intent ?? true,
+    intent: cliOptions.intent ?? !blank,
     chosenAddOns,
     addOnOptions: {
       ...populateAddOnOptionsDefaults(chosenAddOns),
       ...addOnOptionsFromCLI,
     },
     starter: starter,
+    projectPreset: blank ? 'blank' : 'default',
+    routerOnly,
   }
 
   ;(normalized as Options & { includeExamples?: boolean }).includeExamples =

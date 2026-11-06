@@ -10,18 +10,78 @@ import {
   writeConfigFileToEnvironment,
 } from './config-file.js'
 import { formatCommand } from './utils.js'
-import { packageManagerInstall } from './package-manager.js'
+import { detectPnpmVersion, packageManagerInstall } from './package-manager.js'
 import {
   isBase64,
   recursivelyGatherFilesFromEnvironment,
 } from './file-helpers.js'
 import { mergePackageJSON } from './package-json.js'
+import {
+  mergePnpmWorkspace,
+  pnpmBuildDependencies,
+  standalonePnpmNpmrc,
+} from './pnpm-workspace.js'
 import { runSpecialSteps } from './special-steps/index.js'
 import { loadStarter } from './custom-add-ons/starter.js'
 import { setupIntent } from './integrations/intent.js'
 
-import type { Environment, Options } from './types.js'
+import type { AddOn, Environment, Options } from './types.js'
 import type { PersistedOptions } from './config-file.js'
+
+const ENV_FILE_NAMES = new Set(['.env', '.env.local', '.env.example'])
+const ENV_VARIABLE_PATTERN = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/
+
+function mergeEnvFileContents(existing: string, generated: string) {
+  const declaredVariables = new Set<string>()
+  for (const line of existing.split(/\r?\n/)) {
+    const match = line.match(ENV_VARIABLE_PATTERN)
+    if (match) {
+      declaredVariables.add(match[1])
+    }
+  }
+
+  const additions: Array<string> = []
+  for (const block of generated.split(/\r?\n(?:[ \t]*\r?\n)+/)) {
+    const blockLines = block.split(/\r?\n/)
+    while (blockLines.at(-1) === '') {
+      blockLines.pop()
+    }
+    const lines: Array<string> = []
+    let addedVariableCount = 0
+    for (const line of blockLines) {
+      const match = line.match(ENV_VARIABLE_PATTERN)
+      if (!match) {
+        lines.push(line)
+        continue
+      }
+      if (declaredVariables.has(match[1])) {
+        continue
+      }
+
+      declaredVariables.add(match[1])
+      addedVariableCount++
+      lines.push(line)
+    }
+
+    if (addedVariableCount > 0) {
+      additions.push(lines.join('\n'))
+    }
+  }
+
+  if (additions.length === 0) {
+    return existing
+  }
+
+  const separator = existing.length
+    ? existing.endsWith('\n\n')
+      ? ''
+      : existing.endsWith('\n')
+        ? '\n'
+        : '\n\n'
+    : ''
+  const trailingNewline = generated.endsWith('\n') ? '\n' : ''
+  return `${existing}${separator}${additions.join('\n\n')}${trailingNewline}`
+}
 
 export async function hasPendingGitChanges(
   environment: Environment,
@@ -41,27 +101,52 @@ async function createOptions(
   targetDir: string,
 ): Promise<Options> {
   const framework = getFrameworkById(json.framework)
+  const bundler = json.bundler ?? 'vite'
 
   const starter = json.starter ? await loadStarter(json.starter) : undefined
+  const chosenAddOns = await finalizeAddOns(framework!, json.mode!, [
+    ...json.chosenAddOns,
+    ...addOns,
+  ], bundler)
+
+  if (bundler === 'rsbuild') {
+    assertNoExclusiveAddOnConflicts(chosenAddOns)
+  }
 
   return {
     ...json,
     framework,
-    tailwind: true,
+    bundler,
+    tailwind:
+      (json.tailwind ?? true) ||
+      chosenAddOns.some((addOn) => addOn.tailwind === true),
     addOns: true,
-    chosenAddOns: await finalizeAddOns(framework!, json.mode!, [
-      ...json.chosenAddOns,
-      ...addOns,
-    ]),
+    chosenAddOns,
     targetDir,
     starter,
     intent: json.intent ?? false,
   } as Options
 }
 
-async function runCreateApp(options: Required<Options>) {
+function assertNoExclusiveAddOnConflicts(addOns: Array<AddOn>) {
+  const selectedByExclusiveGroup = new Map<string, AddOn>()
+
+  for (const addOn of addOns) {
+    for (const exclusive of addOn.exclusive ?? []) {
+      const selected = selectedByExclusiveGroup.get(exclusive)
+      if (selected && selected.id !== addOn.id) {
+        throw new Error(
+          `Cannot combine ${selected.name} and ${addOn.name}. Add-ons in the "${exclusive}" group are mutually exclusive.`,
+        )
+      }
+      selectedByExclusiveGroup.set(exclusive, addOn)
+    }
+  }
+}
+
+async function runCreateApp(options: Required<Options>, packageManagerVersion?: string) {
   const { environment, output } = createMemoryEnvironment(options.targetDir)
-  await createApp(environment, options)
+  await createApp(environment, options, { existingProject: true, packageManagerVersion })
   return output
 }
 
@@ -131,10 +216,54 @@ export async function writeFiles(
     false,
   )
 
+  // Ignored files still need merge and overwrite protection when targeted.
+  const outputTargets = new Set(Object.keys(relativeOutputFiles))
+  if (Object.prototype.hasOwnProperty.call(relativeOutputFiles, 'pnpm-workspace.yaml')) {
+    outputTargets.add('.npmrc')
+  }
+  for (const relativeFile of outputTargets) {
+    const target = resolve(cwd, relativeFile)
+    if (
+      !Object.prototype.hasOwnProperty.call(currentFiles, relativeFile) &&
+      environment.exists(target) &&
+      !environment.isDirectory(target)
+    ) {
+      currentFiles[relativeFile] = await environment.readFile(target)
+    }
+  }
+
+  for (const [relativeFile, generatedContents] of Object.entries(
+    relativeOutputFiles,
+  )) {
+    if (relativeFile === 'pnpm-workspace.yaml') {
+      const generatedPackage = relativeOutputFiles['package.json']
+      if (generatedPackage) {
+        const currentPackage = currentFiles['package.json'] ? JSON.parse(currentFiles['package.json']) : {}
+        const mergedPackage = mergePackageJSON(currentPackage, JSON.parse(generatedPackage))
+        relativeOutputFiles[relativeFile] = await mergePnpmWorkspace(currentFiles[relativeFile] ?? generatedContents, pnpmBuildDependencies(mergedPackage), pnpmBuildDependencies(currentPackage))
+        const npmrc = await standalonePnpmNpmrc(
+          currentFiles[relativeFile],
+          relativeOutputFiles[relativeFile],
+          relativeOutputFiles['.npmrc'] ?? currentFiles['.npmrc'],
+        )
+        if (npmrc !== undefined) relativeOutputFiles['.npmrc'] = npmrc
+      }
+    }
+    if (
+      ENV_FILE_NAMES.has(basename(relativeFile)) &&
+      relativeFile in currentFiles
+    ) {
+      relativeOutputFiles[relativeFile] = mergeEnvFileContents(
+        currentFiles[relativeFile],
+        generatedContents,
+      )
+    }
+  }
+
   const overwrittenFiles: Array<string> = []
   const changedFiles: Array<string> = []
   for (const relativeFile of Object.keys(relativeOutputFiles)) {
-    if (currentFiles[relativeFile]) {
+    if (Object.prototype.hasOwnProperty.call(currentFiles, relativeFile)) {
       if (currentFiles[relativeFile] !== relativeOutputFiles[relativeFile]) {
         overwrittenFiles.push(relativeFile)
       }
@@ -143,10 +272,14 @@ export async function writeFiles(
     }
   }
 
-  if (!forced && overwrittenFiles.length) {
+  const deletedFiles = output.deletedFiles
+    .map(toRelativePath)
+    .filter((file) => environment.exists(resolve(cwd, file)))
+
+  if (!forced && (overwrittenFiles.length || deletedFiles.length)) {
     environment.warn(
-      'The following will be overwritten',
-      [...overwrittenFiles, ...output.deletedFiles].join('\n'),
+      'The following files will be changed or deleted',
+      [...overwrittenFiles, ...deletedFiles].join('\n'),
     )
     const shouldContinue = await environment.confirm('Do you want to continue?')
     if (!shouldContinue) {
@@ -154,11 +287,8 @@ export async function writeFiles(
     }
   }
 
-  for (const filePath of output.deletedFiles) {
-    const relativeFilePath = toRelativePath(filePath)
-    if (environment.exists(resolve(cwd, relativeFilePath))) {
-      await environment.deleteFile(resolve(cwd, relativeFilePath))
-    }
+  for (const relativeFilePath of deletedFiles) {
+    await environment.deleteFile(resolve(cwd, relativeFilePath))
   }
 
   environment.startStep({
@@ -175,7 +305,7 @@ export async function writeFiles(
         await environment.readFile(resolve(cwd, file)),
       )
       const newJSON = mergePackageJSON(currentJson, JSON.parse(contents))
-      environment.writeFile(
+      await environment.writeFile(
         resolve(cwd, file),
         JSON.stringify(newJSON, null, 2),
       )
@@ -201,10 +331,11 @@ export async function runNewCommands(
       args: Array<string>
     }>
   },
+  packageManagerVersion?: string,
 ) {
   const originalOutput = await runCreateApp({
     ...(await createOptions(originalOptions, [], cwd)),
-  } as Required<Options>)
+  } as Required<Options>, packageManagerVersion)
 
   const originalCommands = new Set(
     originalOutput.commands.map((c) => [c.command, ...c.args].join(' ')),
@@ -256,11 +387,15 @@ export async function addToApp(
   })
 
   const newOptions = await createOptions(persistedOptions, addOns, cwd)
+  const needsBuildApproval = newOptions.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) || newOptions.starter?.command?.allowBuilds?.length
+  const packageManagerVersion = newOptions.packageManager === 'pnpm' && needsBuildApproval
+    ? await detectPnpmVersion(environment, cwd)
+    : undefined
 
   const output = await runCreateApp({
     ...newOptions,
     targetDir: cwd,
-  } as Required<Options>)
+  } as Required<Options>, packageManagerVersion)
 
   await writeFiles(environment, cwd, output, !!options?.forced)
 
@@ -296,6 +431,8 @@ export async function addToApp(
     environment,
     newOptions.targetDir,
     newOptions.packageManager,
+    undefined,
+    { updateLockfile: true },
   )
   s.stop(`Installed dependencies`)
   environment.finishStep('install-dependencies', 'Dependencies installed')
@@ -319,7 +456,7 @@ export async function addToApp(
 
   // Handle new commands
 
-  await runNewCommands(environment, persistedOptions, cwd, output)
+  await runNewCommands(environment, persistedOptions, cwd, output, packageManagerVersion)
 
   const intent = options?.intent ?? persistedOptions.intent ?? true
   newOptions.intent = intent

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -7,16 +7,20 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["src/routeTree.gen.ts"],
-    "include": ["src/*", ".vscode/*", "index.html", "vite.config.ts"]
+    "includes": [
+      "**/src/**/*",
+      "**/.vscode/**/*",
+      <% if (bundler === 'vite') { %>"**/index.html",
+      <% } %>"**/<%= bundler %>.config.ts",
+      "!**/src/routeTree.gen.ts",
+      "!**/src/styles.css"
+    ]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "tab"
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {

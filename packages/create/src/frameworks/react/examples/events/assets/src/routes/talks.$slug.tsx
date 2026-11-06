@@ -73,7 +73,8 @@ function TalkDetailPage() {
           {/* Speaker link */}
           {speaker ? (
             <Link 
-              to={`/speakers/${speaker.slug}`}
+              to="/speakers/$slug"
+              params={{ slug: speaker.slug }}
               className="flex items-center gap-3 group"
             >
               <div className="w-12 h-12 rounded-full overflow-hidden border border-border/50">

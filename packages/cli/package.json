@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/cli",
-  "version": "0.69.5",
+  "version": "0.72.16",
   "description": "TanStack CLI",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,17 +48,16 @@
   "license": "MIT",
   "packageManager": "pnpm@11.9.0",
   "engines": {
-    "node": ">=20"
+    "node": "^20.17.0 || >=22.9.0"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "@tanstack/create": "workspace:*",
-    "chalk": "^5.4.1",
     "chokidar": "^3.6.0",
     "commander": "^13.1.0",
     "diff": "^7.0.0",
     "semver": "^7.7.2",
-    "tempy": "^3.1.0",
+    "supports-color": "^10.2.2",
     "validate-npm-package-name": "^7.0.0",
     "zod": "^3.24.2"
   },
@@ -67,11 +66,12 @@
     "@tanstack/config": "^0.16.2",
     "@tanstack/intent": "^0.0.13",
     "@types/diff": "^5.2.0",
-    "@types/node": "^22.13.4",
+    "@types/node": "^22.20.5",
     "@types/semver": "^7.7.0",
     "@types/validate-npm-package-name": "^4.0.2",
     "@vitest/coverage-v8": "4.1.5",
     "eslint": "^9.20.0",
+    "tsx": "^4.19.4",
     "typescript": "^6.0.2",
     "vitest": "^4.1.5",
     "vitest-fetch-mock": "^0.4.5"

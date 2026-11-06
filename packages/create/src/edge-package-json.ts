@@ -96,6 +96,15 @@ export function mergePackageJSON(
 
 export function createPackageJSON(options: Options) {
   const packageManager = options.packageManager
+  const bundler = options.bundler ?? 'vite'
+  const blank = options.projectPreset === 'blank'
+  const includeDevtools =
+    !blank ||
+    options.chosenAddOns.some((addOn) =>
+      addOn.integrations?.some(
+        (integration) => integration.type === 'devtools',
+      ),
+    )
 
   function getPackageManagerExecuteScript(
     pkg: string,
@@ -113,8 +122,29 @@ export function createPackageJSON(options: Options) {
 
   const additions: Array<Record<string, unknown> | undefined> = [
     options.framework.optionalPackages.typescript,
-    options.framework.optionalPackages.tailwindcss,
+    options.framework.optionalPackages.bundlers?.[bundler],
+    includeDevtools ? options.framework.optionalPackages.devtools : undefined,
+    includeDevtools
+      ? options.framework.optionalPackages.bundlerDevtools?.[bundler]
+      : undefined,
+    !blank && options.includeExamples !== false
+      ? options.framework.optionalPackages.examples
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.tailwindcss
+      : undefined,
+    options.tailwind
+      ? options.framework.optionalPackages.bundlerTailwindcss?.[bundler]
+      : undefined,
     options.mode ? options.framework.optionalPackages[options.mode] : undefined,
+    options.mode === 'file-router'
+      ? options.framework.optionalPackages.bundlerFileRouter?.[bundler]
+      : undefined,
+    options.mode === 'file-router' && options.routerOnly
+      ? options.framework.optionalPackages.bundlerRouterOnlyFileRouter?.[
+          bundler
+        ]
+      : undefined,
   ]
   for (const addition of additions.filter(
     (addition): addition is Record<string, unknown> => Boolean(addition),
@@ -131,8 +161,10 @@ export function createPackageJSON(options: Options) {
       const templateValues = {
         packageManager: options.packageManager,
         projectName: options.projectName,
+        bundler,
         typescript: true,
-        tailwind: true,
+        tailwind: options.tailwind,
+        blank,
         js: 'ts',
         jsx: 'tsx',
         fileRouter: options.mode === 'file-router',
@@ -181,6 +213,9 @@ export function createPackageJSON(options: Options) {
   const scripts = packageJSON.scripts as Record<string, string> | undefined
 
   if (options.routerOnly) {
+    delete dependencies?.srvx
+    delete scripts?.start
+
     if (options.framework.id === 'react') {
       delete dependencies?.['@tanstack/react-start']
       delete dependencies?.['@tanstack/react-router-ssr-query']
@@ -194,7 +229,6 @@ export function createPackageJSON(options: Options) {
     if (options.framework.id === 'solid') {
       delete dependencies?.['@tanstack/solid-start']
       delete dependencies?.['@tanstack/solid-router-ssr-query']
-      delete scripts?.start
       packageJSON.devDependencies = {
         ...(devDependencies ?? {}),
         '@tanstack/router-plugin':

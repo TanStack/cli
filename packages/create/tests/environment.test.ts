@@ -64,6 +64,14 @@ describe('createMemoryEnvironment', () => {
 })
 
 describe('createDefaultEnvironment', () => {
+  it('treats an unavailable version probe as unknown without recording a command error', async () => {
+    const environment = createDefaultEnvironment()
+    await expect(environment.getPackageManagerVersion?.(
+      'pnpm', '/unavailable-pnpm-version-probe-fixture',
+    )).resolves.toBeUndefined()
+    expect(environment.getErrors()).toEqual([])
+  })
+
   it('should create a default environment', async () => {
     const environment = createDefaultEnvironment()
     expect(environment).toBeDefined()
@@ -91,7 +99,12 @@ describe('createDefaultEnvironment', () => {
   it('should record errors', async () => {
     const environment = createDefaultEnvironment()
     environment.startRun()
-    await environment.execute('command-that-does-not-exist', ['test'], '')
+    const result = await environment.execute(
+      'command-that-does-not-exist',
+      ['test'],
+      '',
+    )
+    expect(result).toEqual({ stdout: '', failed: true })
     environment.finishRun()
     expect(environment.getErrors()).toEqual([
       'Command "command-that-does-not-exist test" did not run successfully. Please run this manually in your project.',
