@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Check, Circle, LogOut, Plus, Trash2 } from 'lucide-react'
@@ -50,31 +50,28 @@ function PocketBaseDemo() {
 
   useEffect(() => pb.authStore.onChange(() => setUser(getCurrentUser())), [])
 
-  useEffect(() => {
-    let cancelled = false
-
-    pb.health
-      .check()
-      .then(async () => {
-        if (pb.authStore.isValid) await users.authRefresh()
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        if (
-          err instanceof ClientResponseError &&
-          [401, 403, 404].includes(err.status)
-        ) {
-          // The stored session is stale, e.g. after resetting pb_data.
-          pb.authStore.clear()
-        } else {
-          setServerError(getErrorMessage(err))
-        }
-      })
-
-    return () => {
-      cancelled = true
+  const checkServer = useCallback(async () => {
+    try {
+      await pb.health.check()
+      if (pb.authStore.isValid) await users.authRefresh()
+      setServerError(null)
+    } catch (err) {
+      if (
+        err instanceof ClientResponseError &&
+        [401, 403, 404].includes(err.status)
+      ) {
+        // The stored session is stale, e.g. after resetting pb_data.
+        pb.authStore.clear()
+        setServerError(null)
+      } else {
+        setServerError(getErrorMessage(err))
+      }
     }
   }, [])
+
+  useEffect(() => {
+    void checkServer()
+  }, [checkServer])
 
   return (
     <main className="demo-page">
@@ -90,7 +87,7 @@ function PocketBaseDemo() {
         </section>
 
         {serverError ? (
-          <SetupSteps error={serverError} />
+          <SetupSteps error={serverError} onRetry={checkServer} />
         ) : user ? (
           // Remount per user so one user's todos never render for the next.
           <TodoList
@@ -114,7 +111,20 @@ function PocketBaseDemo() {
   )
 }
 
-function SetupSteps({ error }: { error: string }) {
+function SetupSteps({
+  error,
+  onRetry,
+}: {
+  error: string
+  onRetry: () => Promise<void>
+}) {
+  const [retrying, setRetrying] = useState(false)
+
+  const handleRetry = () => {
+    setRetrying(true)
+    void onRetry().finally(() => setRetrying(false))
+  }
+
   return (
     <section className="demo-card grid gap-3">
       <h2 className="demo-section-title">PocketBase is not ready</h2>
@@ -142,6 +152,14 @@ function SetupSteps({ error }: { error: string }) {
           points to your server.
         </li>
       </ol>
+      <button
+        type="button"
+        onClick={handleRetry}
+        disabled={retrying}
+        className="demo-button justify-self-start"
+      >
+        {retrying ? 'Checking...' : 'Try again'}
+      </button>
     </section>
   )
 }
