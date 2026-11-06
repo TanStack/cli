@@ -33,7 +33,7 @@ function RootComponent() {
 <% } else if (!includeExamples || blank) { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
-  HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
+  HeadContent, Scripts, <% if (addOnEnabled.themer) { %>ScriptOnce, <% } %><% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
 <% if (showDevtools) { %>import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools'
 <% } %>
@@ -103,7 +103,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
       <% if (addOnEnabled.paraglide) { %><html lang={getLocale()}<% if (addOnEnabled.themer) { %> suppressHydrationWarning<% } %>><% } else { %><html lang="en"<% if (addOnEnabled.themer) { %> suppressHydrationWarning<% } %>><% } %>
       <head>
-        <% if (addOnEnabled.themer) { %><script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} /><% } %>
+        <% if (addOnEnabled.themer) { %><ScriptOnce>{THEME_INIT_SCRIPT}</ScriptOnce><% } %>
         <HeadContent />
       </head>
       <body>
@@ -131,7 +131,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 <% } else { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
-  HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
+  HeadContent, Scripts, ScriptOnce, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
@@ -201,7 +201,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
       <% if (addOnEnabled.paraglide) { %><html lang={getLocale()} suppressHydrationWarning><% } else { %><html lang="en" suppressHydrationWarning><% } %>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <ScriptOnce>{THEME_INIT_SCRIPT}</ScriptOnce>
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
