@@ -38,11 +38,13 @@ describe('toolchains', () => {
   })
 
   it.each([
-    ['react', createReactFrameworkDefinition, true],
-    ['solid', createSolidFrameworkDefinition, false],
+    ['react', createReactFrameworkDefinition, true, false],
+    ['react blank', createReactFrameworkDefinition, true, true],
+    ['solid', createSolidFrameworkDefinition, false, false],
+    ['solid blank', createSolidFrameworkDefinition, false, true],
   ])(
     '%s generates an Oxlint lint setup',
-    async (_, createDefinition, usesReactPlugin) => {
+    async (_, createDefinition, usesReactPlugin, blank) => {
       vi.stubGlobal(
         'fetch',
         vi.fn(
@@ -61,6 +63,7 @@ describe('toolchains', () => {
 
       await createApp(environment, {
         projectName: 'oxlint-app',
+        projectPreset: blank ? 'blank' : 'default',
         targetDir: '/oxlint-app',
         framework,
         mode: 'file-router',
