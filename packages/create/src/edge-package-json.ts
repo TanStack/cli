@@ -237,6 +237,22 @@ export function createPackageJSON(options: Options) {
     }
   }
 
+  if (
+    options.intent &&
+    !Object.prototype.hasOwnProperty.call(
+      packageJSON.dependencies ?? {},
+      '@tanstack/intent',
+    )
+  ) {
+    packageJSON.devDependencies = {
+      ...(packageJSON.devDependencies ?? {}),
+      '@tanstack/intent':
+        (packageJSON.devDependencies as Record<string, string> | undefined)?.[
+          '@tanstack/intent'
+        ] ?? 'latest',
+    }
+  }
+
   packageJSON.dependencies = sortObject(
     (packageJSON.dependencies ?? {}) as Record<string, string>,
   )
