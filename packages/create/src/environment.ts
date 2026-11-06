@@ -19,7 +19,9 @@ import type { Environment } from './types.js'
 
 export type { MemoryEnvironmentOutput } from './edge-environment.js'
 
-export function createDefaultEnvironment(): Environment {
+export function createDefaultEnvironment(
+  cancelSignal?: AbortSignal,
+): Environment {
   let errors: Array<string> = []
   return {
     startRun: () => {
@@ -45,14 +47,16 @@ export function createDefaultEnvironment(): Environment {
       return writeFile(path, getBinaryFile(base64Contents) as string)
     },
     getPackageManagerVersion: async (packageManager, cwd) => {
+      if (cancelSignal?.aborted) return undefined
+      // Cancel through stop() while Windows can still inspect the live tree.
       const subprocess = execa(packageManager, ['--version'], {
         cwd,
-        // A separate group lets POSIX cleanup include descendants holding pipes.
+        // Own the group so cleanup can include descendants holding pipes.
         detached: process.platform !== 'win32',
       })
-      let timer: ReturnType<typeof setTimeout> | undefined
-      const timeout = new Promise<undefined>((resolveTimeout) => {
-        timer = setTimeout(async () => {
+      let cleanup: Promise<undefined> | undefined
+      const stop = () => {
+        cleanup ??= (async () => {
           if (subprocess.pid !== undefined) {
             try {
               if (process.platform === 'win32') {
@@ -76,20 +80,36 @@ export function createDefaultEnvironment(): Environment {
               subprocess.kill('SIGKILL')
             }
           }
-          // An inherited pipe must not keep an optional lookup pending.
           subprocess.stdout.destroy()
           subprocess.stderr.destroy()
           await subprocess.catch(() => undefined)
-          resolveTimeout(undefined)
+          return undefined
+        })()
+        return cleanup
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const timeout = new Promise<undefined>((resolveTimeout) => {
+        timer = setTimeout(() => {
+          void stop().then(() => resolveTimeout(undefined))
         }, 15_000)
       })
+      let onAbort: (() => void) | undefined
+      const cancellation = new Promise<undefined>((resolveCancellation) => {
+        onAbort = () => {
+          void stop().then(() => resolveCancellation(undefined))
+        }
+        cancelSignal?.addEventListener('abort', onAbort, { once: true })
+        if (cancelSignal?.aborted) onAbort()
+      })
       try {
-        const result = await Promise.race([subprocess, timeout])
+        const result = await Promise.race([subprocess, timeout, cancellation])
         return result?.stdout.trim()
       } catch {
         return undefined
       } finally {
         clearTimeout(timer)
+        if (onAbort) cancelSignal?.removeEventListener('abort', onAbort)
+        if (cleanup) await cleanup
       }
     },
     execute: async (
@@ -103,6 +123,7 @@ export function createDefaultEnvironment(): Environment {
           // For commands that should show output directly to the user
           await execa(command, args, {
             cwd,
+            cancelSignal,
             stdio: 'inherit',
           })
           return { stdout: '' }
@@ -110,6 +131,7 @@ export function createDefaultEnvironment(): Environment {
           // For commands where we need to capture output
           const result = await execa(command, args, {
             cwd,
+            cancelSignal,
           })
           return { stdout: result.stdout }
         }
@@ -117,7 +139,7 @@ export function createDefaultEnvironment(): Environment {
         errors.push(
           `Command "${command} ${args.join(' ')}" did not run successfully. Please run this manually in your project.`,
         )
-        return { stdout: '' }
+        return { stdout: '', failed: true }
       }
     },
     deleteFile: async (path: string) => {

@@ -119,6 +119,66 @@ describe('package-manager version subprocess', () => {
     expect(environment.getErrors()).toEqual([])
   }, 30_000)
 
+  it('cancels the owned probe tree before returning the fallback', async () => {
+    const cwd = await installShim(
+      "const { spawn } = await import('node:child_process');" +
+        "const child = spawn(process.execPath, ['-e', " +
+        JSON.stringify(
+          "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)",
+        ) +
+        "], { stdio: ['ignore', 'inherit', 'inherit'] });" +
+        "writeFileSync('descendant.pid', String(child.pid)); setInterval(() => {}, 1000)",
+    )
+    const controller = new AbortController()
+    const environment = createDefaultEnvironment(controller.signal)
+    const pending = probe(environment, cwd)
+    await expect
+      .poll(
+        async () => {
+          try {
+            await readFile(join(cwd, 'descendant.pid'), 'utf8')
+            return true
+          } catch {
+            return false
+          }
+        },
+        { timeout: 5_000 },
+      )
+      .toBe(true)
+    const descendant = Number(
+      await readFile(join(cwd, 'descendant.pid'), 'utf8'),
+    )
+    const started = Date.now()
+    controller.abort()
+    await expect(pending).resolves.toBeUndefined()
+    expect(Date.now() - started).toBeLessThan(7_000)
+    await expect
+      .poll(
+        () => {
+          try {
+            process.kill(descendant, 0)
+            return false
+          } catch {
+            return true
+          }
+        },
+        { timeout: 2_000 },
+      )
+      .toBe(true)
+    await rm(join(cwd, 'descendant.pid'))
+    expect(environment.getErrors()).toEqual([])
+  }, 25_000)
+
+  it('does not launch a probe after cancellation', async () => {
+    const cwd = await installShim('setInterval(() => {}, 1000)')
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      probe(createDefaultEnvironment(controller.signal), cwd),
+    ).resolves.toBeUndefined()
+    await expect(readFile(join(cwd, 'probe.pid'), 'utf8')).rejects.toThrow()
+  })
+
   it('reads and trims the version in the target project', async () => {
     const cwd = await installShim(
       "process.stdout.write(' 10.2.0 ' + String.fromCharCode(10))",

@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/create",
-  "version": "0.71.14",
+  "version": "0.71.15",
   "description": "TanStack Application Builder Engine",
   "type": "module",
   "main": "./dist/index.js",
@@ -68,7 +68,6 @@
   ],
   "author": "Jack Herrington <jherr@pobox.com>",
   "license": "MIT",
-  "packageManager": "pnpm@9.15.5",
   "engines": {
     "node": ">=20"
   },

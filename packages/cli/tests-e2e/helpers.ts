@@ -25,6 +25,7 @@ type CreateAppFixtureOptions = {
   bundler?: 'vite' | 'rsbuild'
   packageManager?: 'pnpm' | 'npm' | 'yarn' | 'bun' | 'deno'
   blank?: boolean
+  toolchain?: string
   deployment?: string
   routerOnly?: boolean
   template?: string
@@ -139,7 +140,9 @@ function waitForDevServerURL(getStdout: () => string, timeoutMs = 90_000) {
       }
 
       if (Date.now() - started > timeoutMs) {
-        rejectPromise(new Error('Timed out waiting for dev server URL in output'))
+        rejectPromise(
+          new Error('Timed out waiting for dev server URL in output'),
+        )
         return
       }
 
@@ -353,8 +356,12 @@ export async function createAppFixture(
     }
 
     const totalMs = now() - start
-    const summary = timings.map(([label, ms]) => `${label}=${Math.round(ms)}ms`).join(' | ')
-    console.log(`[e2e:timing] ${options.appName} :: ${summary} | total=${Math.round(totalMs)}ms`)
+    const summary = timings
+      .map(([label, ms]) => `${label}=${Math.round(ms)}ms`)
+      .join(' | ')
+    console.log(
+      `[e2e:timing] ${options.appName} :: ${summary} | total=${Math.round(totalMs)}ms`,
+    )
   }
 
   const rootDir = await mkdtemp(join(tmpdir(), 'tanstack-cli-e2e-'))
@@ -362,6 +369,7 @@ export async function createAppFixture(
     appName,
     blank = false,
     deployment,
+    toolchain,
     template,
     addOns,
     afterCreate,
@@ -399,6 +407,10 @@ export async function createAppFixture(
     createArgs.push('--blank', '--yes', '--no-intent')
   }
 
+  if (toolchain) {
+    createArgs.push('--toolchain', toolchain)
+  }
+
   if (deployment) {
     createArgs.push('--deployment', deployment)
   }
@@ -413,16 +425,12 @@ export async function createAppFixture(
 
   try {
     const createStartedAt = now()
-    await runCommand(
-      process.execPath,
-      createArgs,
-      {
-        cwd: rootDir,
-        env: {
-          CI: '1',
-        },
+    await runCommand(process.execPath, createArgs, {
+      cwd: rootDir,
+      env: {
+        CI: '1',
       },
-    )
+    })
     mark('create', createStartedAt)
 
     await afterCreate?.(appDir)
@@ -431,12 +439,16 @@ export async function createAppFixture(
 
     if (postCreateAddOns?.length) {
       const postAddOnsStartedAt = now()
-      await runCommand(process.execPath, [cliDistPath, 'add', ...postCreateAddOns, '--forced'], {
-        cwd: appDir,
-        env: {
-          CI: '1',
+      await runCommand(
+        process.execPath,
+        [cliDistPath, 'add', ...postCreateAddOns, '--forced'],
+        {
+          cwd: appDir,
+          env: {
+            CI: '1',
+          },
         },
-      })
+      )
 
       mark('post-add-ons', postAddOnsStartedAt)
 
@@ -565,7 +577,10 @@ export function attachRuntimeGuards(page: Page, appUrl: string): RuntimeGuards {
     }
     const errorText = request.failure()?.errorText || 'unknown error'
 
-    if (errorText.includes('ERR_ABORTED') || isBlockedByClientError(errorText)) {
+    if (
+      errorText.includes('ERR_ABORTED') ||
+      isBlockedByClientError(errorText)
+    ) {
       return
     }
 

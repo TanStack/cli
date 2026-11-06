@@ -2,4 +2,4 @@
 '@tanstack/create': patch
 ---
 
-Bound optional package-manager version detection so a stalled shim cannot block app generation indefinitely.
+Bound optional package-manager version detection and clean up owned subprocesses on timeout or cancellation, while retaining the unknown-version fallback.

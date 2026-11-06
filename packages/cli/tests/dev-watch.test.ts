@@ -55,6 +55,48 @@ describe('DevWatchManager', () => {
     }
   }, 25_000)
 
+  it('removes every temporary directory after repeated failed rebuilds', async () => {
+    const fixture = fileURLToPath(
+      new URL('./fixtures/dev-watch-rebuild.mjs', import.meta.url),
+    )
+    const root = await mkdtemp(join(tmpdir(), 'tanstack-watch-fail-'))
+    const ownedPrefix = join(tmpdir(), 'tanstack-dev-watch-')
+    try {
+      const { stdout, stderr } = await promisify(execFile)(
+        process.execPath,
+        ['--import', 'tsx', fixture, root, 'fail'],
+        {
+          cwd: fileURLToPath(new URL('../', import.meta.url)),
+          timeout: 20_000,
+        },
+      )
+      expect(stdout, stderr).toContain('WATCH_FAILED_BUILD_CLEANUP_VERIFIED')
+      const directories: Array<string> = JSON.parse(
+        await readFile(join(root, 'failed-paths.json'), 'utf8'),
+      )
+      expect(directories).toHaveLength(2)
+      for (const directory of directories) {
+        expect(directory.startsWith(ownedPrefix)).toBe(true)
+        await expect(access(directory)).rejects.toMatchObject({
+          code: 'ENOENT',
+        })
+      }
+    } finally {
+      const directories: Array<string> = await readFile(
+        join(root, 'failed-paths.json'),
+        'utf8',
+      )
+        .then((contents) => JSON.parse(contents))
+        .catch(() => [])
+      for (const directory of directories) {
+        if (directory.startsWith(ownedPrefix)) {
+          await rm(directory, { recursive: true, force: true })
+        }
+      }
+      await rm(root, { recursive: true, force: true })
+    }
+  }, 25_000)
+
   it('cleans up when shutdown interrupts temporary directory allocation', async () => {
     const fixture = fileURLToPath(
       new URL('./fixtures/dev-watch-rebuild.mjs', import.meta.url),
