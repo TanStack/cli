@@ -53,6 +53,12 @@ describe('Better Auth database templates', () => {
         const pkg = JSON.parse(render('better-auth/package.json.ejs', data))
         expect(pkg.dependencies[`@better-auth/${orm}-adapter`]).toBe('^1.7.18')
         expect(pkg.dependencies['better-auth']).toBe('^1.7.18')
+        if (orm === 'drizzle') {
+          const ormPackage = JSON.parse(
+            render('drizzle/package.json.ejs', data),
+          )
+          expect(ormPackage.dependencies['drizzle-orm']).toBe('^0.45.2')
+        }
         const auth = render('better-auth/assets/src/lib/auth.ts.ejs', data)
         expect(auth).toContain(`${orm}Adapter(`)
         const provider =
