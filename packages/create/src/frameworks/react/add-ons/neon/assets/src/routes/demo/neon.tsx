@@ -19,7 +19,7 @@ const getTodos = createServerFn({
 const insertTodo = createServerFn({
   method: 'POST',
 })
-  .inputValidator((d: { title: string }) => d)
+  .validator((d: { title: string }) => d)
   .handler(async ({ data }) => {
     const client = await getClient()
     if (!client) {

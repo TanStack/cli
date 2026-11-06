@@ -1,5 +1,5 @@
 {
-  <% if (addOnEnabled.eslint) { %>"include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "vite.config.js"],
+  <% if (addOnEnabled.eslint) { %>"include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "<%= bundler %>.config.js"],
   <% } else { %>"include": ["**/*.ts", "**/*.tsx"],<% } %>
   "compilerOptions": {
     "target": "ES2022",
@@ -7,7 +7,7 @@
     "jsxImportSource": "solid-js",
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["<%= bundler === 'vite' ? 'vite/client' : '@rsbuild/core/types' %>"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

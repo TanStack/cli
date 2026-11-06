@@ -124,6 +124,7 @@ For production, update this to your deployed Strapi URL.
 | `react-markdown` | Markdown rendering |
 | `remark-gfm` | GitHub Flavored Markdown |
 | `use-debounce` | Debounced search input |
+| `zod` | Runtime schema validation and parsing |
 
 ### Running Both Servers
 

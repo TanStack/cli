@@ -1,9 +1,23 @@
-<% if (!includeExamples) { %>
-@import 'tailwindcss';
+<% if (blank) { %>
+<% if (tailwind) { %>@import 'tailwindcss';
 
+<% } else { %>
 * {
   box-sizing: border-box;
 }
+<% } %>
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  width: min(42rem, calc(100% - 2rem));
+  margin: 4rem auto;
+}
+<% } else if (!includeExamples) { %>
+@import 'tailwindcss';
 
 html,
 body,
@@ -38,10 +52,6 @@ body {
   --link-bg-hover: rgba(255, 255, 255, 0.9);
   --hero-a: rgba(79, 184, 178, 0.36);
   --hero-b: rgba(47, 106, 74, 0.2);
-}
-
-* {
-  box-sizing: border-box;
 }
 
 html,
