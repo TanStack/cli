@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import type { BrowserContext } from '@playwright/test'
 import { createReactAppFixture } from './helpers'
 
@@ -31,11 +31,20 @@ test('@blocking handles Descope initialization failure, retry, and session event
         )
         assets = path.resolve(dir, '..', 'descope-ui-fixture')
         fs.mkdirSync(assets)
-        const response = await fetch(
-          'https://registry.npmjs.org/@descope/web-components-ui/-/web-components-ui-3.27.2.tgz',
-        )
-        assert.ok(response.ok)
-        const archive = Buffer.from(await response.arrayBuffer())
+        let archive: Buffer
+        try {
+          const response = await fetch(
+            'https://registry.npmjs.org/@descope/web-components-ui/-/web-components-ui-3.27.2.tgz',
+            { signal: AbortSignal.timeout(30_000) },
+          )
+          assert.ok(response.ok, `Registry returned ${response.status}`)
+          archive = Buffer.from(await response.arrayBuffer())
+        } catch (cause) {
+          throw new Error(
+            'Could not download the pinned Descope UI within 30 seconds',
+            { cause },
+          )
+        }
         assert.equal(
           'sha512-' + createHash('sha512').update(archive).digest('base64'),
           UI_INTEGRITY,
@@ -57,10 +66,17 @@ test('@blocking handles Descope initialization failure, retry, and session event
         assets = path.join(assets, 'package/dist/umd')
       },
     })
-    context = await browser.newContext()
+    context = await browser.newContext({ locale: 'de' })
     const page = await context.newPage()
     const errors: Array<string> = []
     page.on('pageerror', (e) => errors.push(e.message))
+    let polling = false
+    let htmlRequests = 0
+    let pollRequests = 0
+    let releasePoll!: () => void
+    const pollRecovery = new Promise<void>((resolve) => {
+      releasePoll = resolve
+    })
     let healthy = false,
       configRequests = 0,
       logoutRequests = 0
@@ -79,7 +95,9 @@ test('@blocking handles Descope initialization failure, retry, and session event
           return healthy
             ? route.fulfill({
                 json: {
-                  flows: { 'sign-up-or-in': { version: 1 } },
+                  flows: {
+                    'sign-up-or-in': { version: 1, targetLocales: ['de'] },
+                  },
                   componentsVersion: '3.27.2',
                 },
               })
@@ -101,11 +119,50 @@ test('@blocking handles Descope initialization failure, retry, and session event
           if (fs.existsSync(file))
             return route.fulfill({ path: file, contentType: 'text/javascript' })
         }
-        if (url.pathname.endsWith('.html'))
+        if (url.pathname.endsWith('-de.html')) {
+          return route.fulfill({ status: 404, body: 'Localized page missing' })
+        }
+        if (url.pathname.endsWith('.html')) {
+          htmlRequests++
           return route.fulfill({
-            body: '<div>Local sign-in fixture</div>',
+            body: url.pathname.includes('recovered-screen')
+              ? '<div>Recovered sign-in fixture</div>'
+              : '<div>Local sign-in fixture</div><input aria-label="Fixture input">' +
+                (polling && htmlRequests === 1
+                  ? '<div data-type="polling"></div>'
+                  : ''),
             contentType: 'text/html',
           })
+        }
+        if (url.pathname.endsWith('/next')) {
+          pollRequests++
+          if (pollRequests === 1)
+            return route.fulfill({
+              json: { status: 'waiting', action: 'poll' },
+            })
+          if (pollRequests === 2)
+            return route.fulfill({
+              status: 400,
+              json: {
+                errorCode: 'LOCAL_TRANSIENT',
+                errorDescription: 'Temporary local test failure',
+              },
+            })
+          await pollRecovery
+          return route.fulfill({
+            json: {
+              executionId: 'local-execution',
+              stepId: '5',
+              status: 'waiting',
+              action: '',
+              screen: {
+                id: 'recovered-screen',
+                state: { project: { name: 'Local test' } },
+              },
+              stepName: 'Recovered',
+            },
+          })
+        }
         if (url.pathname.endsWith('/start'))
           return route.fulfill({
             json: {
@@ -133,16 +190,40 @@ test('@blocking handles Descope initialization failure, retry, and session event
       waitUntil: 'domcontentloaded',
     })
     await page
-      .getByRole('button', { name: 'Try again' })
+      .getByRole('button', { name: 'Restart sign-in' })
       .waitFor({ timeout: 15000 })
     assert.ok(configRequests > 0)
     const failedRequests = configRequests
     healthy = true
-    await page.getByRole('button', { name: 'Try again' }).click()
+    await page.getByRole('button', { name: 'Restart sign-in' }).click()
     await page
       .getByText('Local sign-in fixture', { exact: true })
       .waitFor({ timeout: 20000 })
     assert.ok(configRequests > failedRequests)
+    await expect(page.getByRole('alert')).toHaveCount(0)
+
+    polling = true
+    htmlRequests = 0
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByText('Local sign-in fixture', { exact: true }).waitFor()
+    const flow = await page.locator('descope-wc').elementHandle()
+    assert.ok(flow)
+    await page.getByRole('alert').waitFor()
+    assert.ok(
+      await flow.evaluate((element) => element.isConnected),
+      'Polling error removed the flow',
+    )
+    await page.getByRole('textbox', { name: 'Fixture input' }).fill('keep-me')
+    assert.equal(
+      await page.getByRole('textbox', { name: 'Fixture input' }).inputValue(),
+      'keep-me',
+    )
+    releasePoll()
+    await page.getByText('Recovered sign-in fixture', { exact: true }).waitFor()
+    assert.ok(pollRequests >= 3)
+    assert.ok(await flow.evaluate((element) => element.isConnected))
+    await expect(page.getByRole('alert')).toHaveCount(0)
+
     assert.equal(
       await page
         .getByRole('status')
@@ -167,26 +248,24 @@ test('@blocking handles Descope initialization failure, retry, and session event
         ),
       )
       .join('.')
-    await page
-      .locator('descope-wc')
-      .evaluate(
-        (element, jwt) =>
-          element.dispatchEvent(
-            new CustomEvent('success', {
-              detail: {
-                sessionJwt: jwt,
-                refreshJwt: jwt,
-                user: {
-                  userId: 'local-user',
-                  name: 'Local User',
-                  email: 'local@example.test',
-                  loginIds: ['local@example.test'],
-                },
+    await page.locator('descope-wc').evaluate(
+      (element, jwt) =>
+        element.dispatchEvent(
+          new CustomEvent('success', {
+            detail: {
+              sessionJwt: jwt,
+              refreshJwt: jwt,
+              user: {
+                userId: 'local-user',
+                name: 'Local User',
+                email: 'local@example.test',
+                loginIds: ['local@example.test'],
               },
-            }),
-          ),
-        jwt,
-      )
+            },
+          }),
+        ),
+      jwt,
+    )
     await page
       .getByRole('button', { name: 'Sign out', exact: true })
       .waitFor({ timeout: 10000 })

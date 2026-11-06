@@ -48,27 +48,13 @@ function SignInFlow({ onRetry }: { onRetry: () => void }) {
       warn: console.warn,
       error: (...messages: unknown[]) => {
         console.error(...messages)
-        // The SDK reports initialization failures through its logger, before
-        // the flow is ready to emit authentication error events.
+        // Logging can also precede the SDK's own fallback or retry. Report the
+        // problem without unmounting the flow and interrupting that recovery.
         if (!ready.current) setStatus('error')
       },
     }),
     [],
   )
-
-  if (status === 'error') {
-    return (
-      <div role="alert" className="space-y-3 text-center">
-        <p>
-          Sign-in could not load. Check your connection and Descope project
-          configuration.
-        </p>
-        <button type="button" onClick={onRetry} className="demo-button">
-          Try again
-        </button>
-      </div>
-    )
-  }
 
   return (
     <div className="flex flex-col items-center gap-3 pt-2">
@@ -82,7 +68,22 @@ function SignInFlow({ onRetry }: { onRetry: () => void }) {
           setStatus('ready')
         }}
         onError={() => setStatus('error')}
+        onScreenUpdate={() => {
+          if (ready.current) setStatus('ready')
+          return false
+        }}
       />
+      {status === 'error' && (
+        <div role="alert" className="space-y-3 text-center">
+          <p>
+            Sign-in reported a problem. Check your connection, or restart this
+            flow.
+          </p>
+          <button type="button" onClick={onRetry} className="demo-button">
+            Restart sign-in
+          </button>
+        </div>
+      )}
     </div>
   )
 }
