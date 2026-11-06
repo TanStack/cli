@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "better-auth": "^1.5.3"<% if (addOnEnabled.drizzle) { %>,
+    "@better-auth/drizzle-adapter": "^1.5.3"<% } else if (addOnEnabled.prisma) { %>,
+    "@better-auth/prisma-adapter": "^1.5.3"<% } %>
+  }
+}
