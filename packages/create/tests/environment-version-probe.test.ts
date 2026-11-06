@@ -9,6 +9,8 @@ import {
 } from 'node:fs/promises'
 import { delimiter, dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 
 import { createDefaultEnvironment } from '../src/environment.js'
 
@@ -168,6 +170,128 @@ describe('package-manager version subprocess', () => {
     await rm(join(cwd, 'descendant.pid'))
     expect(environment.getErrors()).toEqual([])
   }, 25_000)
+
+  it.skipIf(process.platform === 'win32')(
+    'cleans up the group when the calling process exits',
+    async () => {
+      const cwd = await installShim(
+        "const { spawn } = await import('node:child_process');" +
+          "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: ['ignore', 'inherit', 'inherit'] });" +
+          "writeFileSync('descendant.pid', String(child.pid)); setInterval(() => {}, 1000)",
+      )
+      const entry = new URL('../dist/index.js', import.meta.url).href
+      const receipt = join(cwd, 'descendant.pid')
+      probePending = true
+      const caller = spawn(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `
+      import { existsSync } from 'node:fs'
+      const { createDefaultEnvironment } = await import(${JSON.stringify(entry)})
+      void createDefaultEnvironment().getPackageManagerVersion('pnpm', ${JSON.stringify(cwd)})
+      setInterval(() => { if (existsSync(${JSON.stringify(receipt)})) process.exit(0) }, 20)
+    `,
+        ],
+        { cwd, stdio: 'ignore' },
+      )
+      try {
+        await new Promise<void>((resolveExit, reject) => {
+          const timer = setTimeout(() => {
+            caller.kill('SIGKILL')
+            reject(new Error('Caller did not finish its fixture'))
+          }, 5_000)
+          caller.once('error', (error) => {
+            clearTimeout(timer)
+            reject(error)
+          })
+          caller.once('exit', (code) => {
+            clearTimeout(timer)
+            if (code === 0) resolveExit()
+            else reject(new Error(`Caller exit ${code}`))
+          })
+        })
+        const pids = [
+          Number(await readFile(join(cwd, 'probe.pid'), 'utf8')),
+          Number(await readFile(receipt, 'utf8')),
+        ]
+        for (const pid of pids) {
+          await expect
+            .poll(
+              () => {
+                try {
+                  process.kill(pid, 0)
+                  return false
+                } catch {
+                  return true
+                }
+              },
+              { timeout: 2_000 },
+            )
+            .toBe(true)
+        }
+        await rm(receipt)
+        probePending = false
+      } finally {
+        caller.kill('SIGKILL')
+      }
+    },
+    15_000,
+  )
+
+  it.skipIf(process.platform === 'win32')(
+    'stops descendants after the shim has exited without signalling an old group ID',
+    async () => {
+      const cwd = await installShim(
+        "const { spawn } = await import('node:child_process');" +
+          "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: ['ignore', 'inherit', 'inherit'] });" +
+          "writeFileSync('descendant.pid', String(child.pid)); process.exit(0)",
+      )
+      const controller = new AbortController()
+      const pending = probe(createDefaultEnvironment(controller.signal), cwd)
+      await expect
+        .poll(
+          async () => {
+            try {
+              const pid = Number(await readFile(join(cwd, 'probe.pid'), 'utf8'))
+              process.kill(pid, 0)
+              return false
+            } catch {
+              return existsSync(join(cwd, 'descendant.pid'))
+            }
+          },
+          { timeout: 5_000 },
+        )
+        .toBe(true)
+      const kill = vi.spyOn(process, 'kill')
+      try {
+        controller.abort()
+        await expect(pending).resolves.toBeUndefined()
+        expect(kill.mock.calls.some(([pid]) => pid < 0)).toBe(false)
+      } finally {
+        kill.mockRestore()
+      }
+      const descendant = Number(
+        await readFile(join(cwd, 'descendant.pid'), 'utf8'),
+      )
+      await expect
+        .poll(
+          () => {
+            try {
+              process.kill(descendant, 0)
+              return false
+            } catch {
+              return true
+            }
+          },
+          { timeout: 2_000 },
+        )
+        .toBe(true)
+      await rm(join(cwd, 'descendant.pid'))
+    },
+    15_000,
+  )
 
   it('does not launch a probe after cancellation', async () => {
     const cwd = await installShim('setInterval(() => {}, 1000)')

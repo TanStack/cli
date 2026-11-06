@@ -19,6 +19,26 @@ import type { Environment } from './types.js'
 
 export type { MemoryEnvironmentOutput } from './edge-environment.js'
 
+// The live supervisor owns its process group. Only it signals that group, so
+// cleanup never targets a numeric group ID after its owner has exited.
+const versionProbeSupervisor = `
+const { spawn } = require('node:child_process')
+const stop = () => process.kill(-process.pid, 'SIGKILL')
+process.on('disconnect', stop)
+process.on('SIGTERM', stop)
+process.on('SIGINT', stop)
+if (!process.connected) stop()
+const child = spawn(process.argv[1], ['--version'], { stdio: ['ignore', 'pipe', 'pipe'] })
+child.stdout.pipe(process.stdout)
+child.stderr.pipe(process.stderr)
+child.on('error', () => { process.exitCode = 1 })
+child.on('close', (code) => {
+  process.exitCode = code ?? 1
+  process.removeListener('disconnect', stop)
+  if (process.connected) process.disconnect()
+})
+`
+
 export function createDefaultEnvironment(
   cancelSignal?: AbortSignal,
 ): Environment {
@@ -49,11 +69,23 @@ export function createDefaultEnvironment(
     getPackageManagerVersion: async (packageManager, cwd) => {
       if (cancelSignal?.aborted) return undefined
       // Cancel through stop() while Windows can still inspect the live tree.
-      const subprocess = execa(packageManager, ['--version'], {
-        cwd,
-        // Own the group so cleanup can include descendants holding pipes.
-        detached: process.platform !== 'win32',
-      })
+      const posix = process.platform !== 'win32'
+      const subprocess = posix
+        ? execa(
+            process.execPath,
+            [
+              '--input-type=commonjs',
+              '-e',
+              versionProbeSupervisor,
+              packageManager,
+            ],
+            {
+              cwd,
+              detached: true,
+              ipc: true,
+            },
+          )
+        : execa(packageManager, ['--version'], { cwd })
       let cleanup: Promise<undefined> | undefined
       const stop = () => {
         cleanup ??= (async () => {
@@ -74,7 +106,8 @@ export function createDefaultEnvironment(
                   )
                 }
               } else {
-                process.kill(-subprocess.pid, 'SIGKILL')
+                // Closing this specific channel asks the live owner to stop.
+                if (subprocess.connected) subprocess.disconnect()
               }
             } catch {
               subprocess.kill('SIGKILL')
