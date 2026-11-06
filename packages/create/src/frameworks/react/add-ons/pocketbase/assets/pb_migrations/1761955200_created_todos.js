@@ -17,7 +17,8 @@ migrate(
       name: 'todos',
       listRule: ownerOnly,
       viewRule: ownerOnly,
-      createRule: '@request.auth.id != "" && @request.body.owner = @request.auth.id',
+      createRule:
+        '@request.auth.id != "" && @request.body.owner = @request.auth.id',
       updateRule: `${ownerOnly} && (@request.body.owner:isset = false || @request.body.owner = @request.auth.id)`,
       deleteRule: ownerOnly,
       fields: [

@@ -174,10 +174,7 @@ function AuthForm() {
         {isSignUp ? 'Create an account' : 'Sign in to see your todos'}
       </h2>
 
-      <form
-        onSubmit={(e) => void handleSubmit(e)}
-        className="mt-4 grid gap-4"
-      >
+      <form onSubmit={(e) => void handleSubmit(e)} className="mt-4 grid gap-4">
         <div className="grid gap-2">
           <label
             htmlFor="pocketbase-email"
