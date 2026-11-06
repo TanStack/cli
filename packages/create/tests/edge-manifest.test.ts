@@ -80,6 +80,8 @@ describe('@tanstack/create/edge manifest', () => {
     expect(edgeFramework?.name).toBe(nodeDefinition.name)
     expect(edgeFramework?.description).toBe(nodeDefinition.description)
     expect(edgeFramework?.version).toBe(nodeDefinition.version)
+    expect(edgeFramework?.bundlers).toEqual(nodeDefinition.bundlers)
+    expect(edgeFramework?.defaultBundler).toBe(nodeDefinition.defaultBundler)
     expect(edgeFramework?.supportedModes).toEqual(nodeDefinition.supportedModes)
     expect(edgeFramework?.basePackageJSON).toEqual(
       nodeDefinition.basePackageJSON,
@@ -91,6 +93,48 @@ describe('@tanstack/create/edge manifest', () => {
     expect(await materializeAddOns(edgeFramework!.getAddOns())).toEqual(
       await materializeAddOns(nodeFramework.getAddOns()),
     )
+  })
+
+  it('renders an Rsbuild app from the edge manifest', async () => {
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          async () =>
+            new Response(JSON.stringify({ version: '1.0.0' }), {
+              status: 200,
+            }),
+        ),
+      )
+
+      const framework = getFrameworkById('solid')
+      const { environment, output } = createMemoryEnvironment()
+
+      await createApp(environment, {
+        projectName: 'rsbuild-app',
+        targetDir: '/rsbuild-app',
+        framework: framework!,
+        mode: 'file-router',
+        bundler: 'rsbuild',
+        typescript: true,
+        tailwind: true,
+        packageManager: 'pnpm',
+        git: false,
+        install: false,
+        intent: false,
+        chosenAddOns: [],
+        addOnOptions: {},
+        includeExamples: false,
+      } satisfies Options)
+
+      expect(output.files).toHaveProperty('/rsbuild-app/rsbuild.config.ts')
+      expect(output.files).not.toHaveProperty('/rsbuild-app/vite.config.ts')
+      expect(JSON.parse(output.files['/rsbuild-app/.cta.json']).bundler).toBe(
+        'rsbuild',
+      )
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('returns the same React add-ons as the Node filesystem-backed path', () => {
@@ -158,7 +202,9 @@ describe('@tanstack/create/edge manifest', () => {
       )
       expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-start')
       expect(packageJSON.dependencies).toHaveProperty('@tanstack/react-query')
-      expect(packageJSON.dependencies).toHaveProperty('@clerk/clerk-react')
+      expect(packageJSON.dependencies).toHaveProperty(
+        '@clerk/tanstack-react-start',
+      )
       expect(packageJSON.devDependencies).toHaveProperty('wrangler')
       expect(output.files['wrangler.jsonc']).toContain('tanstack-start-app')
       expect(output.files['.env.example']).toContain(

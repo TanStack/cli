@@ -1,6 +1,6 @@
 {
   "name": "create-tanstack",
-  "version": "0.54.38",
+  "version": "0.54.61",
   "description": "Tanstack Application Builder",
   "bin": "./dist/index.js",
   "type": "module",
@@ -28,7 +28,6 @@
   ],
   "author": "Jack Herrington <jherr@pobox.com>",
   "license": "MIT",
-  "packageManager": "pnpm@9.15.5",
   "dependencies": {
     "@tanstack/cli": "workspace:*",
     "@tanstack/create": "workspace:*"
