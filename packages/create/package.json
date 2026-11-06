@@ -68,7 +68,6 @@
   ],
   "author": "Jack Herrington <jherr@pobox.com>",
   "license": "MIT",
-  "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=20"
   },
