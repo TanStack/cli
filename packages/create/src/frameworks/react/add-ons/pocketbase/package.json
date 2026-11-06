@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "pocketbase": "^0.28.1"
+  }
+}
