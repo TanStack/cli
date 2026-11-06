@@ -72,7 +72,7 @@ test('@blocking preserves Themer preferences before hydration and across tabs', 
           () =>
             performance.getEntriesByName('first-contentful-paint').length > 0,
         )
-        if (scenario.stored !== 'denied') {
+        {
           const atPaint = await page.evaluate(() => {
             const paint = performance.getEntriesByName(
               'first-contentful-paint',
@@ -156,6 +156,54 @@ test('@blocking preserves Themer preferences before hydration and across tabs', 
       await expect(first.locator('html')).toHaveClass(/light/)
     } finally {
       await context.close()
+    }
+  } finally {
+    await app.stop()
+    await app.cleanup()
+  }
+})
+
+test('@blocking applies the system theme in a blank app with blocked storage', async ({
+  browser,
+}) => {
+  const app = await createReactAppFixture({
+    appName: 'themer-blank-storage-app',
+    blank: true,
+    addOns: ['themer'],
+    packageManager: 'pnpm',
+    runQualityGatesChecks: true,
+  })
+  try {
+    for (const system of ['light', 'dark'] as const) {
+      const context = await browser.newContext({ colorScheme: system })
+      try {
+        const page = await context.newPage()
+        await page.addInitScript(() => {
+          Object.defineProperty(window, 'localStorage', {
+            get() {
+              throw new DOMException(
+                'Storage blocked for test',
+                'SecurityError',
+              )
+            },
+          })
+        })
+        await page.route('**/*', async (route) => {
+          if (route.request().resourceType() === 'script') await route.abort()
+          else await route.continue()
+        })
+        await page.goto(app.url, { waitUntil: 'domcontentloaded' })
+        await page.waitForFunction(
+          () =>
+            performance.getEntriesByName('first-contentful-paint').length > 0,
+        )
+        await expect(page.locator('html')).toHaveClass(system)
+        expect(
+          await page.locator('html').evaluate((root) => root.style.colorScheme),
+        ).toBe(system)
+      } finally {
+        await context.close()
+      }
     }
   } finally {
     await app.stop()
