@@ -51,7 +51,8 @@ describe('Better Auth database templates', () => {
           orm === 'drizzle' ? "onDelete: 'cascade'" : 'onDelete: Cascade',
         )
         const pkg = JSON.parse(render('better-auth/package.json.ejs', data))
-        expect(pkg.dependencies[`@better-auth/${orm}-adapter`]).toBeDefined()
+        expect(pkg.dependencies[`@better-auth/${orm}-adapter`]).toBe('^1.7.18')
+        expect(pkg.dependencies['better-auth']).toBe('^1.7.18')
         const auth = render('better-auth/assets/src/lib/auth.ts.ejs', data)
         expect(auth).toContain(`${orm}Adapter(`)
         const provider =
