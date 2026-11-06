@@ -1,3 +1,4 @@
+import { useMemo, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Descope, useSession, useUser } from '@descope/react-sdk'
 
@@ -24,36 +25,65 @@ function DescopeDemo() {
 }
 
 function SignedOut() {
+  const [attempt, setAttempt] = useState(0)
+
   return (
     <>
-      <div className="space-y-1.5">
-        <p className="island-kicker mb-2">Descope</p>
-        <h1 className="demo-title">Sign in to continue</h1>
-        <p className="demo-muted text-sm">
-          Descope renders the sign-in flow, manages sessions, and handles
-          passwordless, SSO, and social login for you.
-        </p>
-      </div>
-      <div className="flex justify-center pt-2">
-        <Descope
-          flowId="sign-up-or-in"
-          theme="light"
-          onError={(err) => console.error('Descope flow error', err)}
-        />
-      </div>
-      <p className="demo-muted text-center text-xs">
-        Built with{' '}
-        <a
-          href="https://descope.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium"
-        >
-          DESCOPE
-        </a>
-        .
-      </p>
+      <h1 className="demo-title">Sign in with Descope</h1>
+      <SignInFlow
+        key={attempt}
+        onRetry={() => setAttempt((value) => value + 1)}
+      />
     </>
+  )
+}
+
+function SignInFlow({ onRetry }: { onRetry: () => void }) {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const ready = useRef(false)
+  const logger = useMemo(
+    () => ({
+      debug: console.debug,
+      info: console.info,
+      warn: console.warn,
+      error: (...messages: unknown[]) => {
+        console.error(...messages)
+        // The SDK reports initialization failures through its logger, before
+        // the flow is ready to emit authentication error events.
+        if (!ready.current) setStatus('error')
+      },
+    }),
+    [],
+  )
+
+  if (status === 'error') {
+    return (
+      <div role="alert" className="space-y-3 text-center">
+        <p>
+          Sign-in could not load. Check your connection and Descope project
+          configuration.
+        </p>
+        <button type="button" onClick={onRetry} className="demo-button">
+          Try again
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3 pt-2">
+      {status === 'loading' && <p role="status">Loading sign-in…</p>}
+      <Descope
+        flowId="sign-up-or-in"
+        theme="light"
+        logger={logger}
+        onReady={() => {
+          ready.current = true
+          setStatus('ready')
+        }}
+        onError={() => setStatus('error')}
+      />
+    </div>
   )
 }
 
@@ -67,9 +97,7 @@ function SignedInGreeting() {
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
-        <p className="island-kicker mb-2">Descope</p>
-        <h1 className="demo-title">Welcome back</h1>
-        <p className="demo-muted text-sm">You're signed in as {email}</p>
+        <h1 className="demo-title">Signed in</h1>
       </div>
 
       <div className="flex items-center gap-3">
@@ -89,19 +117,6 @@ function SignedInGreeting() {
           </p>
         </div>
       </div>
-
-      <p className="demo-muted text-center text-xs">
-        Sign out from the avatar in the header. Built with{' '}
-        <a
-          href="https://descope.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium"
-        >
-          DESCOPE
-        </a>
-        .
-      </p>
     </div>
   )
 }
