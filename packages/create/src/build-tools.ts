@@ -56,6 +56,26 @@ export function assertAddOnSupportedByBundler(
   }
 }
 
+export function assertNoExclusiveAddOnConflicts(
+  addOns: Array<AddOn>,
+  onlyGroup?: NonNullable<AddOn['exclusive']>[number],
+) {
+  const selectedByExclusiveGroup = new Map<string, AddOn>()
+
+  for (const addOn of addOns) {
+    for (const exclusive of addOn.exclusive ?? []) {
+      if (onlyGroup && exclusive !== onlyGroup) continue
+      const selected = selectedByExclusiveGroup.get(exclusive)
+      if (selected && selected.id !== addOn.id) {
+        throw new Error(
+          `Cannot combine ${selected.name} and ${addOn.name}. Add-ons in the "${exclusive}" group are mutually exclusive.`,
+        )
+      }
+      selectedByExclusiveGroup.set(exclusive, addOn)
+    }
+  }
+}
+
 export function normalizeAndValidateBundlerOptions(options: Options): Options {
   const bundler = resolveBundler(options.framework, options.bundler).id
 
@@ -66,6 +86,8 @@ export function normalizeAndValidateBundlerOptions(options: Options): Options {
   for (const addOn of options.chosenAddOns) {
     assertAddOnSupportedByBundler(addOn, bundler)
   }
+
+  assertNoExclusiveAddOnConflicts(options.chosenAddOns, 'env')
 
   return {
     ...options,

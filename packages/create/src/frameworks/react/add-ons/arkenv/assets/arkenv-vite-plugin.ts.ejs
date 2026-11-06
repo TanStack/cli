@@ -1,0 +1,6 @@
+<% const validator = addOnOption.arkenv?.validator -%>
+<% if (validator === 'zod' || validator === 'valibot') { -%>
+export { default } from '@arkenv/vite-plugin/standard'
+<% } else { -%>
+export { default } from '@arkenv/vite-plugin'
+<% } -%>
