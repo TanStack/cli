@@ -16,7 +16,7 @@ test('@blocking preserves Themer preferences before hydration and across tabs', 
   const app = await createReactAppFixture({
     appName: 'themer-smoke-app',
     addOns: ['themer'],
-    packageManager: 'bun',
+    packageManager: 'pnpm',
     runQualityGatesChecks: true,
   })
 
