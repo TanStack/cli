@@ -32,7 +32,6 @@ const expectedDependencies = [
 
 const expectedDevDependencies = [
   '@cloudflare/vite-plugin',
-  '@tanstack/router-cli',
   '@types/node',
   '@types/react',
   '@types/react-dom',
@@ -208,7 +207,7 @@ test('@blocking creates a production-valid blank React app', async ({
       )
       expect(packageJSON.scripts).toEqual({
         dev: 'vite dev --port 3000',
-        'generate-routes': 'tsr generate',
+        'generate-routes': 'vite build',
         build: 'vite build',
         preview: 'vite preview',
         deploy: 'npm run build && wrangler deploy',

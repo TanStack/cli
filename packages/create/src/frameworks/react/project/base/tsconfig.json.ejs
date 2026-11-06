@@ -7,7 +7,8 @@
     "module": "ESNext",
     "paths": {
       "#/*": ["./src/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"]<% if (addOnEnabled.events || addOnEnabled.resume) { %>,
+      "content-collections": ["./.content-collections/generated"]<% } %>
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["<%= bundler === 'vite' ? 'vite/client' : '@rsbuild/core/types' %>"],

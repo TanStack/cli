@@ -8,6 +8,13 @@
 
 2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
 
+<% if (addOnEnabled.drizzle || addOnEnabled.prisma) { %>
+### Create the auth tables
+
+Better Auth uses your <%= addOnEnabled.drizzle ? 'Drizzle' : 'Prisma' %> database. Its user, session, account, and verification tables are included in <%= addOnEnabled.drizzle ? '`src/db/schema.ts`' : '`prisma/schema.prisma`' %>.
+
+Set `DATABASE_URL` in `.env.local`, then <% if (addOnEnabled.prisma) { %>run the `db:generate` package script to update the Prisma client and <% } %>run the `db:push` package script to create the tables. Use the ORM's migration workflow when deploying schema changes to an existing database.
+<% } else { %>
 ### Adding a Database (Optional)
 
 Better Auth can work in stateless mode, but to persist user data, add a database:
@@ -30,3 +37,5 @@ Then run migrations:
 ```bash
 <%- getPackageManagerExecuteScript('@better-auth/cli', ['migrate']) %>
 ```
+
+<% } %>

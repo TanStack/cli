@@ -15,7 +15,8 @@
   "devtools": {
     "dependencies": {
       "@tanstack/react-devtools": "latest",
-      "@tanstack/react-router-devtools": "latest"
+      "@tanstack/react-router-devtools": "latest",
+      "@tanstack/router-core": "latest"
     }
   },
   "examples": {
@@ -27,7 +28,7 @@
     "vite": {
       "scripts": {
         "dev": "vite dev --port 3000",
-        "generate-routes": "tsr generate",
+        "generate-routes": "vite build",
         "build": "vite build",
         "preview": "vite preview"
       },
@@ -75,8 +76,11 @@
       }
     }
   },
-  "bundlerFileRouter": {
+  "bundlerRouterOnlyFileRouter": {
     "vite": {
+      "scripts": {
+        "generate-routes": "tsr generate"
+      },
       "devDependencies": {
         "@tanstack/router-cli": "^1.132.0"
       }

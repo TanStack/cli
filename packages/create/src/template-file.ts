@@ -212,7 +212,14 @@ export function createTemplateFile(environment: Environment, options: Options) {
     }
 
     if (append) {
-      await environment.appendFile(resolve(options.targetDir, target), content)
+      const targetPath = resolve(options.targetDir, target)
+      if (content && !/^[\r\n]/.test(content) && environment.exists(targetPath)) {
+        const existing = await environment.readFile(targetPath)
+        if (existing && !/[\r\n]$/.test(existing)) {
+          content = `\n${content}`
+        }
+      }
+      await environment.appendFile(targetPath, content)
     } else {
       await environment.writeFile(resolve(options.targetDir, target), content)
     }

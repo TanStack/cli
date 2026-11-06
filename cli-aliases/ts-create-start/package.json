@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/create-start",
-  "version": "0.59.45",
+  "version": "0.59.61",
   "description": "Tanstack Start Builder",
   "bin": "./dist/index.js",
   "type": "module",
@@ -28,7 +28,6 @@
   ],
   "author": "Jack Herrington <jherr@pobox.com>",
   "license": "MIT",
-  "packageManager": "pnpm@9.15.5",
   "dependencies": {
     "@tanstack/cli": "workspace:*",
     "@tanstack/create": "workspace:*"

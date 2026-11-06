@@ -100,6 +100,11 @@ export function createPackageJSON(options: Options) {
     options.mode === 'file-router'
       ? options.framework.optionalPackages.bundlerFileRouter?.[bundler]
       : undefined,
+    options.mode === 'file-router' && options.routerOnly
+      ? options.framework.optionalPackages.bundlerRouterOnlyFileRouter?.[
+          bundler
+        ]
+      : undefined,
   ]
   for (const addition of additions.filter(Boolean)) {
     packageJSON = mergePackageJSON(packageJSON, addition)

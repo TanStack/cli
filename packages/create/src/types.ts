@@ -75,6 +75,7 @@ export const AddOnBaseSchema = z.object({
     .object({
       command: z.string(),
       args: z.array(z.string()).optional(),
+      allowBuilds: z.array(z.string()).optional(),
     })
     .optional(),
   routes: z
@@ -269,6 +270,7 @@ type ProjectEnvironment = {
 }
 
 type FileEnvironment = {
+  getPackageManagerVersion?: (packageManager: PackageManager, cwd: string) => Promise<string | undefined>
   appendFile: (path: string, contents: string) => Promise<void>
   copyFile: (from: string, to: string) => Promise<void>
   writeFile: (path: string, contents: string) => Promise<void>
@@ -278,7 +280,7 @@ type FileEnvironment = {
     args: Array<string>,
     cwd: string,
     options?: { inherit?: boolean },
-  ) => Promise<{ stdout: string }>
+  ) => Promise<{ stdout: string; failed?: boolean }>
   deleteFile: (path: string) => Promise<void>
 
   exists: (path: string) => boolean
