@@ -3,5 +3,5 @@
   "name": "tanstack-start-app",
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "<%= addOnEnabled.sentry ? './src/worker.ts' : '@tanstack/react-start/server-entry' %>"
+  "main": "<%= addOnEnabled.sentry ? './src/worker.ts' : addOnEnabled.paraglide ? './src/server.ts' : '@tanstack/react-start/server-entry' %>"
 }

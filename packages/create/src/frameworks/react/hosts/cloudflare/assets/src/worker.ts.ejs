@@ -1,7 +1,7 @@
 <% if (!addOnEnabled.sentry) { ignoreFile(); return; } -%>
 import { httpServerIntegration, withSentry } from '@sentry/cloudflare'
 import { wrapFetchWithSentry } from '@sentry/tanstackstart-react'
-import handler from '@tanstack/react-start/server-entry'
+import handler from '<%= addOnEnabled.paraglide ? './server.js' : '@tanstack/react-start/server-entry' %>'
 
 export default withSentry(
   (env: { VITE_SENTRY_DSN?: string }) => ({
