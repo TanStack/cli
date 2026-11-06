@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "drizzle-orm": "^0.45.1"<% if (addOnOption.drizzle.database === 'postgresql') { %>,
+    "drizzle-orm": "<%= addOnEnabled['better-auth'] ? '^0.45.2' : '^0.45.1' %>"<% if (addOnOption.drizzle.database === 'postgresql') { %>,
     "pg": "^8.16.3"<% } %><% if (addOnOption.drizzle.database === 'mysql') { %>,
     "mysql2": "^3.15.3"<% } %><% if (addOnOption.drizzle.database === 'sqlite') { %>,
     "better-sqlite3": "^12.6.2"<% } %>
