@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fs, vol } from 'memfs'
+import { resolve } from 'node:path'
 
 import {
   findFilesRecursively,
@@ -138,10 +139,13 @@ describe('findFilesRecursively', () => {
     const files = {}
     findFilesRecursively('/src', files)
 
-    expect(Object.keys(files)).toEqual([
-      '/src/subdir/subdir2/test.txt',
-      '/src/subdir/test.txt',
-      '/src/test.txt',
-    ])
+    // Disk traversal returns native absolute paths, including the drive.
+    expect(Object.keys(files)).toEqual(
+      [
+        '/src/subdir/subdir2/test.txt',
+        '/src/subdir/test.txt',
+        '/src/test.txt',
+      ].map((path) => resolve(path)),
+    )
   })
 })
