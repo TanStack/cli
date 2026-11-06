@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import { relative, resolve } from 'node:path'
 import { Command, InvalidArgumentError, Option } from 'commander'
 import { cancel, confirm, intro, isCancel, log } from '@clack/prompts'
-import chalk from 'chalk'
 import semver from 'semver'
 
 import {
@@ -13,11 +12,13 @@ import {
   createApp,
   devAddOn,
   getAllAddOns,
+  getBundlers,
   getFrameworkByName,
   getFrameworks,
   initAddOn,
   initStarter,
   isDemoFilePath,
+  resolveBundler,
 } from '@tanstack/create'
 import {
   LIBRARY_GROUPS,
@@ -30,7 +31,8 @@ import {
   getTelemetryStatus,
   setTelemetryEnabled,
 } from './telemetry-config.js'
-import { TelemetryClient, createTelemetryClient } from './telemetry.js'
+import { styleText } from './terminal-style.js'
+import { createTelemetryClient } from './telemetry.js'
 
 import { promptForAddOns, promptForCreateOptions } from './options.js'
 import {
@@ -43,6 +45,7 @@ import { createUIEnvironment } from './ui-environment.js'
 import { DevWatchManager } from './dev-watch.js'
 
 import type { CliOptions } from './types.js'
+import type { TelemetryClient } from './telemetry.js'
 import type {
   FrameworkDefinition,
   Options,
@@ -166,7 +169,7 @@ function getCreateCommandVariant(options: CliOptions) {
   return 'scaffold'
 }
 
-function getCreateTelemetryProperties(projectName: string, options: CliOptions) {
+export function getCreateTelemetryProperties(projectName: string, options: CliOptions) {
   const addOnIds = Array.isArray(options.addOns)
     ? sanitizeIdList(options.addOns)
     : undefined
@@ -180,7 +183,9 @@ function getCreateTelemetryProperties(projectName: string, options: CliOptions) 
       : undefined,
     command_variant: getCreateCommandVariant(options),
     deployment: options.deployment ? sanitizeId(options.deployment) : undefined,
+    bundler: options.buildTool ? sanitizeId(options.buildTool) : undefined,
     examples: options.examples,
+    blank: !!options.blank,
     framework: options.framework ? sanitizeId(options.framework) : undefined,
     git: options.git,
     install: options.install !== false,
@@ -198,7 +203,7 @@ function getCreateTelemetryProperties(projectName: string, options: CliOptions) 
   }
 }
 
-function getResolvedCreateTelemetryProperties(
+export function getResolvedCreateTelemetryProperties(
   finalOptions: Options,
   cliOptions: CliOptions,
 ) {
@@ -219,7 +224,9 @@ function getResolvedCreateTelemetryProperties(
     add_on_count: addOnIds.length,
     add_on_ids: addOnIds,
     deployment: deployment ? sanitizeId(deployment.id) : undefined,
+    bundler: sanitizeId(finalOptions.bundler ?? 'vite'),
     examples: includeExamples,
+    blank: finalOptions.projectPreset === 'blank',
     framework: sanitizeId(finalOptions.framework.id),
     git: finalOptions.git,
     install: finalOptions.install !== false,
@@ -263,6 +270,7 @@ export function cli({
   async function confirmTargetDirectorySafety(
     targetDir: string,
     forced?: boolean,
+    nonInteractive?: boolean,
   ) {
     if (forced) {
       return
@@ -278,6 +286,12 @@ export function cli({
 
     if (fs.readdirSync(targetDir).length === 0) {
       return
+    }
+
+    if (nonInteractive) {
+      throw new Error(
+        `Target directory "${targetDir}" already exists and is not empty. Pass --force to continue non-interactively.`,
+      )
     }
 
     const shouldContinue = await confirm({
@@ -296,7 +310,13 @@ export function cli({
     lines.push(`  Project:         ${finalOptions.projectName}`)
     lines.push(`  Location:        ${finalOptions.targetDir}`)
     lines.push(`  Framework:       ${finalOptions.framework.name}`)
+    lines.push(
+      `  Build tool:      ${resolveBundler(finalOptions.framework, finalOptions.bundler).name}`,
+    )
     lines.push(`  Mode:            ${finalOptions.mode}`)
+    if (finalOptions.projectPreset === 'blank') {
+      lines.push(`  Preset:          blank`)
+    }
     lines.push(`  Package manager: ${finalOptions.packageManager}`)
     if (finalOptions.starter) {
       lines.push(`  Template:        ${finalOptions.starter.name}`)
@@ -500,21 +520,24 @@ export function cli({
       getResolvedCreateTelemetryProperties(normalizedOpts, options),
     )
 
-    normalizedOpts.targetDir =
-      options.targetDir || resolve(process.cwd(), projectName)
+    normalizedOpts.targetDir = resolve(normalizedOpts.targetDir)
 
     // Create the initial app with minimal output for dev watch mode
-    console.log(chalk.bold('\ndev-watch'))
-    console.log(chalk.gray('├─') + ' ' + `creating initial ${appName} app...`)
+    console.log(styleText('bold', '\ndev-watch'))
+    console.log(styleText('gray', '├─') + ' ' + `creating initial ${appName} app...`)
     if (normalizedOpts.install !== false) {
       console.log(
-        chalk.gray('├─') + ' ' + chalk.yellow('⟳') + ' installing packages...',
+        styleText('gray', '├─') + ' ' + styleText('yellow', '⟳') + ' installing packages...',
       )
     }
     const silentEnvironment = createUIEnvironment(appName, true, () => currentTelemetry)
-    await confirmTargetDirectorySafety(normalizedOpts.targetDir, options.force)
+    await confirmTargetDirectorySafety(
+      normalizedOpts.targetDir,
+      options.force,
+      !!options.nonInteractive || !!options.yes,
+    )
     await createApp(silentEnvironment, normalizedOpts)
-    console.log(chalk.gray('└─') + ' ' + chalk.green('✓') + ` app created`)
+    console.log(styleText('gray', '└─') + ' ' + styleText('green', '✓') + ` app created`)
 
     // Now start the dev watch mode
     const manager = new DevWatchManager({
@@ -546,6 +569,13 @@ export function cli({
       if (addOn.type === 'deployment') {
         deployments.add(addOn.id)
       }
+    }
+  }
+
+  const bundlers = new Set<string>()
+  for (const framework of getFrameworks()) {
+    for (const bundler of getBundlers(framework)) {
+      bundlers.add(bundler.id)
     }
   }
 
@@ -617,6 +647,17 @@ export function cli({
 
   addHiddenAgentFlag(program)
 
+  function validateCreateCommandOptions(options: CliOptions) {
+    const legacyCreateFlags = validateLegacyCreateFlags(options)
+    if (legacyCreateFlags.error) {
+      throw new Error(legacyCreateFlags.error)
+    }
+
+    for (const warning of legacyCreateFlags.warnings) {
+      log.warn(warning)
+    }
+  }
+
   // Helper to create the create command action handler
   async function handleCreate(projectName: string, options: CliOptions) {
     try {
@@ -627,19 +668,13 @@ export function cli({
           properties: getCreateTelemetryProperties(projectName, options),
         },
         async (telemetry) => {
-          const legacyCreateFlags = validateLegacyCreateFlags(options)
-          if (legacyCreateFlags.error) {
-            throw new Error(legacyCreateFlags.error)
-          }
-
-          for (const warning of legacyCreateFlags.warnings) {
-            log.warn(warning)
-          }
+          validateCreateCommandOptions(options)
 
           if (options.listAddOns) {
             const addOns = await getAllAddOns(
               getFrameworkByName(options.framework || defaultFramework || 'React')!,
               defaultMode,
+              options.buildTool,
             )
             const visibleAddOns = addOns.filter((a) => !forcedAddOns.includes(a.id))
             telemetry.mergeProperties({
@@ -672,7 +707,7 @@ export function cli({
               const optionMarker = hasOptions ? '*' : ' '
               if (hasOptions) hasConfigurableAddOns = true
               console.log(
-                `${optionMarker} ${chalk.bold(addOn.id)}: ${addOn.description}`,
+                `${optionMarker} ${styleText('bold', addOn.id)}: ${addOn.description}`,
               )
             }
             if (hasConfigurableAddOns) {
@@ -685,6 +720,7 @@ export function cli({
             const addOns = await getAllAddOns(
               getFrameworkByName(options.framework || defaultFramework || 'React')!,
               defaultMode,
+              options.buildTool,
             )
             const addOn =
               addOns.find((a) => a.id === options.addonDetails) ??
@@ -728,30 +764,30 @@ export function cli({
             }
 
             console.log(
-              `${chalk.bold.cyan('Add-on Details:')} ${chalk.bold(addOn.name)}`,
+              `${styleText(['bold', 'cyan'], 'Add-on Details:')} ${styleText('bold', addOn.name)}`,
             )
-            console.log(`${chalk.bold('ID:')} ${addOn.id}`)
-            console.log(`${chalk.bold('Description:')} ${addOn.description}`)
-            console.log(`${chalk.bold('Type:')} ${addOn.type}`)
-            console.log(`${chalk.bold('Phase:')} ${addOn.phase}`)
-            console.log(`${chalk.bold('Supported Modes:')} ${addOn.modes.join(', ')}`)
+            console.log(`${styleText('bold', 'ID:')} ${addOn.id}`)
+            console.log(`${styleText('bold', 'Description:')} ${addOn.description}`)
+            console.log(`${styleText('bold', 'Type:')} ${addOn.type}`)
+            console.log(`${styleText('bold', 'Phase:')} ${addOn.phase}`)
+            console.log(`${styleText('bold', 'Supported Modes:')} ${addOn.modes.join(', ')}`)
 
             if (addOn.link) {
-              console.log(`${chalk.bold('Link:')} ${chalk.blue(addOn.link)}`)
+              console.log(`${styleText('bold', 'Link:')} ${styleText('blue', addOn.link)}`)
             }
 
             if (addOn.dependsOn && addOn.dependsOn.length > 0) {
               console.log(
-                `${chalk.bold('Dependencies:')} ${addOn.dependsOn.join(', ')}`,
+                `${styleText('bold', 'Dependencies:')} ${addOn.dependsOn.join(', ')}`,
               )
             }
 
             if (addOn.options && Object.keys(addOn.options).length > 0) {
-              console.log(`\n${chalk.bold.yellow('Configuration Options:')}`)
+              console.log(`\n${styleText(['bold', 'yellow'], 'Configuration Options:')}`)
               for (const [optionName, option] of Object.entries(addOn.options)) {
                 if ('type' in option) {
                   const opt = option as any
-                  console.log(`  ${chalk.bold(optionName)}:`)
+                  console.log(`  ${styleText('bold', optionName)}:`)
                   console.log(`    Label: ${opt.label}`)
                   if (opt.description) {
                     console.log(`    Description: ${opt.description}`)
@@ -767,13 +803,13 @@ export function cli({
                 }
               }
             } else {
-              console.log(`\n${chalk.gray('No configuration options available')}`)
+              console.log(`\n${styleText('gray', 'No configuration options available')}`)
             }
 
             if (addOn.routes && addOn.routes.length > 0) {
-              console.log(`\n${chalk.bold.green('Routes:')}`)
+              console.log(`\n${styleText(['bold', 'green'], 'Routes:')}`)
               for (const route of addOn.routes) {
-                console.log(`  ${chalk.bold(route.url)} (${route.name})`)
+                console.log(`  ${styleText('bold', String(route.url))} (${route.name})`)
                 console.log(`    File: ${route.path}`)
               }
             }
@@ -850,7 +886,11 @@ export function cli({
 
           let cameFromPrompts = false
           if (finalOptions) {
-            intro(`Creating a new ${appName} app in ${projectName}...`)
+            const createLocation =
+              resolve(finalOptions.targetDir) === resolve(process.cwd())
+                ? 'the current directory'
+                : finalOptions.projectName
+            intro(`Creating a new ${appName} app in ${createLocation}...`)
           } else {
             if (!wantsInteractiveMode) {
               throw new Error(
@@ -880,12 +920,10 @@ export function cli({
           ;(finalOptions as Options & { routerOnly?: boolean }).routerOnly =
             !!cliOptions.routerOnly
 
-          if (options.targetDir) {
-            finalOptions.targetDir = options.targetDir
-          } else if (finalOptions.targetDir) {
+          if (finalOptions.targetDir) {
             // Keep the normalized target dir.
-          } else if (projectName === '.') {
-            finalOptions.targetDir = resolve(process.cwd())
+          } else if (options.targetDir) {
+            finalOptions.targetDir = resolve(options.targetDir)
           } else {
             finalOptions.targetDir = resolve(process.cwd(), finalOptions.projectName)
           }
@@ -893,7 +931,11 @@ export function cli({
           if (cameFromPrompts) {
             await confirmCreateOptions(finalOptions)
           }
-          await confirmTargetDirectorySafety(finalOptions.targetDir, options.force)
+          await confirmTargetDirectorySafety(
+            finalOptions.targetDir,
+            options.force,
+            nonInteractive,
+          )
           await createApp(environment, finalOptions)
         },
       )
@@ -932,6 +974,23 @@ export function cli({
     }
 
     cmd
+      .option<string>(
+        `--build-tool <${Array.from(bundlers).join('|')}>`,
+        'select the project build tool',
+        (value) => {
+          const buildTool = Array.from(bundlers).find(
+            (item) => item.toLowerCase() === value.toLowerCase(),
+          )
+          if (!buildTool) {
+            throw new InvalidArgumentError(
+              `Invalid build tool: ${value}. The following are allowed: ${Array.from(
+                bundlers,
+              ).join(', ')}`,
+            )
+          }
+          return buildTool
+        },
+      )
       .option(
         '--starter [url-or-id]',
         'DEPRECATED: use --template. Initializes from a template URL or built-in id',
@@ -967,12 +1026,16 @@ export function cli({
         'Use router-only compatibility mode (file-based routing without TanStack Start)',
       )
       .option(
+        '--blank',
+        'Create a minimal one-route app without default starter UI, Tailwind, devtools, or tests',
+      )
+      .option(
         '--tailwind',
-        'Deprecated: compatibility flag; Tailwind is always enabled',
+        'Deprecated: compatibility flag; standard scaffolds always enable Tailwind',
       )
       .option(
         '--no-tailwind',
-        'Deprecated: compatibility flag; Tailwind opt-out is ignored',
+        'Deprecated: compatibility flag; use --blank for a project without Tailwind',
       )
       .option('--examples', 'include demo/example pages')
       .option('--no-examples', 'exclude demo/example pages')
@@ -1092,6 +1155,8 @@ export function cli({
           },
         },
         async () => {
+          validateCreateCommandOptions(options)
+
           const frameworkName = options.framework || defaultFramework || 'React'
           const framework = getFrameworkByName(frameworkName)
           if (!framework) {
@@ -1179,10 +1244,10 @@ export function cli({
               return
             }
 
-            console.log(chalk.bold(groupName))
+            console.log(styleText('bold', groupName))
             for (const lib of payload.libraries) {
               console.log(
-                `${chalk.bold(lib.id)} (${lib.latestVersion}) - ${lib.tagline}`,
+                `${styleText('bold', lib.id)} (${lib.latestVersion}) - ${lib.tagline}`,
               )
             }
           },
@@ -1290,8 +1355,8 @@ export function cli({
                 return
               }
 
-              console.log(chalk.bold(payload.title))
-              console.log(chalk.blue(payload.url))
+              console.log(styleText('bold', payload.title))
+              console.log(styleText('blue', payload.url))
               console.log('')
               console.log(payload.content)
             },
@@ -1360,7 +1425,7 @@ export function cli({
 
               for (const result of payload.results) {
                 console.log(
-                  `${chalk.bold(result.title)} [${result.library}]\n${chalk.blue(result.url)}\n${result.snippet}\n`,
+                  `${styleText('bold', result.title)} [${result.library}]\n${styleText('blue', result.url)}\n${result.snippet}\n`,
                 )
               }
             },
@@ -1450,7 +1515,7 @@ export function cli({
 
               for (const partner of partners) {
                 console.log(
-                  `${chalk.bold(partner.name)} [${partner.category}] - ${partner.description}\n${chalk.blue(partner.url)}`,
+                  `${styleText('bold', partner.name)} [${partner.category}] - ${partner.description}\n${styleText('blue', partner.url)}`,
                 )
               }
             },

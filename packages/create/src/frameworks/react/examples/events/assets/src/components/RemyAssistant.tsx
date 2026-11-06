@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Send, X, ChefHat, Croissant } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 import { Store } from '@tanstack/store'
@@ -80,25 +80,26 @@ interface RemyAssistantProps {
 // Export store for header control
 export const showRemyAssistant = new Store(false)
 
+function subscribeToAssistant(onChange: () => void) {
+  const subscription = showRemyAssistant.subscribe(onChange)
+  return () => subscription.unsubscribe()
+}
+
 export default function RemyAssistant({
   speakerSlug,
   talkSlug,
   contextTitle,
 }: RemyAssistantProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const isOpen = useSyncExternalStore(
+    subscribeToAssistant,
+    () => showRemyAssistant.state,
+    () => false,
+  )
   const { messages, sendMessage, isLoading } = useConferenceChat(speakerSlug, talkSlug)
   const [input, setInput] = useState('')
 
-  // Sync with store for header control
-  useEffect(() => {
-    return showRemyAssistant.subscribe(() => {
-      setIsOpen(showRemyAssistant.state)
-    })
-  }, [])
-
   const handleToggle = () => {
     const newState = !isOpen
-    setIsOpen(newState)
     showRemyAssistant.setState(() => newState)
   }
 

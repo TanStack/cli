@@ -14,18 +14,14 @@ function RouteComponent() {
   const strapiArticles = Route.useLoaderData()
 
   return (
-    <div class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
-      <div class="max-w-7xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8 text-white">
-          <span class="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            Strapi
-          </span>{' '}
-          <span class="text-gray-300">Articles</span>
-        </h1>
+    <main class="demo-page demo-page-wide">
+      <div>
+        <p class="island-kicker mb-2">CMS</p>
+        <h1 class="demo-title mb-8">Strapi Articles</h1>
 
         <Show
           when={strapiArticles() && strapiArticles().length > 0}
-          fallback={<p class="text-gray-400">No articles found.</p>}
+          fallback={<p class="demo-muted">No articles found.</p>}
         >
           <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <For each={strapiArticles()}>
@@ -35,25 +31,25 @@ function RouteComponent() {
                   params={{ articleId: article.documentId }}
                   class="block"
                 >
-                  <article class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10 cursor-pointer h-full">
-                    <h2 class="text-xl font-semibold text-white mb-3">
+                  <article class="demo-card h-full cursor-pointer transition hover:-translate-y-0.5">
+                    <h2 class="mb-3 text-xl font-semibold">
                       {article.title || 'Untitled'}
                     </h2>
 
                     {article.description && (
-                      <p class="text-gray-400 mb-4 leading-relaxed">
+                      <p class="demo-muted mb-4 leading-relaxed">
                         {article.description}
                       </p>
                     )}
 
                     {article.content && (
-                      <p class="text-gray-400 line-clamp-3 leading-relaxed">
+                      <p class="demo-muted line-clamp-3 leading-relaxed">
                         {article.content}
                       </p>
                     )}
 
                     {article.createdAt && (
-                      <p class="text-sm text-cyan-400/70 mt-4">
+                      <p class="demo-muted mt-4 text-sm">
                         {new Date(article.createdAt).toLocaleDateString()}
                       </p>
                     )}
@@ -64,6 +60,6 @@ function RouteComponent() {
           </div>
         </Show>
       </div>
-    </div>
+    </main>
   )
 }

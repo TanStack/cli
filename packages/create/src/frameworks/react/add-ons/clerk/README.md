@@ -1,44 +1,50 @@
 ## Setting up Clerk
 
-1. Sign up at [clerk.com](https://clerk.com) and create an application
-2. Copy the **Publishable Key** from the Clerk dashboard
-3. Set it in your `.env.local`:
+1. Create an application in the [Clerk dashboard](https://dashboard.clerk.com).
+2. Copy its publishable and secret keys into `.env.local`:
+
    ```bash
    VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+   CLERK_SECRET_KEY=sk_test_...
    ```
-4. Visit the demo route at `/demo/clerk` once `npm run dev` is running
+
+3. Start the app and visit `/demo/clerk`.
 
 ### What's wired up
 
-- **`<ClerkProvider>`** at the app root (`src/integrations/clerk/provider.tsx`) handles auth context for the whole tree
-- **`<SignInButton>` / `<UserButton>`** in the header swap based on auth state
-- **`/demo/clerk`** shows Clerk's prebuilt sign-in UI and a signed-in greeting
+- `clerkMiddleware()` authenticates each server request from `src/start.ts`.
+- `<ClerkProvider>` supplies auth state throughout the app.
+- `<SignInButton>` and `<UserButton>` in the header respond to the session.
+- `/demo/clerk` shows Clerk's prebuilt sign-in UI and signed-in user data.
 
 ### Protecting a route
 
-Wrap any component in `<SignedIn>` / `<SignedOut>`:
+Use `auth()` in a loader or server function when authorization must happen on the
+server:
 
 ```tsx
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { auth } from '@clerk/tanstack-react-start/server'
 
-function ProtectedPage() {
-  return (
-    <>
-      <SignedIn>
-        <YourPageContent />
-      </SignedIn>
-      <SignedOut>
-        <RedirectToSignIn />
-      </SignedOut>
-    </>
-  )
-}
+const getAuth = createServerFn({ method: 'GET' }).handler(async () => {
+  const { userId } = await auth()
+  return { userId }
+})
+
+export const Route = createFileRoute('/dashboard')({
+  beforeLoad: async () => {
+    const { userId } = await getAuth()
+    if (!userId) throw redirect({ to: '/' })
+  },
+})
 ```
 
-For server-side checks (route loaders, server functions), see the Clerk docs on [`auth()`](https://clerk.com/docs/references/backend/auth).
+`<Show when="signed-in">` remains useful for presentation, but server-side checks
+are the security boundary. See Clerk's [TanStack Start docs](https://clerk.com/docs/tanstack-react-start/getting-started/quickstart).
 
 ### Production checklist
 
-- Replace the test keys with **production keys** from a dedicated production Clerk instance
-- Configure your production domain under **Domains** in the Clerk dashboard
-- Set up social providers (Google, GitHub, etc.) under **User & Authentication → Social Connections**
+- Set both keys in the production environment; never expose `CLERK_SECRET_KEY`.
+- Use production keys from a dedicated production Clerk instance.
+- Configure the production domain and any social connections in the Clerk dashboard.

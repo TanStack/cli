@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { resolve } from 'node:path'
 
 import { createApp } from '../src/create-app.js'
+import { createApp as createEdgeApp } from '../src/edge-create-app.js'
 
 import { createMemoryEnvironment } from '../src/environment.js'
-import { FILE_ROUTER } from '../src/constants.js'
-import { AddOn, Options } from '../src/types.js'
+import type { AddOn, Options } from '../src/types.js'
 
 const simpleOptions = {
   projectName: 'test',
@@ -43,7 +43,7 @@ const simpleOptions = {
   packageManager: 'pnpm',
   typescript: true,
   tailwind: true,
-  mode: FILE_ROUTER,
+  mode: 'file-router',
   variableValues: {},
 } as unknown as Options
 
@@ -87,6 +87,121 @@ describe('createApp', () => {
     expect(output.files['/src/test2.txt']).toEqual('Hello-2')
     expect(output.commands.some(({ command }) => command === 'echo')).toBe(true)
   })
+
+  it.each(['react', 'solid'])(
+    'generates routes for %s file-router apps after install',
+    async (frameworkId) => {
+      const { environment, output } = createMemoryEnvironment()
+      await createApp(environment, {
+        ...simpleOptions,
+        framework: {
+          ...simpleOptions.framework,
+          id: frameworkId,
+        },
+        install: true,
+      } as Options)
+
+      expect(output.commands).toContainEqual({
+        command: 'pnpm',
+        args: ['generate-routes'],
+      })
+    },
+  )
+
+  it('skips route generation when dependency install is skipped', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await createApp(environment, {
+      ...simpleOptions,
+      framework: {
+        ...simpleOptions.framework,
+        id: 'react',
+      },
+      install: false,
+    })
+
+    expect(output.commands).not.toContainEqual({
+      command: 'pnpm',
+      args: ['generate-routes'],
+    })
+  })
+
+  it.each([createApp, createEdgeApp])(
+    'skips intent setup and reports the follow-up when dependency install is skipped (%#)',
+    async (create) => {
+      const { environment, output } = createMemoryEnvironment()
+      let outro = ''
+      environment.outro = (message: string) => {
+        outro = message
+      }
+      await create(environment, {
+        ...simpleOptions,
+        intent: true,
+        install: false,
+      })
+
+      expect(output.commands).not.toContainEqual({
+        command: 'pnpm',
+        args: ['dlx', '@tanstack/intent', 'install'],
+      })
+      expect(outro).not.toContain('was wired up by TanStack Intent')
+      expect(outro).toContain('TanStack Intent setup was skipped')
+      expect(outro).toContain('pnpm install')
+      expect(outro).toContain('pnpm dlx @tanstack/intent install --map')
+    },
+  )
+
+  it.each([createApp, createEdgeApp])(
+    'sets up intent and reports the agent config when dependencies are installed (%#)',
+    async (create) => {
+      const { environment, output } = createMemoryEnvironment()
+      let outro = ''
+      environment.outro = (message: string) => {
+        outro = message
+      }
+      await create(environment, {
+        ...simpleOptions,
+        intent: true,
+        install: true,
+      })
+
+      expect(output.commands).toContainEqual({
+        command: 'pnpm',
+        args: ['dlx', '@tanstack/intent', 'install'],
+      })
+      expect(outro).toContain('was wired up by TanStack Intent')
+      expect(outro).not.toContain('TanStack Intent setup was skipped')
+    },
+  )
+
+  it.each([createApp, createEdgeApp])(
+    'does not report successful Intent setup when the install command fails (%#)',
+    async (create) => {
+      const { environment } = createMemoryEnvironment()
+      const execute = environment.execute
+      environment.execute = (command, args, cwd, options) =>
+        args.includes('@tanstack/intent')
+          ? Promise.resolve({ stdout: '', failed: true })
+          : execute(command, args, cwd, options)
+      let outro = ''
+      const steps: Array<string> = []
+      environment.outro = (message) => {
+        outro = message
+      }
+      environment.finishStep = (_id, message) => {
+        steps.push(message)
+      }
+      await create(environment, {
+        ...simpleOptions,
+        intent: true,
+        install: true,
+      })
+
+      expect(steps).toContain('TanStack Intent setup failed')
+      expect(steps).not.toContain('TanStack Intent configured')
+      expect(outro).not.toContain('was wired up by TanStack Intent')
+      expect(outro).toContain('To retry, run pnpm dlx @tanstack/intent install')
+    },
+  )
 
   it('should create an app - with a add-on', async () => {
     const { environment, output } = createMemoryEnvironment()

@@ -8,8 +8,10 @@ export const Route = createFileRoute('/demo/db-chat')({
 
 function App() {
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <ChatArea />
-    </div>
+    <main className="demo-page demo-center">
+      <section className="demo-panel flex h-[70vh] w-full max-w-3xl flex-col overflow-hidden p-0">
+        <ChatArea />
+      </section>
+    </main>
   )
 }
