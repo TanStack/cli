@@ -19,7 +19,30 @@ import type { Environment } from './types.js'
 
 export type { MemoryEnvironmentOutput } from './edge-environment.js'
 
-export function createDefaultEnvironment(cancelSignal?: AbortSignal): Environment {
+// The live supervisor owns its process group. Only it signals that group, so
+// cleanup never targets a numeric group ID after its owner has exited.
+const versionProbeSupervisor = `
+const { spawn } = require('node:child_process')
+const stop = () => process.kill(-process.pid, 'SIGKILL')
+process.on('disconnect', stop)
+process.on('SIGTERM', stop)
+process.on('SIGCONT', stop)
+process.on('SIGINT', stop)
+if (!process.connected) stop()
+const child = spawn(process.argv[1], ['--version'], { stdio: ['ignore', 'pipe', 'pipe'] })
+child.stdout.pipe(process.stdout)
+child.stderr.pipe(process.stderr)
+child.on('error', () => { process.exitCode = 1 })
+child.on('close', (code) => {
+  process.exitCode = code ?? 1
+  process.removeListener('disconnect', stop)
+  if (process.connected) process.disconnect()
+})
+`
+
+export function createDefaultEnvironment(
+  cancelSignal?: AbortSignal,
+): Environment {
   let errors: Array<string> = []
   return {
     startRun: () => {
@@ -45,11 +68,86 @@ export function createDefaultEnvironment(cancelSignal?: AbortSignal): Environmen
       return writeFile(path, getBinaryFile(base64Contents) as string)
     },
     getPackageManagerVersion: async (packageManager, cwd) => {
+      if (cancelSignal?.aborted) return undefined
+      // Cancel through stop() while Windows can still inspect the live tree.
+      const posix = process.platform !== 'win32'
+      const subprocess = posix
+        ? execa(
+            process.execPath,
+            [
+              '--input-type=commonjs',
+              '-e',
+              versionProbeSupervisor,
+              packageManager,
+            ],
+            {
+              cwd,
+              detached: true,
+              ipc: true,
+              killSignal: 'SIGCONT',
+              forceKillAfterDelay: 1_000,
+            },
+          )
+        : execa(packageManager, ['--version'], { cwd })
+      let cleanup: Promise<undefined> | undefined
+      const stop = () => {
+        cleanup ??= (async () => {
+          if (subprocess.pid !== undefined) {
+            try {
+              if (process.platform === 'win32') {
+                if (
+                  subprocess.exitCode === null &&
+                  subprocess.signalCode === null
+                ) {
+                  await execa(
+                    'taskkill',
+                    ['/PID', String(subprocess.pid), '/T', '/F'],
+                    {
+                      timeout: 5_000,
+                      windowsHide: true,
+                    },
+                  )
+                }
+              } else {
+                // Resume a stopped owner so it can kill its own group. Execa
+                // escalates to SIGKILL after one second if it cannot respond.
+                subprocess.kill()
+                if (subprocess.connected) subprocess.disconnect()
+              }
+            } catch {
+              subprocess.kill('SIGKILL')
+            }
+          }
+          subprocess.stdout.destroy()
+          subprocess.stderr.destroy()
+          await subprocess.catch(() => undefined)
+          return undefined
+        })()
+        return cleanup
+      }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const timeout = new Promise<undefined>((resolveTimeout) => {
+        timer = setTimeout(() => {
+          void stop().then(() => resolveTimeout(undefined))
+        }, 15_000)
+      })
+      let onAbort: (() => void) | undefined
+      const cancellation = new Promise<undefined>((resolveCancellation) => {
+        onAbort = () => {
+          void stop().then(() => resolveCancellation(undefined))
+        }
+        cancelSignal?.addEventListener('abort', onAbort, { once: true })
+        if (cancelSignal?.aborted) onAbort()
+      })
       try {
-        const result = await execa(packageManager, ['--version'], { cwd, cancelSignal })
-        return result.stdout.trim()
+        const result = await Promise.race([subprocess, timeout, cancellation])
+        return result?.stdout.trim()
       } catch {
         return undefined
+      } finally {
+        clearTimeout(timer)
+        if (onAbort) cancelSignal?.removeEventListener('abort', onAbort)
+        if (cleanup) await cleanup
       }
     },
     execute: async (
@@ -117,8 +215,9 @@ export function createDefaultEnvironment(cancelSignal?: AbortSignal): Environmen
 }
 
 export function createMemoryEnvironment(returnPathsRelativeTo: string = '') {
-  const { environment, output } =
-    createEdgeMemoryEnvironment(returnPathsRelativeTo)
+  const { environment, output } = createEdgeMemoryEnvironment(
+    returnPathsRelativeTo,
+  )
   const resolvePath = (path: string) => resolve(process.cwd(), path)
 
   const appendFile = environment.appendFile
