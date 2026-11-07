@@ -262,10 +262,20 @@ export async function writeFiles(
 
   const overwrittenFiles: Array<string> = []
   const changedFiles: Array<string> = []
+  const replacedScripts: Array<string> = []
   for (const relativeFile of Object.keys(relativeOutputFiles)) {
     if (Object.prototype.hasOwnProperty.call(currentFiles, relativeFile)) {
       if (currentFiles[relativeFile] !== relativeOutputFiles[relativeFile]) {
         overwrittenFiles.push(relativeFile)
+        if (basename(relativeFile) === 'package.json') {
+          const currentScripts = JSON.parse(currentFiles[relativeFile]).scripts ?? {}
+          const generatedScripts = JSON.parse(relativeOutputFiles[relativeFile]).scripts ?? {}
+          for (const [name, command] of Object.entries(generatedScripts)) {
+            if (Object.prototype.hasOwnProperty.call(currentScripts, name) && currentScripts[name] !== command) {
+              replacedScripts.push(`${relativeFile} scripts[${JSON.stringify(name)}]: ${JSON.stringify(currentScripts[name])} -> ${JSON.stringify(command)}`)
+            }
+          }
+        }
       }
     } else {
       changedFiles.push(relativeFile)
@@ -275,6 +285,13 @@ export async function writeFiles(
   const deletedFiles = output.deletedFiles
     .map(toRelativePath)
     .filter((file) => environment.exists(resolve(cwd, file)))
+
+  if (replacedScripts.length) {
+    environment.warn(
+      'The following package scripts will be replaced',
+      replacedScripts.join('\n'),
+    )
+  }
 
   if (!forced && (overwrittenFiles.length || deletedFiles.length)) {
     environment.warn(

@@ -1,0 +1,15 @@
+{
+  "name": "Oxfmt",
+  "description": "Format code without adding a linter.",
+  "phase": "setup",
+  "type": "toolchain",
+  "category": "tooling",
+  "exclusive": [
+    "linter"
+  ],
+  "modes": [
+    "code-router",
+    "file-router"
+  ],
+  "link": "https://oxc.rs/docs/guide/usage/formatter"
+}
