@@ -26,6 +26,7 @@ const { spawn } = require('node:child_process')
 const stop = () => process.kill(-process.pid, 'SIGKILL')
 process.on('disconnect', stop)
 process.on('SIGTERM', stop)
+process.on('SIGCONT', stop)
 process.on('SIGINT', stop)
 if (!process.connected) stop()
 const child = spawn(process.argv[1], ['--version'], { stdio: ['ignore', 'pipe', 'pipe'] })
@@ -83,6 +84,8 @@ export function createDefaultEnvironment(
               cwd,
               detached: true,
               ipc: true,
+              killSignal: 'SIGCONT',
+              forceKillAfterDelay: 1_000,
             },
           )
         : execa(packageManager, ['--version'], { cwd })
@@ -106,7 +109,9 @@ export function createDefaultEnvironment(
                   )
                 }
               } else {
-                // Closing this specific channel asks the live owner to stop.
+                // Resume a stopped owner so it can kill its own group. Execa
+                // escalates to SIGKILL after one second if it cannot respond.
+                subprocess.kill()
                 if (subprocess.connected) subprocess.disconnect()
               }
             } catch {

@@ -179,12 +179,14 @@ describe('package-manager version subprocess', () => {
           "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: ['ignore', 'inherit', 'inherit'] });" +
           "writeFileSync('descendant.pid', String(child.pid)); setInterval(() => {}, 1000)",
       )
-      const entry = new URL('../dist/index.js', import.meta.url).href
+      const entry = new URL('../src/environment.ts', import.meta.url).href
       const receipt = join(cwd, 'descendant.pid')
       probePending = true
       const caller = spawn(
         process.execPath,
         [
+          '--import',
+          import.meta.resolve('tsx'),
           '--input-type=module',
           '-e',
           `
@@ -271,6 +273,68 @@ describe('package-manager version subprocess', () => {
         expect(kill.mock.calls.some(([pid]) => pid < 0)).toBe(false)
       } finally {
         kill.mockRestore()
+      }
+      const descendant = Number(
+        await readFile(join(cwd, 'descendant.pid'), 'utf8'),
+      )
+      await expect
+        .poll(
+          () => {
+            try {
+              process.kill(descendant, 0)
+              return false
+            } catch {
+              return true
+            }
+          },
+          { timeout: 2_000 },
+        )
+        .toBe(true)
+      await rm(join(cwd, 'descendant.pid'))
+    },
+    15_000,
+  )
+
+  it.skipIf(process.platform === 'win32')(
+    'resumes a stopped supervisor so cancellation can clean up its group',
+    async () => {
+      const cwd = await installShim(
+        "const { spawn } = await import('node:child_process');" +
+          "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: ['ignore', 'inherit', 'inherit'] });" +
+          "writeFileSync('descendant.pid', String(child.pid));" +
+          "process.kill(process.ppid, 'SIGSTOP');" +
+          "writeFileSync('supervisor.pid', String(process.ppid)); setInterval(() => {}, 1000)",
+      )
+      const controller = new AbortController()
+      const pending = probe(createDefaultEnvironment(controller.signal), cwd)
+      await expect
+        .poll(() => existsSync(join(cwd, 'supervisor.pid')), { timeout: 5_000 })
+        .toBe(true)
+      const supervisor = Number(
+        await readFile(join(cwd, 'supervisor.pid'), 'utf8'),
+      )
+      let timer: ReturnType<typeof setTimeout> | undefined
+      try {
+        controller.abort()
+        await expect(
+          Promise.race([
+            pending,
+            new Promise((_, reject) => {
+              timer = setTimeout(
+                () =>
+                  reject(new Error('Stopped supervisor blocked cancellation')),
+                2_000,
+              )
+            }),
+          ]),
+        ).resolves.toBeUndefined()
+      } finally {
+        clearTimeout(timer)
+        // Recover only this fixture if the regression leaves its owner stopped.
+        try {
+          process.kill(supervisor, 'SIGCONT')
+        } catch {}
+        await pending
       }
       const descendant = Number(
         await readFile(join(cwd, 'descendant.pid'), 'utf8'),
