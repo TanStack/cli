@@ -3,7 +3,7 @@
   "description": "Integrate oRPC into your application.",
   "phase": "add-on",
   "modes": ["file-router"],
-  "link": "https://orpc.unnoq.com/",
+  "link": "https://orpc.dev/",
   "dependsOn": ["tanstack-query"],
   "type": "add-on",
   "category": "api",
