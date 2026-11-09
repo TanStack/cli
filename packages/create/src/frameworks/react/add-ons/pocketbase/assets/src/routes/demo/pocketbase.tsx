@@ -53,20 +53,27 @@ function PocketBaseDemo() {
   const checkServer = useCallback(async () => {
     try {
       await pb.health.check()
-      if (pb.authStore.isValid) await users.authRefresh()
-      setServerError(null)
     } catch (err) {
-      if (
-        err instanceof ClientResponseError &&
-        [401, 403, 404].includes(err.status)
-      ) {
-        // The stored session is stale, e.g. after resetting pb_data.
-        pb.authStore.clear()
-        setServerError(null)
-      } else {
-        setServerError(getErrorMessage(err))
+      setServerError(getErrorMessage(err))
+      return
+    }
+    if (pb.authStore.isValid) {
+      try {
+        await users.authRefresh()
+      } catch (err) {
+        if (
+          err instanceof ClientResponseError &&
+          [401, 403, 404].includes(err.status)
+        ) {
+          // The stored session is stale, e.g. after resetting pb_data.
+          pb.authStore.clear()
+        } else {
+          setServerError(getErrorMessage(err))
+          return
+        }
       }
     }
+    setServerError(null)
   }, [])
 
   useEffect(() => {
@@ -263,6 +270,7 @@ function TodoList({
   const [items, setItems] = useState<Array<Todo> | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [newTodo, setNewTodo] = useState('')
+  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     let unsubscribe: (() => Promise<void>) | undefined
@@ -301,17 +309,23 @@ function TodoList({
     action().catch((err: unknown) => setActionError(getErrorMessage(err)))
   }
 
-  const handleAddTodo = () => {
+  const handleAddTodo = (e: FormEvent) => {
+    e.preventDefault()
     const text = newTodo.trim()
-    if (!text) return
+    if (!text || adding) return
+    setAdding(true)
     run(async () => {
-      const record = await todos.create({
-        text,
-        completed: false,
-        owner: userId,
-      })
-      setItems((current) => (current ? upsert(current, record) : [record]))
-      setNewTodo('')
+      try {
+        const record = await todos.create({
+          text,
+          completed: false,
+          owner: userId,
+        })
+        setItems((current) => (current ? upsert(current, record) : [record]))
+        setNewTodo('')
+      } finally {
+        setAdding(false)
+      }
     })
   }
 
@@ -360,28 +374,27 @@ function TodoList({
       </section>
 
       <section className="demo-card">
-        <div className="flex gap-3">
+        <form onSubmit={handleAddTodo} className="flex gap-3">
           <input
             type="text"
             value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddTodo()
+            onChange={(e) => {
+              setNewTodo(e.target.value)
+              setActionError(null)
             }}
             placeholder="What needs to be done?"
             aria-label="New todo"
             className="demo-input min-w-0 flex-1"
           />
           <button
-            type="button"
-            onClick={handleAddTodo}
-            disabled={!newTodo.trim()}
+            type="submit"
+            disabled={adding || !newTodo.trim()}
             className="demo-button"
           >
             <Plus size={20} />
-            Add
+            {adding ? 'Adding...' : 'Add'}
           </button>
-        </div>
+        </form>
         {actionError && (
           <div className="demo-alert demo-alert-danger mt-3">
             <p className="text-sm">{actionError}</p>
