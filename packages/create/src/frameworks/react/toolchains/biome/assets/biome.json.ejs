@@ -18,8 +18,8 @@
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
+    <% if (formatsTypeScript) { %>"indentStyle": "space",
+    "indentWidth": 2<% } else { %>"indentStyle": "tab"<% } %>
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
@@ -30,8 +30,8 @@
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "single",
-      "semicolons": "asNeeded"
+      <% if (formatsTypeScript) { %>"quoteStyle": "single",
+      "semicolons": "asNeeded"<% } else { %>"quoteStyle": "double"<% } %>
     }
   }
 }

@@ -274,6 +274,7 @@ function createTemplateRendererSource(renderers = templateRenderers) {
   const {
     packageManager,
     projectName,
+    formatsTypeScript,
     bundler,
     typescript,
     tailwind,
@@ -327,6 +328,7 @@ type TemplateRenderContext = {
   [key: string]: any
   packageManager: any
   projectName: any
+  formatsTypeScript?: boolean
   bundler: any
   typescript: any
   tailwind: any
