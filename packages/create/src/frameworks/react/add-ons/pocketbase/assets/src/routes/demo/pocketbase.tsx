@@ -78,8 +78,7 @@ function PocketBaseDemo() {
       <div className="mx-auto w-full max-w-2xl space-y-6">
         <section className="demo-panel">
           <div className="text-center">
-            <p className="island-kicker mb-2">PocketBase</p>
-            <h1 className="demo-title">Todos</h1>
+            <h1 className="demo-title">PocketBase todos</h1>
             <p className="demo-muted mt-2">
               Private, realtime todos from {POCKETBASE_URL}
             </p>
@@ -99,13 +98,6 @@ function PocketBaseDemo() {
         ) : (
           <AuthForm />
         )}
-
-        <div className="text-center mt-6">
-          <p className="demo-muted text-sm">
-            Built with PocketBase: SQLite, auth, realtime and an admin UI in a
-            single binary.
-          </p>
-        </div>
       </div>
     </main>
   )
