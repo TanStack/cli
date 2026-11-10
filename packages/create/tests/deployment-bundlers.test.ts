@@ -96,6 +96,8 @@ describe.each([
       )
       expect(files).not.toHaveProperty('vite.config.ts')
       expect(pkg.dependencies.nitro).toBe('3.0.261103-rc')
+      expect(pkg.dependencies.db0).toBe('^0.4.1')
+      expect(pkg.dependencies.unstorage).toBe('^2.0.0-alpha.10')
       expect(pkg.dependencies).not.toHaveProperty('srvx')
       expect(pkg.devDependencies['@rsbuild/core']).toBe('^2.3.0')
       expect(pkg.engines.node).toBe('>=22.22.0')
