@@ -146,19 +146,21 @@ describe.each([
     const pkg = JSON.parse(files['package.json'])
     expect(files).not.toHaveProperty('rsbuild.config.ts')
     expect(files['vite.config.ts']).not.toContain('nitro/rsbuild')
-    expect(pkg.engines).toBeUndefined()
     if (id === 'cloudflare') {
+      expect(pkg.engines).toBeUndefined()
       expect(JSON.parse(files['wrangler.jsonc']).main).toBe(
         `@tanstack/${_id}-start/server-entry`,
       )
       expect(pkg.scripts.deploy).toBe('pnpm run build && wrangler deploy')
     } else if (id === 'netlify') {
+      expect(pkg.engines).toBeUndefined()
       expect(files['netlify.toml']).toContain('publish = "dist/client"')
       expect(
         pkg.devDependencies['@netlify/vite-plugin-tanstack-start'],
       ).toBeDefined()
     } else {
-      expect(pkg.dependencies.nitro).toBe('3.0.260610-beta')
+      expect(pkg.dependencies.nitro).toBe('3.0.261103-rc')
+      expect(pkg.engines.node).toBe('>=22.22.0')
     }
   })
 
