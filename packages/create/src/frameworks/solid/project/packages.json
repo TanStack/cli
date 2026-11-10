@@ -78,5 +78,18 @@
         "@tanstack/router-cli": "^1.133.21"
       }
     }
+  },
+  "bundlerDeployment": {
+    "rsbuild": {
+      "engines": {
+        "node": ">=22.22.0"
+      },
+      "devDependencies": {
+        "@rsbuild/core": "^2.3.0"
+      },
+      "scripts": {
+        "start": "node .output/server/index.mjs"
+      }
+    }
   }
 }

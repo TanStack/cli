@@ -3,6 +3,6 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
-    "nitro": "3.0.260610-beta"
+    "nitro": "<%= bundler === 'rsbuild' ? '3.0.261103-rc' : '3.0.260610-beta' %>"
   }
 }

@@ -1,0 +1,24 @@
+<% if (bundler === 'rsbuild') { -%>
+## Deploy to Cloudflare Workers
+
+This project uses the experimental Nitro Rsbuild integration with the Cloudflare Workers preset.
+
+1. Authenticate with `wrangler login`.
+2. Run `<%= packageManager %> run deploy` to build and deploy the Worker.
+
+Edit `wrangler.jsonc` to configure your Worker name and KV, D1, R2, or Durable Object bindings. Nitro generates `.output/server/wrangler.json` with the built entry and assets directory; the deploy script uses that generated configuration.
+
+Set production secrets with `wrangler secret put MY_VAR`.
+<% } else { -%>
+## Deploy to Cloudflare Workers
+
+This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
+
+1. Install Wrangler: `npm install -g wrangler`
+2. Authenticate: `wrangler login`
+3. Deploy: `npx wrangler deploy`
+
+For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
+
+KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
+<% } -%>

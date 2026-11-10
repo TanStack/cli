@@ -10,10 +10,7 @@ import * as create from '@tanstack/create'
 
 import * as prompts from '../src/ui-prompts'
 import * as commandLine from '../src/command-line'
-import {
-  getCurrentDirectoryName,
-  sanitizePackageName,
-} from '../src/utils'
+import { getCurrentDirectoryName, sanitizePackageName } from '../src/utils'
 
 import type { Framework } from '@tanstack/create'
 
@@ -49,6 +46,20 @@ beforeEach(() => {
         id: 'tanstack-chat',
         type: 'add-on',
         modes: ['file-router'],
+      },
+      {
+        id: 'cloudflare',
+        name: 'Cloudflare',
+        type: 'deployment',
+        modes: ['file-router'],
+        exclusive: ['deploy'],
+        integrations: [
+          {
+            type: 'rsbuild-plugin',
+            import: "import { nitro } from 'nitro/rsbuild'",
+            code: "nitro({ preset: 'cloudflare-module' })",
+          },
+        ],
       },
       {
         id: 'biome',
@@ -94,14 +105,13 @@ const baseCliOptions: CliOptions = {
 
 function setBasicSpies() {
   vi.spyOn(prompts, 'selectBundler').mockImplementation(async () => 'vite')
-  vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(async () => [])
-  vi
-    .spyOn(commandLine, 'resolveStarterSpecifier')
-    .mockImplementation(async (value) =>
-      value === 'blog'
-        ? 'https://example.com/react/blog/starter.json'
-        : value,
-    )
+  vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(
+    async () => [],
+  )
+  vi.spyOn(commandLine, 'resolveStarterSpecifier').mockImplementation(
+    async (value) =>
+      value === 'blog' ? 'https://example.com/react/blog/starter.json' : value,
+  )
   vi.spyOn(create, 'loadStarter').mockImplementation(
     async (id) =>
       ({
@@ -194,14 +204,16 @@ describe('promptForCreateOptions', () => {
 
   it('prompts for templates when none was provided', async () => {
     setBasicSpies()
-    vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(async () => [
-      {
-        id: 'blog',
-        name: 'Blog',
-        description: 'Blog template',
-        framework: 'react',
-      },
-    ])
+    vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(
+      async () => [
+        {
+          id: 'blog',
+          name: 'Blog',
+          description: 'Blog template',
+          framework: 'react',
+        },
+      ],
+    )
 
     await promptForCreateOptions(baseCliOptions, {})
 
@@ -232,14 +244,18 @@ describe('promptForCreateOptions', () => {
     expect(options?.bundler).toBe('rsbuild')
     expect(options?.chosenAddOns.map((addOn) => addOn.id)).toEqual(['biome'])
     expect(prompts.selectTemplate).not.toHaveBeenCalled()
-    expect(prompts.selectDeployment).not.toHaveBeenCalled()
+    expect(prompts.selectDeployment).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      undefined,
+      'rsbuild',
+    )
     expect(prompts.selectAddOns).not.toHaveBeenCalled()
   })
 
   it.each([
     [{ template: 'blog' }, '--starter, --template, or --template-id'],
-    [{ deployment: 'cloudflare' }, '--deployment'],
-    [{ addOns: ['react-query'] }, 'toolchains only'],
+    [{ addOns: ['react-query'] }, 'does not support --add-ons'],
   ])(
     'rejects explicit %s after Rsbuild is selected interactively',
     async (flags, error) => {
@@ -282,6 +298,25 @@ describe('promptForCreateOptions', () => {
 
       expect(options?.bundler).toBe('rsbuild')
       expect(options?.routerOnly).toBe(routerOnly)
+    },
+  )
+
+  it.each([false, true])(
+    'keeps an Rsbuild deployment (forced=%s)',
+    async (forced) => {
+      setBasicSpies()
+      vi.mocked(prompts.selectBundler).mockResolvedValue('rsbuild')
+      const options = await promptForCreateOptions(
+        {
+          ...baseCliOptions,
+          blank: true,
+          deployment: forced ? undefined : 'cloudflare',
+        },
+        forced ? { forcedDeployment: 'cloudflare' } : {},
+      )
+      expect(options?.chosenAddOns.map((addOn) => addOn.id)).toEqual([
+        'cloudflare',
+      ])
     },
   )
 
@@ -438,6 +473,29 @@ describe('promptForCreateOptions', () => {
 })
 
 describe('promptForAddOns', () => {
+  it('offers a deployment to an existing Rsbuild Start app', async () => {
+    vi.mocked(prompts.selectAddOns).mockReset()
+    vi.mocked(prompts.selectAddOns).mockResolvedValue(['cloudflare'])
+    vi.spyOn(create, 'readConfigFile').mockResolvedValue({
+      projectName: 'test',
+      framework: 'react',
+      bundler: 'rsbuild',
+      mode: 'file-router',
+      chosenAddOns: ['eslint'],
+      version: 1,
+    })
+    await expect(promptForAddOns()).resolves.toEqual(['cloudflare'])
+    expect(prompts.selectAddOns).toHaveBeenCalledWith(
+      expect.anything(),
+      'file-router',
+      'deployment',
+      expect.any(String),
+      ['biome', 'eslint'],
+      false,
+      'rsbuild',
+    )
+  })
+
   it('does not offer a second exclusive Rsbuild toolchain', async () => {
     vi.mocked(prompts.selectAddOns).mockClear()
     vi.spyOn(create, 'readConfigFile').mockResolvedValue({
@@ -445,7 +503,7 @@ describe('promptForAddOns', () => {
       framework: 'react',
       bundler: 'rsbuild',
       mode: 'file-router',
-      chosenAddOns: ['eslint'],
+      chosenAddOns: ['eslint', 'cloudflare'],
       version: 1,
     })
 

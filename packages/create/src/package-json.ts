@@ -36,10 +36,7 @@ export function mergePackageJSON(
     : []
 
   const onlyBuiltDependencies = [
-    ...new Set([
-      ...baseOnlyBuiltDependencies,
-      ...overlayOnlyBuiltDependencies,
-    ]),
+    ...new Set([...baseOnlyBuiltDependencies, ...overlayOnlyBuiltDependencies]),
   ]
 
   if (packageJSON.pnpm || overlayPackageJSON?.pnpm) {
@@ -72,7 +69,9 @@ export function createPackageJSON(options: Options) {
     pkg: string,
     args: Array<string> = [],
   ) {
-    return formatCommand(getPackageManagerExecuteCommand(packageManager, pkg, args))
+    return formatCommand(
+      getPackageManagerExecuteCommand(packageManager, pkg, args),
+    )
   }
 
   let packageJSON = {
@@ -83,6 +82,9 @@ export function createPackageJSON(options: Options) {
   const additions: Array<Record<string, any> | undefined> = [
     options.framework.optionalPackages.typescript,
     options.framework.optionalPackages.bundlers?.[bundler],
+    options.chosenAddOns.some((addOn) => addOn.type === 'deployment')
+      ? options.framework.optionalPackages.bundlerDeployment?.[bundler]
+      : undefined,
     includeDevtools ? options.framework.optionalPackages.devtools : undefined,
     includeDevtools
       ? options.framework.optionalPackages.bundlerDevtools?.[bundler]
@@ -159,6 +161,14 @@ export function createPackageJSON(options: Options) {
       packageJSON,
       options.starter.packageAdditions,
     )
+  }
+
+  if (
+    bundler === 'rsbuild' &&
+    options.chosenAddOns.some((addOn) => addOn.type === 'deployment')
+  ) {
+    delete (packageJSON.dependencies as Record<string, string> | undefined)
+      ?.srvx
   }
 
   if (options.routerOnly) {

@@ -9,12 +9,20 @@
   "exclusive": ["deploy"],
   "color": "#00C7B7",
   "priority": 180,
-  "partner": { "id": "netlify", "tier": "gold" },
+  "partner": {
+    "id": "netlify",
+    "tier": "gold"
+  },
   "integrations": [
     {
       "type": "vite-plugin",
       "import": "import netlify from '@netlify/vite-plugin-tanstack-start'",
       "code": "netlify()"
+    },
+    {
+      "type": "rsbuild-plugin",
+      "import": "import { nitro } from 'nitro/rsbuild'",
+      "code": "nitro({ preset: 'netlify' })"
     }
   ]
 }

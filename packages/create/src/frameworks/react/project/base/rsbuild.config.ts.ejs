@@ -1,4 +1,5 @@
 <% if (bundler !== 'rsbuild') { ignoreFile() } -%>
+<% const deploymentPlugins = integrations.filter(i => i.type === 'rsbuild-plugin') -%>
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 <% if (tailwind) { -%>
@@ -8,6 +9,10 @@ import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss'
 import { tanstackRouter } from '@tanstack/router-plugin/rspack'
 <% } else { -%>
 import { tanstackStart } from '@tanstack/react-start/plugin/rsbuild'
+<% } -%>
+
+<% for (const integration of deploymentPlugins) { -%>
+<%- integrationImportContent(integration) %>
 <% } -%>
 
 export default defineConfig({
@@ -28,7 +33,8 @@ export default defineConfig({
   plugins: [
     pluginReact(),
     <% if (tailwind) { %>pluginTailwindcss(),<% } %>
-    <% if (!routerOnly) { %>tanstackStart(),<% } %>
+    <% if (!routerOnly) { %>tanstackStart(<% if (deploymentPlugins.length) { %>{ rsbuild: { installDevServerMiddleware: false } }<% } %>),<% } %>
+    <% for (const integration of deploymentPlugins) { %><%- integrationImportCode(integration) %>,<% } %>
   ],
   <% if (routerOnly) { -%>
   tools: {

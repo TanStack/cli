@@ -1,0 +1,23 @@
+<% if (bundler === 'rsbuild') { -%>
+## Deploy to Vercel
+
+This project uses the experimental Nitro Rsbuild integration with the Vercel preset, which generates `.vercel/output` for the Vercel Build Output API.
+
+Import your repository using Add New > Project in Vercel. `vercel.json` disables framework auto-detection and sets the build command to `<%= getPackageManagerRunScript('build') %>`. For a local prebuilt deployment, run `<%= getPackageManagerRunScript('build') %>` followed by `vercel deploy --prebuilt`.
+
+Configure production secrets in the Vercel project settings.
+<% } else { -%>
+## Deploy to Vercel
+
+1. Push this repo to GitHub, GitLab, or Bitbucket
+2. In Vercel, choose **Add New > Project** and import the repo
+3. Keep the detected TanStack Start framework settings
+4. Add production values from `.env.example` under **Settings > Environment Variables**
+5. Deploy
+
+Vercel runs the build script and deploys Nitro's output as Vercel Functions and
+static assets. The included `vercel.json` makes framework detection explicit.
+
+Variables prefixed with `VITE_` are included in the browser bundle. Keep secrets
+unprefixed so they remain server-only.
+<% } -%>

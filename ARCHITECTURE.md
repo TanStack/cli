@@ -117,6 +117,7 @@ Templates (`.ejs` files) have access to:
 | `provider` | Wraps app in `__root.tsx` | Basic context providers |
 | `root-provider` | Wraps app, exports context | Providers with shared state |
 | `vite-plugin` | `vite.config.ts` | Vite plugins |
+| `rsbuild-plugin` | `rsbuild.config.ts` | Rsbuild deployment adapter plugins |
 | `devtools` | After app in `__root.tsx` | Developer tools |
 | `header-user` | Header component | Auth UI, user menus |
 | `layout` | Layout wrapper | Dashboard layouts |

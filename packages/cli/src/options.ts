@@ -89,9 +89,6 @@ export async function promptForCreateOptions(
     if (forcedAddOns.length > 0) {
       throw new Error('Rsbuild does not currently support forced add-ons.')
     }
-    if (forcedDeployment) {
-      throw new Error('Rsbuild does not currently support deployments.')
-    }
   }
 
   const projectLocation = resolveProjectLocation({
@@ -178,7 +175,7 @@ export async function promptForCreateOptions(
 
   // Deployment selection
   let deployment: string | undefined
-  if (routerOnly || options.bundler === 'rsbuild') {
+  if (routerOnly) {
     deployment = undefined
   } else if (cliOptions.deployment) {
     deployment = cliOptions.deployment
@@ -189,6 +186,7 @@ export async function promptForCreateOptions(
       options.framework,
       cliOptions.deployment,
       forcedDeployment,
+      options.bundler,
     )
   } else {
     deployment = forcedDeployment
@@ -319,18 +317,24 @@ export async function promptForAddOns(): Promise<Array<string>> {
   const bundler = resolveBundler(framework, config.bundler).id
 
   if (bundler === 'rsbuild') {
-    const toolchains = getAllAddOns(framework, config.mode!, bundler).filter(
-      (addOn) => addOn.type === 'toolchain',
+    const supportedAddOns = getAllAddOns(
+      framework,
+      config.mode!,
+      bundler,
+    ).filter(
+      (addOn) =>
+        addOn.type === 'toolchain' ||
+        (!config.routerOnly && addOn.type === 'deployment'),
     )
     const configuredAddOnIds = new Set(
       config.chosenAddOns.map((addOn) => addOn.toLowerCase()),
     )
     const configuredExclusiveGroups = new Set(
-      toolchains
+      supportedAddOns
         .filter((addOn) => configuredAddOnIds.has(addOn.id.toLowerCase()))
         .flatMap((addOn) => addOn.exclusive ?? []),
     )
-    const unavailableToolchains = toolchains
+    const unavailableAddOns = supportedAddOns
       .filter(
         (addOn) =>
           configuredAddOnIds.has(addOn.id.toLowerCase()) ||
@@ -340,20 +344,28 @@ export async function promptForAddOns(): Promise<Array<string>> {
       )
       .map((addOn) => addOn.id)
 
-    if (unavailableToolchains.length === toolchains.length) {
-      return []
-    }
-
-    for (const addOn of await selectAddOns(
-      framework,
-      config.mode!,
-      'toolchain',
-      'Which toolchain would you like to add?',
-      unavailableToolchains,
-      false,
-      bundler,
-    )) {
-      addOns.add(addOn)
+    for (const type of ['toolchain', 'deployment']) {
+      if (
+        !supportedAddOns.some(
+          (addOn) =>
+            addOn.type === type && !unavailableAddOns.includes(addOn.id),
+        )
+      ) {
+        continue
+      }
+      for (const addOn of await selectAddOns(
+        framework,
+        config.mode!,
+        type,
+        type === 'toolchain'
+          ? 'Which toolchain would you like to add?'
+          : 'Which deployment adapter would you like to add?',
+        unavailableAddOns,
+        false,
+        bundler,
+      )) {
+        addOns.add(addOn)
+      }
     }
     return Array.from(addOns)
   }

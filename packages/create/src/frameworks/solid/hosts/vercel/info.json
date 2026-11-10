@@ -10,12 +10,20 @@
   "exclusive": ["deploy"],
   "color": "#000000",
   "priority": 140,
-  "partner": { "id": "vercel", "tier": "gold" },
+  "partner": {
+    "id": "vercel",
+    "tier": "gold"
+  },
   "integrations": [
     {
       "type": "vite-plugin",
       "import": "import { nitro } from 'nitro/vite'",
       "code": "nitro()"
+    },
+    {
+      "type": "rsbuild-plugin",
+      "import": "import { nitro } from 'nitro/rsbuild'",
+      "code": "nitro({ preset: 'vercel' })"
     }
   ]
 }

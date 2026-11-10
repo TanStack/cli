@@ -9,13 +9,21 @@
   "exclusive": ["deploy"],
   "color": "#9B4DCA",
   "priority": 160,
-  "partner": { "id": "railway", "tier": "gold" },
+  "partner": {
+    "id": "railway",
+    "tier": "gold"
+  },
   "deletedFiles": ["nixpacks.toml"],
   "integrations": [
     {
       "type": "vite-plugin",
       "import": "import { nitro } from 'nitro/vite'",
       "code": "nitro({ rollupConfig: { external: [/^@sentry\\//] } })"
+    },
+    {
+      "type": "rsbuild-plugin",
+      "import": "import { nitro } from 'nitro/rsbuild'",
+      "code": "nitro({ preset: 'node-server' })"
     }
   ]
 }

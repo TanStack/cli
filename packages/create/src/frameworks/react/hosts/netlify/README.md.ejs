@@ -1,3 +1,10 @@
+<% if (bundler === 'rsbuild') { -%>
+## Deploy to Netlify
+
+This project uses the experimental Nitro Rsbuild integration with the Netlify preset.
+
+Connect your repository to Netlify. Build with `<%= packageManager %> run build` and publish `dist`, as configured in `netlify.toml`. Nitro emits the server functions and Netlify deployment configuration in `.netlify/`.
+<% } else { -%>
 ## Deploy to Netlify
 
 This project ships with `netlify.toml` configured for a Netlify site:
@@ -9,3 +16,4 @@ This project ships with `netlify.toml` configured for a Netlify site:
 5. Trigger the first deploy
 
 Server functions and API routes run on Netlify Functions. For lower-latency request handling, see Netlify Edge Functions: https://docs.netlify.com/edge-functions/overview.
+<% } -%>

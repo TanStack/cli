@@ -1,0 +1,7 @@
+[build]
+  command = "<%= bundler %> build"
+  publish = "<%= bundler === 'rsbuild' ? 'dist' : 'dist/client' %>"
+[dev]
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888

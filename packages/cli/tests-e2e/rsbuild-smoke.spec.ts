@@ -15,14 +15,21 @@ import {
 
 const execFileAsync = promisify(execFile)
 
-const scenarios = [
+const scenarios: Array<{
+  framework: 'react' | 'solid'
+  routerOnly: boolean
+  blank: boolean
+  deployment?: string
+}> = [
   { framework: 'react', routerOnly: false, blank: false },
   { framework: 'solid', routerOnly: false, blank: false },
   { framework: 'react', routerOnly: true, blank: true },
   { framework: 'solid', routerOnly: true, blank: true },
-] as const
+  { framework: 'react', routerOnly: false, blank: false, deployment: 'nitro' },
+  { framework: 'solid', routerOnly: false, blank: false, deployment: 'nitro' },
+]
 
-test('@matrix lists only toolchains for Rsbuild', async () => {
+test('@matrix lists toolchains and deployment adapters for Rsbuild', async () => {
   const { stdout } = await execFileAsync(
     process.execPath,
     [
@@ -40,10 +47,13 @@ test('@matrix lists only toolchains for Rsbuild', async () => {
   const addOns = JSON.parse(stdout) as Array<{ type: string }>
 
   expect(addOns.length).toBeGreaterThan(0)
-  expect(addOns.every((addOn) => addOn.type === 'toolchain')).toBe(true)
+  expect(
+    addOns.every((addOn) => ['toolchain', 'deployment'].includes(addOn.type)),
+  ).toBe(true)
+  expect(addOns.filter((addOn) => addOn.type === 'deployment')).toHaveLength(6)
 })
 
-test('@matrix rejects an Rsbuild deployment before creating a directory', async () => {
+test('@matrix rejects an Rsbuild business add-on before creating a directory', async () => {
   const rootDir = await mkdtemp(join(tmpdir(), 'tanstack-rsbuild-conflict-'))
   const appName = 'invalid-rsbuild-app'
 
@@ -58,8 +68,8 @@ test('@matrix rejects an Rsbuild deployment before creating a directory', async 
           appName,
           '--build-tool',
           'rsbuild',
-          '--deployment',
-          'cloudflare',
+          '--add-ons',
+          'shadcn',
           '--yes',
           '--no-install',
           '--no-git',
@@ -75,7 +85,7 @@ test('@matrix rejects an Rsbuild deployment before creating a directory', async 
       | undefined
     expect(
       `${commandError?.stdout ?? ''}\n${commandError?.stderr ?? ''}`,
-    ).toContain('Rsbuild does not currently support --deployment')
+    ).toContain('Rsbuild does not support --add-ons')
     await expect(access(join(rootDir, appName))).rejects.toThrow()
   } finally {
     await rm(rootDir, { recursive: true, force: true })
@@ -84,13 +94,14 @@ test('@matrix rejects an Rsbuild deployment before creating a directory', async 
 
 test.describe('@matrix Rsbuild smoke matrix', () => {
   for (const scenario of scenarios) {
-    test(`@matrix ${scenario.framework} routerOnly=${scenario.routerOnly} blank=${scenario.blank}`, async ({
+    test(`@matrix ${scenario.framework} routerOnly=${scenario.routerOnly} blank=${scenario.blank} deployment=${scenario.deployment ?? 'none'}`, async ({
       page,
     }) => {
       const fixture = await createAppFixture({
-        appName: `${scenario.framework}-rsbuild-${scenario.routerOnly ? 'router' : 'start'}-smoke`,
+        appName: `${scenario.framework}-rsbuild-${scenario.deployment ?? (scenario.routerOnly ? 'router' : 'start')}-smoke`,
         framework: scenario.framework,
         bundler: 'rsbuild',
+        deployment: scenario.deployment,
         routerOnly: scenario.routerOnly,
         blank: scenario.blank,
         packageManager: 'pnpm',

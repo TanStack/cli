@@ -5,10 +5,7 @@ import {
   normalizeOptions,
   validateLegacyCreateFlags,
 } from '../src/command-line.js'
-import {
-  sanitizePackageName,
-  getCurrentDirectoryName,
-} from '../src/utils.js'
+import { sanitizePackageName, getCurrentDirectoryName } from '../src/utils.js'
 import {
   __testRegisterFramework,
   __testClearFrameworks,
@@ -691,7 +688,7 @@ describe('normalizeOptions', () => {
         buildTool: 'rsbuild',
         addOns: ['form'],
       }),
-    ).rejects.toThrow('Rsbuild currently supports toolchains only')
+    ).rejects.toThrow('Rsbuild does not support --add-ons')
   })
 
   it('keeps explicitly selected integrations in the blank preset', async () => {
@@ -827,8 +824,7 @@ describe('validateLegacyCreateFlags', () => {
     [{ starter: 'blog' }, '--starter'],
     [{ template: 'blog' }, '--template'],
     [{ templateId: 'blog' }, '--template-id'],
-    [{ deployment: 'cloudflare' }, '--deployment'],
-    [{ addOns: ['form'] }, 'toolchains only'],
+    [{ addOns: ['form'] }, 'does not support --add-ons'],
   ])(
     'rejects unsupported Rsbuild combinations containing %s',
     (flags, text) => {
@@ -838,6 +834,15 @@ describe('validateLegacyCreateFlags', () => {
       })
 
       expect(result.error).toContain(text)
+    },
+  )
+
+  it.each(['nitro', 'railway', 'render', 'vercel', 'netlify', 'cloudflare'])(
+    'allows Rsbuild with the %s deployment flag',
+    (deployment) => {
+      expect(
+        validateLegacyCreateFlags({ buildTool: 'rsbuild', deployment }).error,
+      ).toBeUndefined()
     },
   )
 

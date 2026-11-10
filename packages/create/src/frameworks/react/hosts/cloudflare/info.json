@@ -9,12 +9,20 @@
   "exclusive": ["deploy"],
   "color": "#F38020",
   "priority": 200,
-  "partner": { "id": "cloudflare", "tier": "gold" },
+  "partner": {
+    "id": "cloudflare",
+    "tier": "gold"
+  },
   "integrations": [
     {
       "type": "vite-plugin",
       "import": "import { cloudflare } from '@cloudflare/vite-plugin'",
       "code": "cloudflare({ viteEnvironment: { name: 'ssr' } })"
+    },
+    {
+      "type": "rsbuild-plugin",
+      "import": "import { nitro } from 'nitro/rsbuild'",
+      "code": "nitro({ preset: 'cloudflare-module' })"
     }
   ]
 }

@@ -95,7 +95,7 @@ describe('@tanstack/create/edge manifest', () => {
     )
   })
 
-  it('renders an Rsbuild app from the edge manifest', async () => {
+  it('renders an Rsbuild deployment from the edge manifest', async () => {
     try {
       vi.stubGlobal(
         'fetch',
@@ -122,13 +122,16 @@ describe('@tanstack/create/edge manifest', () => {
         git: false,
         install: false,
         intent: false,
-        chosenAddOns: [],
+        chosenAddOns: await finalizeAddOns(framework!, 'file-router', ['cloudflare'], 'rsbuild'),
         addOnOptions: {},
         includeExamples: false,
       } satisfies Options)
 
       expect(output.files).toHaveProperty('/rsbuild-app/rsbuild.config.ts')
       expect(output.files).not.toHaveProperty('/rsbuild-app/vite.config.ts')
+      expect(output.files['/rsbuild-app/rsbuild.config.ts']).toContain("nitro({ preset: 'cloudflare-module' })")
+      expect(JSON.parse(output.files['/rsbuild-app/package.json']).dependencies.nitro).toBe('3.0.261103-rc')
+      expect(JSON.parse(output.files['/rsbuild-app/wrangler.jsonc'])).not.toHaveProperty('main')
       expect(JSON.parse(output.files['/rsbuild-app/.cta.json']).bundler).toBe(
         'rsbuild',
       )
