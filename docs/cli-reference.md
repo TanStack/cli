@@ -59,11 +59,11 @@ Explicit add-ons and deployment adapters can add their own required files and
 dependencies. Add `-y` to use defaults for every remaining option; when the
 target is non-empty, also pass `--force` or the command exits without writing.
 
-Rsbuild Start projects support all six deployment adapters through Nitro's
+Rsbuild Start projects support five deployment adapters through Nitro's
 experimental Rsbuild integration: `nitro`, `railway`, `render`, `vercel`,
-`netlify`, and `cloudflare`. Generated deployment projects require Node.js
->=22.22 and Rsbuild >=2.3. Router-only projects do not support deployment
-adapters.
+and `netlify`. Cloudflare remains Vite-only until Nitro's Rsbuild development
+runtime works with Workerd. Generated deployment projects require Node.js
+>=22.22 and Rsbuild >=2.3. Router-only projects do not support deployment adapters.
 
 ### Programmatic generation
 
