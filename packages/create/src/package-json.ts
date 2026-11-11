@@ -1,6 +1,7 @@
 import { render } from 'ejs'
 import { formatCommand, sortObject } from './utils.js'
 import { getPackageManagerExecuteCommand } from './package-manager.js'
+import { mergePackageEngines } from './package-engines.js'
 import type { Options } from './types.js'
 
 export function mergePackageJSON(
@@ -23,6 +24,12 @@ export function mergePackageJSON(
       ...(overlayPackageJSON?.scripts || {}),
     },
   }
+
+  const engines = mergePackageEngines(
+    packageJSON.engines,
+    overlayPackageJSON?.engines,
+  )
+  if (engines) mergedPackageJSON.engines = engines
 
   const baseOnlyBuiltDependencies = Array.isArray(
     packageJSON.pnpm?.onlyBuiltDependencies,

@@ -50,7 +50,8 @@ test('@matrix lists toolchains and deployment adapters for Rsbuild', async () =>
   expect(
     addOns.every((addOn) => ['toolchain', 'deployment'].includes(addOn.type)),
   ).toBe(true)
-  expect(addOns.filter((addOn) => addOn.type === 'deployment')).toHaveLength(6)
+  expect(addOns.filter((addOn) => addOn.type === 'deployment')).toHaveLength(5)
+  expect(addOns).not.toContainEqual(expect.objectContaining({ id: 'cloudflare' }))
 })
 
 test('@matrix rejects an Rsbuild business add-on before creating a directory', async () => {

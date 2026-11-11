@@ -1,22 +1,3 @@
-<% if (bundler === 'rsbuild') { -%>
-{
-  "scripts": {
-    "start": "rsbuild preview",
-    "deploy": "<%= packageManager %> run build && wrangler deploy --config .output/server/wrangler.json"
-  },
-  "dependencies": {
-    "nitro": "3.0.261103-rc"
-  },
-  "devDependencies": {
-    "wrangler": "^4.70.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "workerd"
-    ]
-  }
-}
-<% } else { -%>
 {
   "scripts": {
     "deploy": "<%= packageManager %> run build && wrangler deploy"
@@ -29,4 +10,3 @@
     "onlyBuiltDependencies": ["sharp", "workerd"]
   }
 }
-<% } -%>

@@ -122,22 +122,30 @@ describe('@tanstack/create/edge manifest', () => {
         git: false,
         install: false,
         intent: false,
-        chosenAddOns: await finalizeAddOns(framework!, 'file-router', ['cloudflare'], 'rsbuild'),
+        chosenAddOns: await finalizeAddOns(framework!, 'file-router', ['netlify'], 'rsbuild'),
         addOnOptions: {},
         includeExamples: false,
       } satisfies Options)
 
       expect(output.files).toHaveProperty('/rsbuild-app/rsbuild.config.ts')
       expect(output.files).not.toHaveProperty('/rsbuild-app/vite.config.ts')
-      expect(output.files['/rsbuild-app/rsbuild.config.ts']).toContain("nitro({ preset: 'cloudflare-module' })")
+      expect(output.files['/rsbuild-app/rsbuild.config.ts']).toContain("nitro({ preset: 'netlify' })")
       expect(JSON.parse(output.files['/rsbuild-app/package.json']).dependencies.nitro).toBe('3.0.261103-rc')
-      expect(JSON.parse(output.files['/rsbuild-app/wrangler.jsonc'])).not.toHaveProperty('main')
+      expect(output.files['/rsbuild-app/netlify.toml']).toContain('publish = "dist"')
       expect(JSON.parse(output.files['/rsbuild-app/.cta.json']).bundler).toBe(
         'rsbuild',
       )
     } finally {
       vi.unstubAllGlobals()
     }
+  })
+
+  it.each(['react', 'solid'])('keeps Cloudflare out of the %s Rsbuild edge catalog', async (id) => {
+    const framework = getFrameworkById(id)!
+    expect(getAllAddOns(framework, 'file-router', 'rsbuild').map((addOn) => addOn.id))
+      .not.toContain('cloudflare')
+    await expect(finalizeAddOns(framework, 'file-router', ['cloudflare'], 'rsbuild'))
+      .rejects.toThrow('is not supported')
   })
 
   it('returns the same React add-ons as the Node filesystem-backed path', () => {

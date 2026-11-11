@@ -2,7 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tanstack-start-app",
   "compatibility_date": "2025-09-02",
-  "compatibility_flags": ["nodejs_compat"]<% if (bundler !== 'rsbuild') { %>,
+  "compatibility_flags": ["nodejs_compat"],
   "main": "<%= addOnEnabled.sentry ? './src/worker.ts' : '@tanstack/react-start/server-entry' %>"
-  <% } -%>
 }

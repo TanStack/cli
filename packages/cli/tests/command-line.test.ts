@@ -837,7 +837,7 @@ describe('validateLegacyCreateFlags', () => {
     },
   )
 
-  it.each(['nitro', 'railway', 'render', 'vercel', 'netlify', 'cloudflare'])(
+  it.each(['nitro', 'railway', 'render', 'vercel', 'netlify'])(
     'allows Rsbuild with the %s deployment flag',
     (deployment) => {
       expect(

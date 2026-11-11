@@ -115,7 +115,8 @@ describe('bundler project generation', () => {
       ).toBe(true)
       expect(
         addOns.filter((addOn) => addOn.type === 'deployment'),
-      ).toHaveLength(6)
+      ).toHaveLength(5)
+      expect(addOns.map((addOn) => addOn.id)).not.toContain('cloudflare')
       await expect(
         finalizeAddOns(framework, 'file-router', ['eslint'], 'rsbuild'),
       ).resolves.toEqual(

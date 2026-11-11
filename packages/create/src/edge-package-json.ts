@@ -1,6 +1,7 @@
 import { renderForOptions } from './edge-render.js'
 import { formatCommand, sortObject } from './utils.js'
 import { getPackageManagerExecuteCommand } from './package-manager.js'
+import { mergePackageEngines } from './package-engines.js'
 
 import type { Options } from './types.js'
 
@@ -51,6 +52,12 @@ export function mergePackageJSON(
       ...overlayScripts,
     },
   }
+
+  const engines = mergePackageEngines(
+    packageJSON.engines as Record<string, string> | undefined,
+    overlayPackageJSON?.engines as Record<string, string> | undefined,
+  )
+  if (engines) mergedPackageJSON.engines = engines
 
   const packagePnpm =
     packageJSON.pnpm && typeof packageJSON.pnpm === 'object'

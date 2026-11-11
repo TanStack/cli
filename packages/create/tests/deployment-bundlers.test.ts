@@ -17,7 +17,6 @@ const presets = {
   render: 'render-com',
   vercel: 'vercel',
   netlify: 'netlify',
-  cloudflare: 'cloudflare-module',
 }
 
 function frameworkFromDefinition(definition: FrameworkDefinition): Framework {
@@ -116,13 +115,7 @@ describe.each([
         ...pkg.devDependencies,
       }).not.toHaveProperty('@netlify/vite-plugin-tanstack-start')
 
-      if (id === 'cloudflare') {
-        expect(JSON.parse(files['wrangler.jsonc'])).not.toHaveProperty('main')
-        expect(pkg.scripts.deploy).toBe(
-          'pnpm run build && wrangler deploy --config .output/server/wrangler.json',
-        )
-        expect(pkg.devDependencies.wrangler).toBeDefined()
-      } else if (id === 'netlify') {
+      if (id === 'netlify') {
         expect(files['netlify.toml']).toContain('command = "rsbuild build"')
         expect(files['netlify.toml']).toContain('publish = "dist"')
       } else if (id === 'vercel') {
@@ -137,31 +130,55 @@ describe.each([
     },
   )
 
-  it.each(Object.keys(presets))('preserves the %s Vite adapter', async (id) => {
-    const files = await generate(
-      frameworkFromDefinition(definition()),
-      'vite',
-      [id],
-    )
-    const pkg = JSON.parse(files['package.json'])
-    expect(files).not.toHaveProperty('rsbuild.config.ts')
-    expect(files['vite.config.ts']).not.toContain('nitro/rsbuild')
-    if (id === 'cloudflare') {
-      expect(pkg.engines).toBeUndefined()
-      expect(JSON.parse(files['wrangler.jsonc']).main).toBe(
-        `@tanstack/${_id}-start/server-entry`,
+  it.each([...Object.keys(presets), 'cloudflare'])(
+    'preserves the %s Vite adapter',
+    async (id) => {
+      const files = await generate(
+        frameworkFromDefinition(definition()),
+        'vite',
+        [id],
       )
-      expect(pkg.scripts.deploy).toBe('pnpm run build && wrangler deploy')
-    } else if (id === 'netlify') {
-      expect(pkg.engines).toBeUndefined()
-      expect(files['netlify.toml']).toContain('publish = "dist/client"')
-      expect(
-        pkg.devDependencies['@netlify/vite-plugin-tanstack-start'],
-      ).toBeDefined()
-    } else {
-      expect(pkg.dependencies.nitro).toBe('3.0.261103-rc')
-      expect(pkg.engines.node).toBe('>=22.22.0')
+      const pkg = JSON.parse(files['package.json'])
+      expect(files).not.toHaveProperty('rsbuild.config.ts')
+      expect(files['vite.config.ts']).not.toContain('nitro/rsbuild')
+      if (id === 'cloudflare') {
+        expect(pkg.engines).toBeUndefined()
+        expect(JSON.parse(files['wrangler.jsonc']).main).toBe(
+          `@tanstack/${_id}-start/server-entry`,
+        )
+        expect(pkg.scripts.deploy).toBe('pnpm run build && wrangler deploy')
+      } else if (id === 'netlify') {
+        expect(pkg.engines).toBeUndefined()
+        expect(files['netlify.toml']).toContain('publish = "dist/client"')
+        expect(
+          pkg.devDependencies['@netlify/vite-plugin-tanstack-start'],
+        ).toBeDefined()
+      } else {
+        expect(pkg.dependencies.nitro).toBe('3.0.261103-rc')
+        expect(pkg.engines.node).toBe('>=22.22.0')
+      }
+    },
+  )
+
+  it('rejects Cloudflare when creating or extending an Rsbuild app', async () => {
+    const framework = frameworkFromDefinition(definition())
+    await expect(
+      generate(framework, 'rsbuild', ['cloudflare']),
+    ).rejects.toThrow('"cloudflare" (Cloudflare) is not supported')
+
+    __testClearFrameworks()
+    registerFramework(definition())
+    const files = await generate(framework, 'rsbuild', [])
+    const { environment, output } = createMemoryEnvironment('/')
+    environment.startRun()
+    for (const [path, content] of Object.entries(files)) {
+      await environment.writeFile(`/${path}`, content)
     }
+    const before = { ...output.files }
+    await expect(
+      addToApp(environment, ['cloudflare'], '/', { forced: true }),
+    ).rejects.toThrow('"cloudflare" (Cloudflare) is not supported')
+    expect(output.files).toEqual(before)
   })
 
   it('rejects conflicting deployment adapters and router-only deployments', async () => {

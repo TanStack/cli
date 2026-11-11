@@ -20,8 +20,10 @@ Biome, and Prettier. Templates and catalog business/example add-ons are not
 supported.
 
 Full Start projects support `--deployment nitro`, `railway`, `render`,
-`vercel`, `netlify`, and `cloudflare` through the experimental `nitro/rsbuild`
+`vercel`, and `netlify` through the experimental `nitro/rsbuild`
 integration. These projects require Node.js >=22.22 and Rsbuild >=2.3.
+Cloudflare remains Vite-only until Nitro's Rsbuild development runtime works
+with Workerd.
 Router-only projects do not support deployment adapters. Existing Rsbuild
 Start projects can add one deployment adapter with `tanstack add`.
 

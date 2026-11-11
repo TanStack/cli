@@ -53,11 +53,19 @@ beforeEach(() => {
         type: 'deployment',
         modes: ['file-router'],
         exclusive: ['deploy'],
+        integrations: [{ type: 'vite-plugin' }],
+      },
+      {
+        id: 'nitro',
+        name: 'Nitro',
+        type: 'deployment',
+        modes: ['file-router'],
+        exclusive: ['deploy'],
         integrations: [
           {
             type: 'rsbuild-plugin',
             import: "import { nitro } from 'nitro/rsbuild'",
-            code: "nitro({ preset: 'cloudflare-module' })",
+            code: "nitro({ preset: 'node-server' })",
           },
         ],
       },
@@ -310,13 +318,30 @@ describe('promptForCreateOptions', () => {
         {
           ...baseCliOptions,
           blank: true,
-          deployment: forced ? undefined : 'cloudflare',
+          deployment: forced ? undefined : 'nitro',
         },
-        forced ? { forcedDeployment: 'cloudflare' } : {},
+        forced ? { forcedDeployment: 'nitro' } : {},
       )
-      expect(options?.chosenAddOns.map((addOn) => addOn.id)).toEqual([
-        'cloudflare',
-      ])
+      expect(options?.chosenAddOns.map((addOn) => addOn.id)).toEqual(['nitro'])
+    },
+  )
+
+  it.each([false, true])(
+    'rejects the Vite-only Cloudflare deployment for Rsbuild (forced=%s)',
+    async (forced) => {
+      setBasicSpies()
+      vi.mocked(prompts.selectBundler).mockResolvedValue('rsbuild')
+      await expect(
+        promptForCreateOptions(
+          {
+            ...baseCliOptions,
+            buildTool: 'rsbuild',
+            blank: true,
+            deployment: forced ? undefined : 'cloudflare',
+          },
+          forced ? { forcedDeployment: 'cloudflare' } : {},
+        ),
+      ).rejects.toThrow('"cloudflare" (Cloudflare) is not supported')
     },
   )
 
@@ -475,7 +500,7 @@ describe('promptForCreateOptions', () => {
 describe('promptForAddOns', () => {
   it('offers a deployment to an existing Rsbuild Start app', async () => {
     vi.mocked(prompts.selectAddOns).mockReset()
-    vi.mocked(prompts.selectAddOns).mockResolvedValue(['cloudflare'])
+    vi.mocked(prompts.selectAddOns).mockResolvedValue(['nitro'])
     vi.spyOn(create, 'readConfigFile').mockResolvedValue({
       projectName: 'test',
       framework: 'react',
@@ -484,7 +509,7 @@ describe('promptForAddOns', () => {
       chosenAddOns: ['eslint'],
       version: 1,
     })
-    await expect(promptForAddOns()).resolves.toEqual(['cloudflare'])
+    await expect(promptForAddOns()).resolves.toEqual(['nitro'])
     expect(prompts.selectAddOns).toHaveBeenCalledWith(
       expect.anything(),
       'file-router',
@@ -503,7 +528,7 @@ describe('promptForAddOns', () => {
       framework: 'react',
       bundler: 'rsbuild',
       mode: 'file-router',
-      chosenAddOns: ['eslint', 'cloudflare'],
+      chosenAddOns: ['eslint', 'nitro'],
       version: 1,
     })
 
