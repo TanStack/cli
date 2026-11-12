@@ -1,6 +1,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
-<% if (addOnEnabled['tanstack-query']) { %><% if (addOnEnabled.tRPC || routerOnly) { %>
+<% if (addOnEnabled.paraglide) { %>import { deLocalizeUrl, localizeUrl } from './paraglide/runtime'
+<% } %><% if (addOnEnabled['tanstack-query']) { %><% if (addOnEnabled.tRPC || routerOnly) { %>
 import type { ReactNode } from 'react'<% } %>
 <% if (routerOnly) { %>
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -23,7 +24,11 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
-    <% if (addOnEnabled['tanstack-query'] && (addOnEnabled.tRPC || routerOnly)) { %>
+    <% if (addOnEnabled.paraglide) { %>rewrite: {
+      input: ({ url }) => deLocalizeUrl(url),
+      output: ({ url }) => localizeUrl(url),
+    },
+    <% } %>    <% if (addOnEnabled['tanstack-query'] && (addOnEnabled.tRPC || routerOnly)) { %>
     Wrap: (props: { children: ReactNode }) => {
       return (
         <% if (routerOnly) { %><QueryClientProvider client={context.queryClient}><% } %>
