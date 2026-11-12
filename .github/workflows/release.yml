@@ -35,6 +35,12 @@ jobs:
         run: pnpm build
       - name: Test Unit
         run: pnpm test:unit
+      - name: Setup Bun for E2E
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+          token: ''
       - name: Install Playwright Chrome
         run: pnpm --filter @tanstack/cli exec playwright install --with-deps chrome
       - name: E2E Blocking
