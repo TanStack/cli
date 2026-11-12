@@ -10,10 +10,7 @@
   "exclusive": ["deploy"],
   "color": "#000000",
   "priority": 140,
-  "partner": {
-    "id": "vercel",
-    "tier": "gold"
-  },
+  "partner": { "id": "vercel", "tier": "gold" },
   "integrations": [
     {
       "type": "vite-plugin",

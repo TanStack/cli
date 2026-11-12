@@ -10,10 +10,7 @@
   "exclusive": ["deploy"],
   "color": "#46E3B7",
   "priority": 150,
-  "partner": {
-    "id": "render",
-    "tier": "gold"
-  },
+  "partner": { "id": "render", "tier": "gold" },
   "integrations": [
     {
       "type": "vite-plugin",

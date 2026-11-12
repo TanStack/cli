@@ -43,7 +43,10 @@ export function mergePackageJSON(
     : []
 
   const onlyBuiltDependencies = [
-    ...new Set([...baseOnlyBuiltDependencies, ...overlayOnlyBuiltDependencies]),
+    ...new Set([
+      ...baseOnlyBuiltDependencies,
+      ...overlayOnlyBuiltDependencies,
+    ]),
   ]
 
   if (packageJSON.pnpm || overlayPackageJSON?.pnpm) {
@@ -76,9 +79,7 @@ export function createPackageJSON(options: Options) {
     pkg: string,
     args: Array<string> = [],
   ) {
-    return formatCommand(
-      getPackageManagerExecuteCommand(packageManager, pkg, args),
-    )
+    return formatCommand(getPackageManagerExecuteCommand(packageManager, pkg, args))
   }
 
   let packageJSON = {

@@ -80,7 +80,10 @@ export function mergePackageJSON(
     : []
 
   const onlyBuiltDependencies = [
-    ...new Set([...baseOnlyBuiltDependencies, ...overlayOnlyBuiltDependencies]),
+    ...new Set([
+      ...baseOnlyBuiltDependencies,
+      ...overlayOnlyBuiltDependencies,
+    ]),
   ]
 
   if (packagePnpm || overlayPnpm) {
@@ -114,16 +117,13 @@ export function createPackageJSON(options: Options) {
     pkg: string,
     args: Array<string> = [],
   ) {
-    return formatCommand(
-      getPackageManagerExecuteCommand(packageManager, pkg, args),
-    )
+    return formatCommand(getPackageManagerExecuteCommand(packageManager, pkg, args))
   }
 
   let packageJSON: Record<string, unknown> = {
-    ...(JSON.parse(JSON.stringify(options.framework.basePackageJSON)) as Record<
-      string,
-      unknown
-    >),
+    ...(JSON.parse(
+      JSON.stringify(options.framework.basePackageJSON),
+    ) as Record<string, unknown>),
     name: options.projectName,
   }
 

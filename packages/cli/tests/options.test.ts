@@ -10,7 +10,10 @@ import * as create from '@tanstack/create'
 
 import * as prompts from '../src/ui-prompts'
 import * as commandLine from '../src/command-line'
-import { getCurrentDirectoryName, sanitizePackageName } from '../src/utils'
+import {
+  getCurrentDirectoryName,
+  sanitizePackageName,
+} from '../src/utils'
 
 import type { Framework } from '@tanstack/create'
 
@@ -113,13 +116,14 @@ const baseCliOptions: CliOptions = {
 
 function setBasicSpies() {
   vi.spyOn(prompts, 'selectBundler').mockImplementation(async () => 'vite')
-  vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(
-    async () => [],
-  )
-  vi.spyOn(commandLine, 'resolveStarterSpecifier').mockImplementation(
-    async (value) =>
-      value === 'blog' ? 'https://example.com/react/blog/starter.json' : value,
-  )
+  vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(async () => [])
+  vi
+    .spyOn(commandLine, 'resolveStarterSpecifier')
+    .mockImplementation(async (value) =>
+      value === 'blog'
+        ? 'https://example.com/react/blog/starter.json'
+        : value,
+    )
   vi.spyOn(create, 'loadStarter').mockImplementation(
     async (id) =>
       ({
@@ -212,16 +216,14 @@ describe('promptForCreateOptions', () => {
 
   it('prompts for templates when none was provided', async () => {
     setBasicSpies()
-    vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(
-      async () => [
-        {
-          id: 'blog',
-          name: 'Blog',
-          description: 'Blog template',
-          framework: 'react',
-        },
-      ],
-    )
+    vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(async () => [
+      {
+        id: 'blog',
+        name: 'Blog',
+        description: 'Blog template',
+        framework: 'react',
+      },
+    ])
 
     await promptForCreateOptions(baseCliOptions, {})
 

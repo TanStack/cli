@@ -5,7 +5,10 @@ import {
   normalizeOptions,
   validateLegacyCreateFlags,
 } from '../src/command-line.js'
-import { sanitizePackageName, getCurrentDirectoryName } from '../src/utils.js'
+import {
+  sanitizePackageName,
+  getCurrentDirectoryName,
+} from '../src/utils.js'
 import {
   __testRegisterFramework,
   __testClearFrameworks,
