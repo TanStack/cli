@@ -12,7 +12,7 @@
     "build": "nx run-many --target=build --parallel 5",
     "dev": "nx run-many --target=dev --parallel 20",
     "test": "pnpm test:unit && pnpm test:e2e",
-    "test:unit": "nx run-many --target=test",
+    "test:unit": "nx run-many --target=test && node --test scripts/release-*.test.mjs",
     "test:e2e": "nx run @tanstack/cli:test:e2e",
     "test:e2e:matrix": "nx run @tanstack/cli:test:e2e:matrix",
     "check-outdated": "node scripts/check-outdated-packages.js",
