@@ -1,7 +1,9 @@
 <% const themeInitScript = "(function(){try{var stored=null;try{stored=window.localStorage.getItem('theme')}catch(e){}var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();"; const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
 <% if (routerOnly) { %>
 import { Outlet, createRootRoute } from '@tanstack/react-router'
-<% if (showDevtools) { %>
+<% if (includeExamples && !blank) { %>import Header from '../components/Header'
+import Footer from '../components/Footer'
+<% } %><% if (showDevtools) { %>
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 <% } %>
@@ -15,8 +17,10 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <>
-      <Outlet />
-      <% if (showDevtools) { %><TanStackDevtools
+      <% if (includeExamples && !blank) { %><Header />
+      <% } %><Outlet />
+      <% if (includeExamples && !blank) { %><Footer />
+      <% } %>      <% if (showDevtools) { %><TanStackDevtools
         config={{
           position: 'bottom-right',
         }}
