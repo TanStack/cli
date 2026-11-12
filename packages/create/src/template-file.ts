@@ -128,6 +128,7 @@ export function createTemplateFile(environment: Environment, options: Options) {
       integration.code || integration.jsName
 
     const templateValues = {
+      formatsTypeScript: true,
       packageManager: options.packageManager,
       projectName: options.projectName,
       bundler: options.bundler ?? 'vite',
