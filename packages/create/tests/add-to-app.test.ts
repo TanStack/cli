@@ -491,7 +491,7 @@ describe('addToApp', () => {
           dependencies: {
             'test-package': '1.0.0',
           },
-          devDependencies: {},
+          devDependencies: { '@tanstack/intent': 'latest' },
         },
         null,
         2,
@@ -555,4 +555,111 @@ describe('addToApp', () => {
     const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
     expect(persisted.chosenAddOns).toEqual(['eslint'])
   })
+})
+
+
+it.each(['dependencies', 'devDependencies'] as const)(
+  'retains the real Intent pin and location in %s when adding an add-on',
+  async (field) => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    await environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify({ ...fakeCTAJSON, intent: true }),
+    )
+    const intent = { skills: [], exclude: ['private'] }
+    await environment.writeFile(
+      '/foo/package.json',
+      JSON.stringify({ intent, [field]: { '@tanstack/intent': '0.4.0' } }),
+    )
+    await addToApp(environment, ['test'], '/foo', {
+      forced: true,
+      intent: true,
+    })
+    const pkg = JSON.parse(await environment.readFile('/foo/package.json'))
+    expect(pkg[field]['@tanstack/intent']).toBe('0.4.0')
+    const other = field === 'dependencies' ? 'devDependencies' : 'dependencies'
+    expect(pkg[other]).not.toHaveProperty('@tanstack/intent')
+    expect(pkg.intent).toEqual(intent)
+    environment.finishRun()
+  },
+)
+
+it.each([false, true])(
+  'normal add does not authorize existing dependencies without a policy (skill-bearing dependency=%s)',
+  async (withUnrelatedSkills) => {
+    const { environment, output } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    await environment.writeFile('/foo/.cta.json', JSON.stringify(fakeCTAJSON))
+    const dependencies = withUnrelatedSkills
+      ? { 'unrelated-skills': '1.0.0' }
+      : {}
+    await environment.writeFile(
+      '/foo/package.json',
+      JSON.stringify({ name: 'test', dependencies }),
+    )
+    if (withUnrelatedSkills) {
+      await environment.writeFile(
+        '/foo/node_modules/unrelated-skills/package.json',
+        JSON.stringify({ name: 'unrelated-skills', version: '1.0.0' }),
+      )
+      await environment.writeFile(
+        '/foo/node_modules/unrelated-skills/skills/unrelated/SKILL.md',
+        '---\nname: unrelated\ndescription: Existing unrelated skills\n---\nExisting dependency skill.\n',
+      )
+    }
+    const warn = vi.fn()
+    environment.warn = warn
+    const execute = environment.execute
+    environment.execute = async (command, args, cwd, options) => {
+      const result = await execute(command, args, cwd, options)
+      if (args.join(' ') === 'exec --no -- intent install') {
+        expect(
+          JSON.parse(await environment.readFile('/foo/package.json')),
+        ).not.toHaveProperty('intent')
+        throw new Error('Intent requires explicit skill permissions')
+      }
+      return result
+    }
+    // Neither the saved config nor this invocation opts into Intent permissions.
+    await addToApp(environment, ['test'], '/foo', { forced: true })
+    const pkg = JSON.parse(await environment.readFile('/foo/package.json'))
+    expect(pkg).not.toHaveProperty('intent')
+    expect(pkg.dependencies).toMatchObject(dependencies)
+    environment.finishRun()
+    expect(output.commands).toContainEqual({
+      command: 'npm',
+      args: ['exec', '--no', '--', 'intent', 'install'],
+    })
+    expect(
+      output.commands.some(
+        (entry) => entry.command === 'npm' && entry.args[0] === 'install',
+      ),
+    ).toBe(true)
+    expect(warn).toHaveBeenCalledWith(
+      'TanStack Intent setup failed',
+      expect.stringContaining('Intent requires explicit skill permissions'),
+    )
+  },
+)
+
+it('normal add preserves inherited policy without introducing local permissions', async () => {
+  const { environment } = createMemoryEnvironment('/foo')
+  environment.startRun()
+  const root = JSON.stringify({
+    workspaces: ['foo'],
+    intent: { skills: ['workspace-approved'], exclude: ['private'] },
+  })
+  await environment.writeFile('/package.json', root)
+  await environment.writeFile('/foo/.cta.json', JSON.stringify(fakeCTAJSON))
+  await environment.writeFile(
+    '/foo/package.json',
+    JSON.stringify({ dependencies: { 'unrelated-skills': '1.0.0' } }),
+  )
+  await addToApp(environment, ['test'], '/foo', { forced: true })
+  expect(
+    JSON.parse(await environment.readFile('/foo/package.json')),
+  ).not.toHaveProperty('intent')
+  expect(await environment.readFile('/package.json')).toBe(root)
+  environment.finishRun()
 })

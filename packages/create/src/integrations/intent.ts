@@ -1,10 +1,6 @@
 import { resolve } from 'node:path'
 
-import {
-  INTENT_PACKAGE,
-  intentCommand,
-  packageManagerExecute,
-} from '../package-manager.js'
+import { getIntentExecuteCommand, intentCommand } from '../package-manager.js'
 
 import type { Environment, Options } from '../types.js'
 
@@ -12,8 +8,23 @@ export async function setupIntent(
   environment: Environment,
   targetDir: string,
   options: Options,
+  intentPolicyError?: string,
 ) {
   if (!options.intent) {
+    return false
+  }
+
+  if (intentPolicyError !== undefined) {
+    environment.startStep({
+      id: 'setup-intent',
+      type: 'info',
+      message: 'TanStack Intent setup failed',
+    })
+    environment.finishStep('setup-intent', 'TanStack Intent setup failed')
+    environment.warn(
+      'TanStack Intent setup failed',
+      `Skill permissions were not initialized: ${intentPolicyError}`,
+    )
     return false
   }
 
@@ -39,13 +50,10 @@ export async function setupIntent(
   })
 
   try {
-    const result = await packageManagerExecute(
-      environment,
-      resolve(targetDir),
-      options.packageManager,
-      INTENT_PACKAGE,
-      ['install'],
-    )
+    const { command, args } = getIntentExecuteCommand(options.packageManager, [
+      'install',
+    ])
+    const result = await environment.execute(command, args, resolve(targetDir))
     const message = result.failed
       ? 'TanStack Intent setup failed'
       : 'TanStack Intent configured'

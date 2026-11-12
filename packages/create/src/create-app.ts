@@ -1,4 +1,5 @@
 import { basename, resolve } from 'node:path'
+import { configureIntentPolicy, preserveIntentConfiguration } from './intent-policy.js'
 
 import { isBase64, isDemoFilePath } from './file-helpers.js'
 import { formatCommand } from './utils.js'
@@ -72,6 +73,24 @@ async function writeFiles(
   options: Options,
   context: { existingProject?: boolean } = {},
 ) {
+  const packageJsonPath = resolve(options.targetDir, 'package.json')
+  let existingPackageJSON: Record<string, any> = {}
+  let intentPolicyError: string | undefined
+  if (options.intent && environment.exists(packageJsonPath)) {
+    try {
+      const parsed: unknown = JSON.parse(
+        await environment.readFile(packageJsonPath),
+      )
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(
+          `Invalid Intent policy manifest ${packageJsonPath}: expected a JSON object.`,
+        )
+      }
+      existingPackageJSON = parsed
+    } catch (error) {
+      intentPolicyError = error instanceof Error ? error.message : String(error)
+    }
+  }
   const workspaceWasPresent = environment.exists(
     resolve(options.targetDir, 'pnpm-workspace.yaml'),
   )
@@ -143,7 +162,23 @@ async function writeFiles(
     type: 'file',
     message: 'Writing package.json...',
   })
-  const packageJSON = await resolvePackageJSONLatest(createPackageJSON(options))
+  const generatedPackageJSON = createPackageJSON(options)
+  if (options.intent) {
+    preserveIntentConfiguration(generatedPackageJSON, existingPackageJSON)
+  }
+  const packageJSON = await resolvePackageJSONLatest(generatedPackageJSON)
+  if (options.intent && intentPolicyError === undefined) {
+    try {
+      await configureIntentPolicy(
+        environment,
+        resolve(options.targetDir),
+        packageJSON,
+        { ...context, existingPackageJSON },
+      )
+    } catch (error) {
+      intentPolicyError = error instanceof Error ? error.message : String(error)
+    }
+  }
   await writePnpmWorkspace(
     environment,
     resolve(options.targetDir, 'pnpm-workspace.yaml'),
@@ -164,12 +199,14 @@ async function writeFiles(
   })
   await writeConfigFileToEnvironment(environment, options)
   environment.finishStep('write-config-file', 'Config file written')
+  return intentPolicyError
 }
 
 async function runCommandsAndInstallDependencies(
   environment: Environment,
   options: Options,
   packageManagerVersion?: string,
+  intentPolicyError?: string,
 ) {
   const needsBuildApproval =
     options.chosenAddOns.some((addOn) => addOn.command?.allowBuilds?.length) ||
@@ -314,7 +351,12 @@ async function runCommandsAndInstallDependencies(
 
   await installShadcnComponents(environment, options.targetDir, options)
 
-  const intentConfigured = await setupIntent(environment, options.targetDir, options)
+  const intentConfigured = await setupIntent(
+    environment,
+    options.targetDir,
+    options,
+    intentPolicyError,
+  )
 
   if (shouldGenerateRoutes(options)) {
     s.start(`Generating route tree...`)
@@ -416,7 +458,11 @@ async function writeEnvExample(environment: Environment, options: Options) {
 
 const SHIPPING_CATEGORIES = new Set(['auth', 'database', 'orm', 'deploy'])
 
-function buildNextSteps(options: Options, intentConfigured: boolean): string {
+function buildNextSteps(
+  options: Options,
+  intentConfigured: boolean,
+  intentPolicyFailed: boolean,
+): string {
   const collectedEnv = new Set(Object.keys(options.envVarValues || {}))
   const listedEnvVars = new Set<string>()
   const envVarLines: Array<string> = []
@@ -448,7 +494,7 @@ function buildNextSteps(options: Options, intentConfigured: boolean): string {
   if (docLines.length > 0) {
     sections.push(`Docs for the integrations you picked:\n${docLines.join('\n')}`)
   }
-  if (options.intent) {
+  if (options.intent && !intentPolicyFailed) {
     if (options.install === false) {
       const installCommand = formatCommand(
         getPackageManagerInstallCommand(options.packageManager),
@@ -470,6 +516,7 @@ function report(
   environment: Environment,
   options: Options,
   intentConfigured: boolean,
+  intentPolicyFailed: boolean,
 ) {
   const warnings: Array<string> = []
   for (const addOn of options.chosenAddOns) {
@@ -484,10 +531,17 @@ function report(
 
   // Format errors
   const errors = [...environment.getErrors()]
-  if (options.intent && options.install !== false && !intentConfigured) {
+  if (
+    options.intent &&
+    !intentConfigured &&
+    (intentPolicyFailed || options.install !== false)
+  ) {
     const retryCommand = intentCommand(options.packageManager, ['install'])
     if (!errors.some((error) => error.includes(retryCommand))) {
-      errors.push(`TanStack Intent setup failed. To retry, run ${retryCommand} in your project.`)
+      const retryInstructions = intentPolicyFailed
+        ? `Fix the policy error above${options.install === false ? ', install dependencies,' : ''} and run ${retryCommand} in your project.`
+        : `To retry, run ${retryCommand} in your project.`
+      errors.push(`TanStack Intent setup failed. ${retryInstructions}`)
     }
   }
   let errorStatement = ''
@@ -510,7 +564,7 @@ ${errors.join('\n')}`
     : `% cd ${options.projectName}
 `
 
-  const nextSteps = buildNextSteps(options, intentConfigured)
+  const nextSteps = buildNextSteps(options, intentConfigured, intentPolicyFailed)
   const readmeDescription =
     options.projectPreset === 'blank'
       ? 'running, building, adding routes, and selected integrations.'
@@ -538,15 +592,28 @@ export async function createApp(
   const effectiveOptions = stripExamplesFromOptions(normalizeAndValidateBundlerOptions(options))
 
   environment.startRun()
-  await writeFiles(environment, effectiveOptions, context)
+  const intentPolicyError = await writeFiles(
+    environment,
+    effectiveOptions,
+    context,
+  )
   await seedEnvValues(environment, effectiveOptions)
   await writeEnvExample(environment, effectiveOptions)
   const intentConfigured = await runCommandsAndInstallDependencies(
     environment,
-    effectiveOptions,
+    {
+      ...effectiveOptions,
+      intent: context.existingProject ? false : effectiveOptions.intent,
+    },
     context.packageManagerVersion,
+    intentPolicyError,
   )
   environment.finishRun()
 
-  report(environment, effectiveOptions, intentConfigured)
+  report(
+    environment,
+    effectiveOptions,
+    intentConfigured,
+    intentPolicyError !== undefined,
+  )
 }

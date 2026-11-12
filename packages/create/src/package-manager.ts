@@ -122,13 +122,32 @@ export function getPackageManagerExecuteCommand(
 
 export const INTENT_PACKAGE = '@tanstack/intent'
 
+export function getIntentExecuteCommand(
+  packageManager: PackageManager,
+  args: Array<string>,
+) {
+  switch (packageManager) {
+    case 'bun':
+      return {
+        command: 'bunx',
+        args: ['--no-install', '--package', INTENT_PACKAGE, 'intent', ...args],
+      }
+    case 'pnpm':
+    case 'yarn':
+      return { command: packageManager, args: ['exec', 'intent', ...args] }
+    // Intent's Deno fallback requires npm; it must not download a temporary CLI.
+    case 'deno':
+    default:
+      return { command: 'npm', args: ['exec', '--no', '--', 'intent', ...args] }
+  }
+}
+
 export function intentCommand(
   packageManager: PackageManager,
   args: Array<string>,
 ) {
-  const { command, args: commandArgs } = getPackageManagerExecuteCommand(
+  const { command, args: commandArgs } = getIntentExecuteCommand(
     packageManager,
-    INTENT_PACKAGE,
     args,
   )
   return [command, ...commandArgs].join(' ')
