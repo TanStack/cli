@@ -1,0 +1,11 @@
+{
+  "name": "Oxlint",
+  "description": "Oxlint toolchain support.",
+  "phase": "setup",
+  "type": "toolchain",
+  "category": "tooling",
+  "exclusive": ["linter"],
+  "color": "#195EFF",
+  "modes": ["code-router", "file-router"],
+  "link": "https://oxc.rs/docs/guide/usage/linter"
+}

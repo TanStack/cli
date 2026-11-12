@@ -56,7 +56,7 @@ skills:
         config_surface: "exclusive deploy add-ons (cloudflare/netlify/railway/nitro)"
       - name: "Toolchains"
         package: "@tanstack/create"
-        config_surface: "exclusive linter choice (eslint/biome)"
+        config_surface: "exclusive linter choice (eslint/biome/oxlint)"
     reference_candidates:
       - topic: "create flag compatibility matrix"
         reason: "Many interacting flags and compatibility branches (router-only/template/add-ons/deployment/toolchain)."
