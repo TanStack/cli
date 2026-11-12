@@ -4,6 +4,7 @@
   "phase": "add-on",
   "type": "add-on",
   "category": "tooling",
+  "exclusive": ["env"],
   "color": "#6366F1",
   "priority": 29,
   "link": "https://github.com/t3-oss/t3-env",

@@ -2,6 +2,7 @@ import { basename, resolve } from 'node:path'
 
 import { CONFIG_FILE } from './constants.js'
 import { finalizeAddOns } from './add-ons.js'
+import { assertNoExclusiveAddOnConflicts } from './build-tools.js'
 import { getFrameworkById } from './frameworks.js'
 import { createMemoryEnvironment } from './environment.js'
 import { createApp } from './create-app.js'
@@ -25,7 +26,7 @@ import { runSpecialSteps } from './special-steps/index.js'
 import { loadStarter } from './custom-add-ons/starter.js'
 import { setupIntent } from './integrations/intent.js'
 
-import type { AddOn, Environment, Options } from './types.js'
+import type { Environment, Options } from './types.js'
 import type { PersistedOptions } from './config-file.js'
 
 const ENV_FILE_NAMES = new Set(['.env', '.env.local', '.env.example'])
@@ -126,22 +127,6 @@ async function createOptions(
     starter,
     intent: json.intent ?? false,
   } as Options
-}
-
-function assertNoExclusiveAddOnConflicts(addOns: Array<AddOn>) {
-  const selectedByExclusiveGroup = new Map<string, AddOn>()
-
-  for (const addOn of addOns) {
-    for (const exclusive of addOn.exclusive ?? []) {
-      const selected = selectedByExclusiveGroup.get(exclusive)
-      if (selected && selected.id !== addOn.id) {
-        throw new Error(
-          `Cannot combine ${selected.name} and ${addOn.name}. Add-ons in the "${exclusive}" group are mutually exclusive.`,
-        )
-      }
-      selectedByExclusiveGroup.set(exclusive, addOn)
-    }
-  }
 }
 
 async function runCreateApp(options: Required<Options>, packageManagerVersion?: string) {
