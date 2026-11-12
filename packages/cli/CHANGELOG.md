@@ -1,5 +1,20 @@
 # @tanstack/cli
 
+## 0.72.17
+
+### Patch Changes
+
+- Finish pending rebuild writes before dev watch removes its temporary directory during shutdown. ([#563](https://github.com/TanStack/cli/pull/563))
+
+- Configure the Paraglide add-on with TanStack Router URL rewrites and request-scoped server middleware. ([#503](https://github.com/TanStack/cli/pull/503))
+
+- Generate a Workers server entry for the React Sentry add-on when targeting Cloudflare. Update the Neon demo to use the current Start validator API. ([#567](https://github.com/TanStack/cli/pull/567))
+
+- Declare the router core peer dependency when React or Solid router devtools are included in a generated app. ([#482](https://github.com/TanStack/cli/pull/482))
+
+- Updated dependencies [[`15cb17b`](https://github.com/TanStack/cli/commit/15cb17b4382c5f82c0b46bbac524900ee949c4b3), [`b3e1ab0`](https://github.com/TanStack/cli/commit/b3e1ab09743a475c6e61ee0f64e8b94b65f97828), [`82f31a6`](https://github.com/TanStack/cli/commit/82f31a6529a2d24344860bc2ec7a5d00ebed589b), [`81d3e99`](https://github.com/TanStack/cli/commit/81d3e99748f10daaf00561a5219fb55199b76668), [`f40a234`](https://github.com/TanStack/cli/commit/f40a234e4163906a3a4522c0074c55780224bee9), [`efb68bd`](https://github.com/TanStack/cli/commit/efb68bdfcf01fa6b52c7cfea1186061f219a3331), [`9fe6af8`](https://github.com/TanStack/cli/commit/9fe6af85b1c0029d8f3e244020ce2df25c6ee647), [`40e0043`](https://github.com/TanStack/cli/commit/40e0043707b23b498c6a32950404893817a6f2c3), [`6d6116b`](https://github.com/TanStack/cli/commit/6d6116b98eb134558abaff8849e120a12714b596), [`28cf758`](https://github.com/TanStack/cli/commit/28cf758bc3cfbbf03c35081a6a96a069223c4256), [`3074e0d`](https://github.com/TanStack/cli/commit/3074e0d72cc2a3975623763dd290c1139bcacf82), [`d7f86f2`](https://github.com/TanStack/cli/commit/d7f86f27eede2c3b309b4986e37a1560946fc7c8), [`b42d225`](https://github.com/TanStack/cli/commit/b42d225b0070a91bcde79eaec4a59e31b37f889c), [`3c6ba4e`](https://github.com/TanStack/cli/commit/3c6ba4e01f5970c9e53d5b5e75a2fd372ddd3c23), [`d767e4c`](https://github.com/TanStack/cli/commit/d767e4c6364642ff66488828449f56c4f6253bd4), [`000d081`](https://github.com/TanStack/cli/commit/000d08101c381611c22b742e7d17d32a6f852a4d), [`7bd4230`](https://github.com/TanStack/cli/commit/7bd42308bcca1c27329b9d996143aa23b752e7ad), [`2690587`](https://github.com/TanStack/cli/commit/2690587e5220c55147f5d13bc4a73ef10d354544)]:
+  - @tanstack/create@0.72.0
+
 ## 0.72.16
 
 ### Patch Changes
