@@ -51,6 +51,28 @@ beforeEach(() => {
         modes: ['file-router'],
       },
       {
+        id: 'cloudflare',
+        name: 'Cloudflare',
+        type: 'deployment',
+        modes: ['file-router'],
+        exclusive: ['deploy'],
+        integrations: [{ type: 'vite-plugin' }],
+      },
+      {
+        id: 'nitro',
+        name: 'Nitro',
+        type: 'deployment',
+        modes: ['file-router'],
+        exclusive: ['deploy'],
+        integrations: [
+          {
+            type: 'rsbuild-plugin',
+            import: "import { nitro } from 'nitro/rsbuild'",
+            code: "nitro({ preset: 'node-server' })",
+          },
+        ],
+      },
+      {
         id: 'biome',
         type: 'toolchain',
         modes: ['file-router'],
@@ -232,14 +254,18 @@ describe('promptForCreateOptions', () => {
     expect(options?.bundler).toBe('rsbuild')
     expect(options?.chosenAddOns.map((addOn) => addOn.id)).toEqual(['biome'])
     expect(prompts.selectTemplate).not.toHaveBeenCalled()
-    expect(prompts.selectDeployment).not.toHaveBeenCalled()
+    expect(prompts.selectDeployment).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      undefined,
+      'rsbuild',
+    )
     expect(prompts.selectAddOns).not.toHaveBeenCalled()
   })
 
   it.each([
     [{ template: 'blog' }, '--starter, --template, or --template-id'],
-    [{ deployment: 'cloudflare' }, '--deployment'],
-    [{ addOns: ['react-query'] }, 'toolchains only'],
+    [{ addOns: ['react-query'] }, 'does not support --add-ons'],
   ])(
     'rejects explicit %s after Rsbuild is selected interactively',
     async (flags, error) => {
@@ -282,6 +308,42 @@ describe('promptForCreateOptions', () => {
 
       expect(options?.bundler).toBe('rsbuild')
       expect(options?.routerOnly).toBe(routerOnly)
+    },
+  )
+
+  it.each([false, true])(
+    'keeps an Rsbuild deployment (forced=%s)',
+    async (forced) => {
+      setBasicSpies()
+      vi.mocked(prompts.selectBundler).mockResolvedValue('rsbuild')
+      const options = await promptForCreateOptions(
+        {
+          ...baseCliOptions,
+          blank: true,
+          deployment: forced ? undefined : 'nitro',
+        },
+        forced ? { forcedDeployment: 'nitro' } : {},
+      )
+      expect(options?.chosenAddOns.map((addOn) => addOn.id)).toEqual(['nitro'])
+    },
+  )
+
+  it.each([false, true])(
+    'rejects the Vite-only Cloudflare deployment for Rsbuild (forced=%s)',
+    async (forced) => {
+      setBasicSpies()
+      vi.mocked(prompts.selectBundler).mockResolvedValue('rsbuild')
+      await expect(
+        promptForCreateOptions(
+          {
+            ...baseCliOptions,
+            buildTool: 'rsbuild',
+            blank: true,
+            deployment: forced ? undefined : 'cloudflare',
+          },
+          forced ? { forcedDeployment: 'cloudflare' } : {},
+        ),
+      ).rejects.toThrow('"cloudflare" (Cloudflare) is not supported')
     },
   )
 
@@ -438,6 +500,29 @@ describe('promptForCreateOptions', () => {
 })
 
 describe('promptForAddOns', () => {
+  it('offers a deployment to an existing Rsbuild Start app', async () => {
+    vi.mocked(prompts.selectAddOns).mockReset()
+    vi.mocked(prompts.selectAddOns).mockResolvedValue(['nitro'])
+    vi.spyOn(create, 'readConfigFile').mockResolvedValue({
+      projectName: 'test',
+      framework: 'react',
+      bundler: 'rsbuild',
+      mode: 'file-router',
+      chosenAddOns: ['eslint'],
+      version: 1,
+    })
+    await expect(promptForAddOns()).resolves.toEqual(['nitro'])
+    expect(prompts.selectAddOns).toHaveBeenCalledWith(
+      expect.anything(),
+      'file-router',
+      'deployment',
+      expect.any(String),
+      ['biome', 'eslint'],
+      false,
+      'rsbuild',
+    )
+  })
+
   it('does not offer a second exclusive Rsbuild toolchain', async () => {
     vi.mocked(prompts.selectAddOns).mockClear()
     vi.spyOn(create, 'readConfigFile').mockResolvedValue({
@@ -445,7 +530,7 @@ describe('promptForAddOns', () => {
       framework: 'react',
       bundler: 'rsbuild',
       mode: 'file-router',
-      chosenAddOns: ['eslint'],
+      chosenAddOns: ['eslint', 'nitro'],
       version: 1,
     })
 

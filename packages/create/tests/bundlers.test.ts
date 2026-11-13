@@ -102,13 +102,21 @@ describe('bundler project generation', () => {
     ['react', createReactFrameworkDefinition, 'shadcn'],
     ['solid', createSolidFrameworkDefinition, 'solid-ui'],
   ])(
-    '%s filters the Rsbuild catalog to toolchains',
+    '%s filters the Rsbuild catalog to toolchains and compatible deployments',
     async (_, createDefinition, incompatibleAddOn) => {
       const framework = frameworkFromDefinition(createDefinition())
       const addOns = getAllAddOns(framework, 'file-router', 'rsbuild')
 
       expect(addOns.length).toBeGreaterThan(0)
-      expect(addOns.every((addOn) => addOn.type === 'toolchain')).toBe(true)
+      expect(
+        addOns.every((addOn) =>
+          ['toolchain', 'deployment'].includes(addOn.type),
+        ),
+      ).toBe(true)
+      expect(
+        addOns.filter((addOn) => addOn.type === 'deployment'),
+      ).toHaveLength(5)
+      expect(addOns.map((addOn) => addOn.id)).not.toContain('cloudflare')
       await expect(
         finalizeAddOns(framework, 'file-router', ['eslint'], 'rsbuild'),
       ).resolves.toEqual(
@@ -121,7 +129,7 @@ describe('bundler project generation', () => {
           [incompatibleAddOn],
           'rsbuild',
         ),
-      ).rejects.toThrow('Rsbuild currently supports toolchain add-ons only')
+      ).rejects.toThrow('Rsbuild supports toolchains and deployment adapters')
     },
   )
 

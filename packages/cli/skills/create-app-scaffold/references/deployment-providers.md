@@ -20,3 +20,12 @@ npx @tanstack/cli create app --deployment vercel -y
 ```
 
 Deployment providers are exclusive; choose one per scaffold.
+
+## Rsbuild
+
+The `nitro`, `railway`, `render`, `vercel`, and `netlify` deployment ids are
+available for full TanStack Start projects with `--build-tool rsbuild`.
+Cloudflare remains Vite-only until Nitro's Rsbuild development runtime works
+with Workerd. Supported Rsbuild adapters use Nitro's experimental integration
+and require Node.js >=22.22 and Rsbuild >=2.3. Router-only projects do not
+support deployment adapters.

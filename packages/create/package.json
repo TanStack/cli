@@ -78,6 +78,7 @@
     "parse-gitignore": "^2.0.0",
     "prettier": "^3.5.0",
     "rimraf": "^6.0.1",
+    "semver": "^7.7.3",
     "yaml": "^2.8.2",
     "zod": "^3.24.2"
   },
@@ -85,6 +86,7 @@
     "@types/ejs": "^3.1.5",
     "@types/node": "^22.13.4",
     "@types/parse-gitignore": "^1.0.2",
+    "@types/semver": "^7.7.0",
     "@vitest/coverage-v8": "4.1.5",
     "eslint": "^9.20.0",
     "memfs": "4.17.0",

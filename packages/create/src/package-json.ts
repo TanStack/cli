@@ -1,6 +1,7 @@
 import { render } from 'ejs'
 import { formatCommand, sortObject } from './utils.js'
 import { getPackageManagerExecuteCommand } from './package-manager.js'
+import { mergePackageEngines } from './package-engines.js'
 import type { Options } from './types.js'
 
 export function mergePackageJSON(
@@ -23,6 +24,12 @@ export function mergePackageJSON(
       ...(overlayPackageJSON?.scripts || {}),
     },
   }
+
+  const engines = mergePackageEngines(
+    packageJSON.engines,
+    overlayPackageJSON?.engines,
+  )
+  if (engines) mergedPackageJSON.engines = engines
 
   const baseOnlyBuiltDependencies = Array.isArray(
     packageJSON.pnpm?.onlyBuiltDependencies,
@@ -83,6 +90,9 @@ export function createPackageJSON(options: Options) {
   const additions: Array<Record<string, any> | undefined> = [
     options.framework.optionalPackages.typescript,
     options.framework.optionalPackages.bundlers?.[bundler],
+    options.chosenAddOns.some((addOn) => addOn.type === 'deployment')
+      ? options.framework.optionalPackages.bundlerDeployment?.[bundler]
+      : undefined,
     includeDevtools ? options.framework.optionalPackages.devtools : undefined,
     includeDevtools
       ? options.framework.optionalPackages.bundlerDevtools?.[bundler]
@@ -159,6 +169,14 @@ export function createPackageJSON(options: Options) {
       packageJSON,
       options.starter.packageAdditions,
     )
+  }
+
+  if (
+    bundler === 'rsbuild' &&
+    options.chosenAddOns.some((addOn) => addOn.type === 'deployment')
+  ) {
+    delete (packageJSON.dependencies as Record<string, string> | undefined)
+      ?.srvx
   }
 
   if (options.routerOnly) {

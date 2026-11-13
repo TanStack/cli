@@ -1,5 +1,8 @@
 {
+  "engines": {
+    "node": ">=22.22.0"
+  },
   "dependencies": {
-    "nitro": "3.0.260610-beta"
+    "nitro": "3.0.261103-rc"
   }
 }

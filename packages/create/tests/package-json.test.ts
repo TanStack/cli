@@ -1,9 +1,144 @@
 import { describe, expect, it } from 'vitest'
+import { satisfies } from 'semver'
 
 import { createPackageJSON as createEdgePackageJSON } from '../src/edge-package-json.js'
 import { createPackageJSON } from '../src/package-json.js'
 
 import type { Options, Framework } from '../src/types.js'
+
+describe.each([
+  ['Node', createPackageJSON],
+  ['edge', createEdgePackageJSON],
+] as const)('%s package engines', (_name, createManifest) => {
+  function generateWithEngines(ranges: Array<string>) {
+    return createManifest({
+      projectName: 'test',
+      packageManager: 'pnpm',
+      mode: 'file-router',
+      typescript: true,
+      tailwind: false,
+      addOnOptions: {},
+      chosenAddOns: ranges.map((node, index) => ({
+        id: `custom-${index}`,
+        packageAdditions: { engines: { node } },
+      })),
+      framework: {
+        id: 'react',
+        basePackageJSON: {},
+        optionalPackages: {},
+      },
+    } as unknown as Options)
+  }
+
+  it.each([
+    {
+      name: 'one-sided prerelease opt-in',
+      ranges: ['>=22.0.0-rc.1 <23', '>=20 <22.5'],
+      accepted: ['22.0.0', '22.4.0'],
+      rejected: ['22.0.0-rc.2', '22.5.0'],
+    },
+    {
+      name: 'shared prerelease opt-in',
+      ranges: ['>=22.0.0-rc.1 <23', '>=22.0.0-rc.2 <22.5'],
+      accepted: ['22.0.0-rc.2', '22.4.0'],
+      rejected: ['22.0.0-rc.1', '22.1.0-rc.1', '22.5.0'],
+    },
+    {
+      name: 'a prerelease-only intersection',
+      ranges: ['>=22.0.0-rc.1 <22.0.0', '>=22.0.0-rc.2 <22.0.0'],
+      accepted: ['22.0.0-rc.2'],
+      rejected: ['22.0.0-rc.1', '22.0.0'],
+    },
+    {
+      name: 'independent OR alternatives',
+      ranges: [
+        '^22.0.0-rc.1 || ^24.0.0-rc.1',
+        '>=20 <22.5 || >=24.0.0-rc.2 <24.0.0',
+      ],
+      accepted: ['22.4.0', '24.0.0-rc.2'],
+      rejected: ['22.0.0-rc.2', '24.0.0-rc.1', '24.0.0'],
+    },
+    {
+      name: 'multiple overlays after a prerelease OR intersection',
+      ranges: ['>=22.0.0-rc.1 <23', '22.0.0-rc.2 || >=22.1 <23', '*'],
+      accepted: ['22.1.0', '22.4.0'],
+      rejected: ['22.0.0-rc.2', '23.0.0'],
+    },
+    {
+      name: 'overlapping ranges without a subset relationship',
+      ranges: ['>=22 <25', '>=24 <26'],
+      accepted: ['24.0.0', '24.9.0'],
+      rejected: ['23.9.0', '24.0.0-rc.1', '25.0.0'],
+    },
+    {
+      name: 'the Nitro and WorkOS minimum versions',
+      ranges: ['>=22.22.0', '>=22.11.0'],
+      accepted: ['22.22.0', '24.0.0'],
+      rejected: ['22.21.0', '24.0.0-rc.2'],
+    },
+    {
+      name: 'a prerelease range and the Nitro minimum version',
+      ranges: ['^24.0.0-rc.1', '>=22.22.0'],
+      accepted: ['24.0.0', '24.5.0'],
+      rejected: ['24.0.0-rc.2', '25.0.0'],
+    },
+    {
+      name: 'a wildcard without prerelease opt-in',
+      ranges: ['>=22.0.0-rc.1 <23', '*'],
+      accepted: ['22.0.0', '22.4.0'],
+      rejected: ['22.0.0-rc.2', '23.0.0'],
+    },
+    {
+      name: 'an empty range without prerelease opt-in',
+      ranges: ['>=22.0.0-rc.1 <23', ''],
+      accepted: ['22.0.0', '22.4.0'],
+      rejected: ['22.0.0-rc.2', '23.0.0'],
+    },
+    {
+      name: 'prerelease opt-in at an upper bound',
+      ranges: ['>=22 <23.0.0-rc.5', '>=22 <23.0.0-rc.3'],
+      accepted: ['22.4.0', '23.0.0-rc.2'],
+      rejected: ['22.0.0-rc.1', '23.0.0-rc.3', '23.0.0'],
+    },
+    {
+      name: 'all stable versions and shared zero-version prereleases',
+      ranges: ['>=0.0.0-rc.1', '>=0.0.0-rc.2'],
+      accepted: ['0.0.0-rc.2', '0.0.0', '22.0.0'],
+      rejected: ['0.0.0-rc.1', '22.0.0-rc.1'],
+    },
+  ])('preserves $name', ({ ranges, accepted, rejected }) => {
+    for (const order of [ranges, [...ranges].reverse()]) {
+      const packageJSON = generateWithEngines(order)
+      const { node } = packageJSON.engines as Record<string, string>
+      for (const version of accepted) {
+        expect(satisfies(version, node), `${version} satisfies ${node}`).toBe(
+          true,
+        )
+      }
+      for (const version of rejected) {
+        expect(satisfies(version, node), `${version} satisfies ${node}`).toBe(
+          false,
+        )
+      }
+    }
+  })
+
+  it.each([
+    ['>=20 <21', '>=22.22.0'],
+    ['22.0.0-rc.1', '>=20 <23'],
+    ['>=20 <21 || >=24 <25', '>=22 <23'],
+    ['>=22 <21', '>=22.22.0'],
+  ])('rejects incompatible engines %s and %s', (left, right) => {
+    for (const order of [
+      [left, right],
+      [right, left],
+    ]) {
+      expect(() => generateWithEngines(order)).toThrow(
+        `Incompatible engines.node requirements: "${order[0]}" and "${order[1]}"`,
+      )
+    }
+  })
+})
 
 describe('createPackageJSON', () => {
   it.each([
