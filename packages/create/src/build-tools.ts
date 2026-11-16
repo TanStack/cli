@@ -39,19 +39,26 @@ export function resolveBundler(
 }
 
 export function isAddOnSupportedByBundler(
-  addOn: Pick<AddOn, 'type'>,
+  addOn: Pick<AddOn, 'type' | 'integrations'>,
   bundlerId: string,
 ) {
-  return bundlerId !== 'rsbuild' || addOn.type === 'toolchain'
+  return (
+    bundlerId !== 'rsbuild' ||
+    addOn.type === 'toolchain' ||
+    (addOn.type === 'deployment' &&
+      addOn.integrations?.some(
+        (integration) => integration.type === 'rsbuild-plugin',
+      ) === true)
+  )
 }
 
 export function assertAddOnSupportedByBundler(
-  addOn: Pick<AddOn, 'id' | 'name' | 'type'>,
+  addOn: Pick<AddOn, 'id' | 'name' | 'type' | 'integrations'>,
   bundlerId: string,
 ) {
   if (!isAddOnSupportedByBundler(addOn, bundlerId)) {
     throw new Error(
-      `Rsbuild currently supports toolchain add-ons only. "${addOn.id}" (${addOn.name}) is a ${addOn.type} add-on.`,
+      `Rsbuild supports toolchains and deployment adapters with an Rsbuild integration only. "${addOn.id}" (${addOn.name}) is not supported.`,
     )
   }
 }
@@ -65,6 +72,18 @@ export function normalizeAndValidateBundlerOptions(options: Options): Options {
 
   for (const addOn of options.chosenAddOns) {
     assertAddOnSupportedByBundler(addOn, bundler)
+  }
+
+  if (bundler === 'rsbuild') {
+    const deployments = options.chosenAddOns.filter(
+      (addOn) => addOn.type === 'deployment',
+    )
+    if (deployments.length > 1) {
+      throw new Error('Only one deployment adapter can be selected.')
+    }
+    if (options.routerOnly && deployments.length > 0) {
+      throw new Error('Rsbuild deployment adapters require TanStack Start.')
+    }
   }
 
   return {

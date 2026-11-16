@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": <%- JSON.stringify(bundler === 'rsbuild' ? null : 'tanstack-start') %><% if (bundler === 'rsbuild') { %>,
+  "buildCommand": "<%= getPackageManagerRunScript('build') %>"<% } %>
+}

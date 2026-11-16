@@ -1,6 +1,7 @@
 import { renderForOptions } from './edge-render.js'
 import { formatCommand, sortObject } from './utils.js'
 import { getPackageManagerExecuteCommand } from './package-manager.js'
+import { mergePackageEngines } from './package-engines.js'
 
 import type { Options } from './types.js'
 
@@ -51,6 +52,12 @@ export function mergePackageJSON(
       ...overlayScripts,
     },
   }
+
+  const engines = mergePackageEngines(
+    packageJSON.engines as Record<string, string> | undefined,
+    overlayPackageJSON?.engines as Record<string, string> | undefined,
+  )
+  if (engines) mergedPackageJSON.engines = engines
 
   const packagePnpm =
     packageJSON.pnpm && typeof packageJSON.pnpm === 'object'
@@ -123,6 +130,9 @@ export function createPackageJSON(options: Options) {
   const additions: Array<Record<string, unknown> | undefined> = [
     options.framework.optionalPackages.typescript,
     options.framework.optionalPackages.bundlers?.[bundler],
+    options.chosenAddOns.some((addOn) => addOn.type === 'deployment')
+      ? options.framework.optionalPackages.bundlerDeployment?.[bundler]
+      : undefined,
     includeDevtools ? options.framework.optionalPackages.devtools : undefined,
     includeDevtools
       ? options.framework.optionalPackages.bundlerDevtools?.[bundler]
@@ -211,6 +221,14 @@ export function createPackageJSON(options: Options) {
     | Record<string, string>
     | undefined
   const scripts = packageJSON.scripts as Record<string, string> | undefined
+
+  if (
+    bundler === 'rsbuild' &&
+    options.chosenAddOns.some((addOn) => addOn.type === 'deployment')
+  ) {
+    delete (packageJSON.dependencies as Record<string, string> | undefined)
+      ?.srvx
+  }
 
   if (options.routerOnly) {
     delete dependencies?.srvx

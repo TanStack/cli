@@ -15,10 +15,21 @@ npx @tanstack/cli create app --framework solid --build-tool rsbuild -y
 ```
 
 Rsbuild supports full TanStack Start and router-only projects, including the
-standard and `--blank` presets, built-in example pages, Tailwind, ESLint, and
-Biome. It does not currently support templates, deployment adapters, or
-catalog business/example add-ons. `tanstack add` is limited to ESLint/Biome in
-Rsbuild projects.
+standard and `--blank` presets, built-in example pages, Tailwind, ESLint,
+Biome, and Prettier. Templates and catalog business/example add-ons are not
+supported.
+
+Full Start projects support `--deployment nitro`, `railway`, `render`,
+`vercel`, and `netlify` through the experimental `nitro/rsbuild`
+integration. These projects require Node.js >=22.22 and Rsbuild >=2.3.
+Cloudflare remains Vite-only until Nitro's Rsbuild development runtime works
+with Workerd.
+Router-only projects do not support deployment adapters. Existing Rsbuild
+Start projects can add one deployment adapter with `tanstack add`.
+
+```bash
+npx @tanstack/cli create app --build-tool rsbuild --deployment nitro -y
+```
 
 Use the build-tool-aware catalog view before constructing an Rsbuild command:
 

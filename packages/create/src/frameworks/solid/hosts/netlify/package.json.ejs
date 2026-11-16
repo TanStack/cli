@@ -1,0 +1,21 @@
+<% if (bundler === 'rsbuild') { -%>
+{
+  "scripts": {
+    "start": "rsbuild preview"
+  },
+  "dependencies": {
+    "nitro": "3.0.261103-rc"
+  }
+}
+<% } else { -%>
+{
+  "devDependencies": {
+    "@netlify/vite-plugin-tanstack-start": "^1.2.15"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp"
+    ]
+  }
+}
+<% } -%>

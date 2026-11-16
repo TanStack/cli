@@ -337,17 +337,11 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
           'Rsbuild does not currently support --starter, --template, or --template-id.',
       }
     }
-    if (cliOptions.deployment) {
-      return {
-        warnings,
-        error: 'Rsbuild does not currently support --deployment.',
-      }
-    }
     if (cliOptions.addOns) {
       return {
         warnings,
         error:
-          'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+          'Rsbuild does not support --add-ons. Use --toolchain or --deployment.',
       }
     }
   }
@@ -524,12 +518,9 @@ export async function normalizeOptions(
     ) {
       throw new Error('Rsbuild does not currently support templates.')
     }
-    if (cliOptions.deployment || opts?.forcedDeployment) {
-      throw new Error('Rsbuild does not currently support deployments.')
-    }
     if (forcedAddOns?.length || cliOptions.addOns) {
       throw new Error(
-        'Rsbuild currently supports toolchains only. Use --toolchain eslint or --toolchain biome.',
+        'Rsbuild does not support --add-ons. Use --toolchain or --deployment.',
       )
     }
   }

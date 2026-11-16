@@ -415,12 +415,12 @@ export async function selectDeployment(
   framework: Framework,
   deployment?: string,
   forcedDeployment?: string,
+  bundlerId?: string,
 ): Promise<string | undefined> {
   const deployments = new Set<AddOn>()
   let initialValue: string | undefined = undefined
   for (const addOn of orderAddOnsForPartnerPlacement(
-    framework
-      .getAddOns()
+    getAllAddOns(framework, 'file-router', bundlerId)
       .filter((addOn) => addOn.type === 'deployment')
       .sort((a, b) => a.name.localeCompare(b.name)),
     'deployment',

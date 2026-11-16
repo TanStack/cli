@@ -15,6 +15,11 @@
       "type": "vite-plugin",
       "import": "import netlify from '@netlify/vite-plugin-tanstack-start'",
       "code": "netlify()"
+    },
+    {
+      "type": "rsbuild-plugin",
+      "import": "import { nitro } from 'nitro/rsbuild'",
+      "code": "nitro({ preset: 'netlify' })"
     }
   ]
 }

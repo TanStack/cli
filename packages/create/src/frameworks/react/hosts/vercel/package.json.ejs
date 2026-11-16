@@ -1,0 +1,9 @@
+{
+  "engines": { "node": ">=22.22.0" },
+  <% if (bundler === 'rsbuild') { -%>
+  "scripts": { "start": "rsbuild preview" },
+  <% } -%>
+  "dependencies": {
+    "nitro": "3.0.261103-rc"
+  }
+}

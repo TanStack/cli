@@ -43,6 +43,7 @@ tanstack create my-app --blank --deployment cloudflare -y
 tanstack create my-app --add-ons clerk,drizzle,tanstack-query
 tanstack create my-app --router-only --toolchain eslint --no-examples
 tanstack create my-app --build-tool rsbuild -y
+tanstack create my-app --build-tool rsbuild --deployment nitro -y
 tanstack create my-app --framework Solid --build-tool rsbuild --router-only --blank --toolchain biome -y
 tanstack create my-app --template https://example.com/template.json
 tanstack create my-app --template ecommerce
@@ -57,6 +58,12 @@ skill mappings for coding agents.
 Explicit add-ons and deployment adapters can add their own required files and
 dependencies. Add `-y` to use defaults for every remaining option; when the
 target is non-empty, also pass `--force` or the command exits without writing.
+
+Rsbuild Start projects support five deployment adapters through Nitro's
+experimental Rsbuild integration: `nitro`, `railway`, `render`, `vercel`,
+and `netlify`. Cloudflare remains Vite-only until Nitro's Rsbuild development
+runtime works with Workerd. Generated deployment projects require Node.js
+>=22.22 and Rsbuild >=2.3. Router-only projects do not support deployment adapters.
 
 ### Programmatic generation
 

@@ -172,7 +172,7 @@ describe('partner add-on scaffolds', () => {
 
       expect(packageJSON.dependencies).toHaveProperty(
         'nitro',
-        '3.0.260610-beta',
+        '3.0.261103-rc',
       )
       expect(packageJSON.dependencies).not.toHaveProperty('nitro-nightly')
       expect(Object.values(packageJSON.dependencies)).not.toContain(
@@ -259,7 +259,7 @@ describe('partner add-on scaffolds', () => {
 
       expect(packageJSON.dependencies).toHaveProperty(
         'nitro',
-        '3.0.260610-beta',
+        '3.0.261103-rc',
       )
       expect(packageJSON.scripts.start).toBe('node .output/server/index.mjs')
       expect(renderYaml).toContain('name: tanstack-start-app')
@@ -327,7 +327,7 @@ describe('partner add-on scaffolds', () => {
       ])
       expect(packageJSON.dependencies).toHaveProperty(
         'nitro',
-        '3.0.260610-beta',
+        '3.0.261103-rc',
       )
       expect(vercelJSON).toEqual({
         $schema: 'https://openapi.vercel.sh/vercel.json',
