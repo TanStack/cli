@@ -1,0 +1,30 @@
+{
+  "name": "PocketBase",
+  "description": "Open source backend in one file (SQLite, auth, realtime, file storage, admin UI).",
+  "link": "https://pocketbase.io",
+  "phase": "add-on",
+  "type": "add-on",
+  "category": "database",
+  "exclusive": ["database", "orm"],
+  "color": "#16161A",
+  "priority": 135,
+  "modes": ["file-router"],
+  "routes": [
+    {
+      "icon": "Database",
+      "url": "/demo/pocketbase",
+      "name": "PocketBase",
+      "path": "src/routes/demo/pocketbase.tsx",
+      "jsName": "PocketBaseDemo"
+    }
+  ],
+  "envVars": [
+    {
+      "name": "VITE_POCKETBASE_URL",
+      "description": "PocketBase server URL",
+      "required": true,
+      "secret": false,
+      "file": ".env.local"
+    }
+  ]
+}

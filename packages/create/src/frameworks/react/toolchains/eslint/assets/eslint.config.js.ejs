@@ -16,5 +16,9 @@ export default [
   },
   {
     ignores: ['eslint.config.js', 'prettier.config.js'],
-  },
+  },<% if (addOnEnabled.pocketbase) { %>
+  {
+    // PocketBase runs these files itself and writes their types to pb_data/.
+    ignores: ['pb_data/**', 'pb_migrations/**'],
+  },<% } %>
 ]

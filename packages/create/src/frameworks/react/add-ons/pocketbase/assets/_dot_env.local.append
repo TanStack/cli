@@ -1,0 +1,2 @@
+# PocketBase server URL (run `./pocketbase serve` locally, default http://127.0.0.1:8090)
+VITE_POCKETBASE_URL=http://127.0.0.1:8090

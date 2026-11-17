@@ -1,0 +1,4 @@
+# PocketBase server binary and local data
+/pocketbase
+/pocketbase.exe
+pb_data/
