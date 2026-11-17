@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "intlayer": "^9.8.0",
+    "react-intlayer": "^9.8.0"
+  },
+  "devDependencies": {
+    "vite-intlayer": "^9.8.0"
+  }
+}
