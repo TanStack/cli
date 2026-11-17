@@ -47,6 +47,9 @@ function upsert(list: Array<Todo>, todo: Todo) {
 function PocketBaseDemo() {
   const [user, setUser] = useState(getCurrentUser)
   const [serverError, setServerError] = useState<string | null>(null)
+  // Wait for the health check and session refresh before rendering anything
+  // that talks to PocketBase, so a stale saved session never starts requests.
+  const [ready, setReady] = useState(false)
 
   useEffect(() => pb.authStore.onChange(() => setUser(getCurrentUser())), [])
 
@@ -74,6 +77,7 @@ function PocketBaseDemo() {
       }
     }
     setServerError(null)
+    setReady(true)
   }, [])
 
   useEffect(() => {
@@ -94,6 +98,11 @@ function PocketBaseDemo() {
 
         {serverError ? (
           <SetupSteps error={serverError} onRetry={checkServer} />
+        ) : !ready ? (
+          <section className="demo-card p-8 text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-[var(--lagoon-deep)]"></div>
+            <p className="demo-muted">Connecting to PocketBase...</p>
+          </section>
         ) : user ? (
           // Remount per user so one user's todos never render for the next.
           <TodoList
