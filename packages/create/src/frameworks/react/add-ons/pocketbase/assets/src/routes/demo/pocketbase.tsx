@@ -25,13 +25,23 @@ function getCurrentUser() {
   return pb.authStore.isValid ? pb.authStore.record : null
 }
 
+function hasStatus(err: unknown, statuses: Array<number>) {
+  return err instanceof ClientResponseError && statuses.includes(err.status)
+}
+
+// PocketBase v0.42+ answers any request that carries an expired or
+// invalidated token with 401 (e.g. after a password change elsewhere).
+function isSessionError(err: unknown) {
+  return hasStatus(err, [401])
+}
+
 function getErrorMessage(err: unknown) {
   if (err instanceof ClientResponseError) {
     if (err.status === 0) return `Could not connect to ${POCKETBASE_URL}.`
     // Validation errors carry the useful message per field.
-    const [fieldError] = Object.values(err.response.data ?? {}) as Array<{
-      message?: string
-    }>
+    const fieldError = Object.values<{ message?: string }>(
+      err.response.data ?? {},
+    ).at(0)
     return fieldError?.message ?? err.message
   }
   return err instanceof Error ? err.message : String(err)
@@ -57,23 +67,23 @@ function PocketBaseDemo() {
     try {
       await pb.health.check()
     } catch (err) {
-      setServerError(getErrorMessage(err))
-      return
+      if (!isSessionError(err)) {
+        setServerError(getErrorMessage(err))
+        return
+      }
+      // The server is up but rejected the saved token.
+      pb.authStore.clear()
     }
     if (pb.authStore.isValid) {
       try {
         await users.authRefresh()
       } catch (err) {
-        if (
-          err instanceof ClientResponseError &&
-          [401, 403, 404].includes(err.status)
-        ) {
-          // The stored session is stale, e.g. after resetting pb_data.
-          pb.authStore.clear()
-        } else {
+        if (!hasStatus(err, [401, 403, 404])) {
           setServerError(getErrorMessage(err))
           return
         }
+        // The saved session is stale, e.g. after resetting pb_data.
+        pb.authStore.clear()
       }
     }
     setServerError(null)
@@ -280,19 +290,21 @@ function TodoList({
   const [actionError, setActionError] = useState<string | null>(null)
   const [newTodo, setNewTodo] = useState('')
   const [adding, setAdding] = useState(false)
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  )
 
   useEffect(() => {
-    let unsubscribe: (() => Promise<void>) | undefined
     let cancelled = false
 
     // The collection's listRule scopes both the list and the realtime events
     // to the signed-in user.
-    todos
+    const subscription = todos
       .getFullList({ sort: 'created' })
-      .then(async (records) => {
-        if (cancelled) return
+      .then((records) => {
+        if (cancelled) return undefined
         setItems(records)
-        unsubscribe = await todos.subscribe('*', ({ action, record }) => {
+        return todos.subscribe('*', ({ action, record }) => {
           setItems((current) => {
             if (!current) return current
             if (action === 'delete') {
@@ -301,21 +313,28 @@ function TodoList({
             return upsert(current, record)
           })
         })
-        if (cancelled) await unsubscribe()
       })
       .catch((err: unknown) => {
-        if (!cancelled) onLoadError(getErrorMessage(err))
+        if (!cancelled) {
+          if (isSessionError(err)) pb.authStore.clear()
+          else onLoadError(getErrorMessage(err))
+        }
+        return undefined
       })
 
     return () => {
       cancelled = true
-      void unsubscribe?.()
+      // Unsubscribe once the subscription exists, even if it is still pending.
+      void subscription.then((unsubscribe) => unsubscribe?.())
     }
   }, [onLoadError])
 
   const run = (action: () => Promise<void>) => {
     setActionError(null)
-    action().catch((err: unknown) => setActionError(getErrorMessage(err)))
+    action().catch((err: unknown) => {
+      if (isSessionError(err)) pb.authStore.clear()
+      else setActionError(getErrorMessage(err))
+    })
   }
 
   const handleAddTodo = (e: FormEvent) => {
@@ -338,8 +357,26 @@ function TodoList({
     })
   }
 
-  const handleToggleTodo = (todo: Todo) => {
+  // Lock a todo's buttons while its request runs, so a double click can't
+  // toggle it twice or delete it twice.
+  const runForTodo = (id: string, action: () => Promise<void>) => {
+    if (pendingIds.has(id)) return
+    setPendingIds((current) => new Set(current).add(id))
     run(async () => {
+      try {
+        await action()
+      } finally {
+        setPendingIds((current) => {
+          const next = new Set(current)
+          next.delete(id)
+          return next
+        })
+      }
+    })
+  }
+
+  const handleToggleTodo = (todo: Todo) => {
+    runForTodo(todo.id, async () => {
       const record = await todos.update(todo.id, {
         completed: !todo.completed,
       })
@@ -348,7 +385,7 @@ function TodoList({
   }
 
   const handleRemoveTodo = (id: string) => {
-    run(async () => {
+    runForTodo(id, async () => {
       await todos.delete(id)
       setItems((current) =>
         current ? current.filter((item) => item.id !== id) : current,
@@ -393,6 +430,7 @@ function TodoList({
             }}
             placeholder="What needs to be done?"
             aria-label="New todo"
+            maxLength={500}
             className="demo-input min-w-0 flex-1"
           />
           <button
@@ -438,10 +476,11 @@ function TodoList({
                 <button
                   type="button"
                   onClick={() => handleToggleTodo(todo)}
+                  disabled={pendingIds.has(todo.id)}
                   aria-label={
                     todo.completed ? 'Mark as not done' : 'Mark as done'
                   }
-                  className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                  className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 disabled:opacity-50 ${
                     todo.completed
                       ? 'border-[var(--lagoon-deep)] bg-[var(--lagoon)] text-[var(--sea-ink)]'
                       : 'border-[var(--line)] text-transparent hover:border-[var(--lagoon-deep)] hover:text-[var(--lagoon-deep)]'
@@ -463,6 +502,7 @@ function TodoList({
                 <button
                   type="button"
                   onClick={() => handleRemoveTodo(todo.id)}
+                  disabled={pendingIds.has(todo.id)}
                   aria-label="Delete todo"
                   className="demo-button demo-button-danger flex-shrink-0 p-2"
                 >
