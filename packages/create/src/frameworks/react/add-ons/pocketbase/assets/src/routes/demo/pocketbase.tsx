@@ -30,7 +30,8 @@ function hasStatus(err: unknown, statuses: Array<number>) {
 }
 
 // PocketBase v0.42+ answers any request that carries an expired or
-// invalidated token with 401 (e.g. after a password change elsewhere).
+// invalidated token with 401 (e.g. after a password change elsewhere). The
+// client in lib/pocketbase.ts then signs out if that token is still current.
 function isSessionError(err: unknown) {
   return hasStatus(err, [401])
 }
@@ -67,14 +68,14 @@ function PocketBaseDemo() {
     try {
       await pb.health.check()
     } catch (err) {
+      // A 401 means the server is up but rejected the saved token.
       if (!isSessionError(err)) {
         setServerError(getErrorMessage(err))
         return
       }
-      // The server is up but rejected the saved token.
-      pb.authStore.clear()
     }
     if (pb.authStore.isValid) {
+      const token = pb.authStore.token
       try {
         await users.authRefresh()
       } catch (err) {
@@ -83,7 +84,7 @@ function PocketBaseDemo() {
           return
         }
         // The saved session is stale, e.g. after resetting pb_data.
-        pb.authStore.clear()
+        if (pb.authStore.token === token) pb.authStore.clear()
       }
     }
     setServerError(null)
@@ -320,9 +321,8 @@ function TodoList({
         })
       })
       .catch((err: unknown) => {
-        if (!signal.aborted) {
-          if (isSessionError(err)) pb.authStore.clear()
-          else onLoadError(getErrorMessage(err))
+        if (!signal.aborted && !isSessionError(err)) {
+          onLoadError(getErrorMessage(err))
         }
         return undefined
       })
@@ -337,8 +337,7 @@ function TodoList({
   const run = (action: () => Promise<void>) => {
     setActionError(null)
     action().catch((err: unknown) => {
-      if (isSessionError(err)) pb.authStore.clear()
-      else setActionError(getErrorMessage(err))
+      if (!isSessionError(err)) setActionError(getErrorMessage(err))
     })
   }
 

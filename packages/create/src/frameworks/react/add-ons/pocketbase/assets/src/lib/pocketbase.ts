@@ -17,5 +17,20 @@ export function createPocketBase() {
   const client = new PocketBase(POCKETBASE_URL)
   // Avoid cancelling duplicated requests (e.g. React StrictMode double effects).
   client.autoCancellation(false)
+  // On a 401, sign out only if the rejected token is still the current one.
+  // The SDK's built-in auto-clear would also drop a newer session, e.g. one
+  // signed in from another tab while this request was in flight.
+  client.autoClearAuthStore(false)
+  client.afterSend = (
+    response: Response,
+    data: unknown,
+    options?: { headers?: Record<string, string> },
+  ) => {
+    const token = options?.headers?.Authorization
+    if (response.status === 401 && token && token === client.authStore.token) {
+      client.authStore.clear()
+    }
+    return data
+  }
   return client
 }
