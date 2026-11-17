@@ -21,8 +21,9 @@ interface Todo extends RecordModel {
 const todos = pb.collection<Todo>('todos')
 const users = pb.collection('users')
 
-function getCurrentUser() {
-  return pb.authStore.isValid ? pb.authStore.record : null
+function getSession() {
+  const { isValid, token, record } = pb.authStore
+  return isValid && record ? { token, user: record } : null
 }
 
 function hasStatus(err: unknown, statuses: Array<number>) {
@@ -56,13 +57,13 @@ function upsert(list: Array<Todo>, todo: Todo) {
 }
 
 function PocketBaseDemo() {
-  const [user, setUser] = useState(getCurrentUser)
+  const [session, setSession] = useState(getSession)
   const [serverError, setServerError] = useState<string | null>(null)
   // Wait for the health check and session refresh before rendering anything
   // that talks to PocketBase, so a stale saved session never starts requests.
   const [ready, setReady] = useState(false)
 
-  useEffect(() => pb.authStore.onChange(() => setUser(getCurrentUser())), [])
+  useEffect(() => pb.authStore.onChange(() => setSession(getSession())), [])
 
   const checkServer = useCallback(async () => {
     try {
@@ -114,12 +115,13 @@ function PocketBaseDemo() {
             <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-[var(--lagoon-deep)]"></div>
             <p className="demo-muted">Connecting to PocketBase...</p>
           </section>
-        ) : user ? (
-          // Remount per user so one user's todos never render for the next.
+        ) : session ? (
+          // Remount per session: one user's todos never render for the next,
+          // and a new token (e.g. from another tab) reloads the list.
           <TodoList
-            key={user.id}
-            userId={user.id}
-            email={user.email}
+            key={session.token}
+            userId={session.user.id}
+            email={session.user.email}
             onLoadError={setServerError}
           />
         ) : (
