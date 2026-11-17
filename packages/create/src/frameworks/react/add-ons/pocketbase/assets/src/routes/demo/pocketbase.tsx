@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Check, Circle, LogOut, Plus, Trash2 } from 'lucide-react'
@@ -293,16 +293,21 @@ function TodoList({
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   )
+  const signalRef = useRef<AbortSignal | null>(null)
 
   useEffect(() => {
-    let cancelled = false
+    // Every request below uses this signal. Aborting it on unmount (sign out
+    // or a user switch) means a late 401 for this session can't clear the next.
+    const controller = new AbortController()
+    const { signal } = controller
+    signalRef.current = signal
 
     // The collection's listRule scopes both the list and the realtime events
     // to the signed-in user.
     const subscription = todos
-      .getFullList({ sort: 'created' })
+      .getFullList({ sort: 'created', signal })
       .then((records) => {
-        if (cancelled) return undefined
+        if (signal.aborted) return undefined
         setItems(records)
         return todos.subscribe('*', ({ action, record }) => {
           setItems((current) => {
@@ -315,7 +320,7 @@ function TodoList({
         })
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
+        if (!signal.aborted) {
           if (isSessionError(err)) pb.authStore.clear()
           else onLoadError(getErrorMessage(err))
         }
@@ -323,7 +328,7 @@ function TodoList({
       })
 
     return () => {
-      cancelled = true
+      controller.abort()
       // Unsubscribe once the subscription exists, even if it is still pending.
       void subscription.then((unsubscribe) => unsubscribe?.())
     }
@@ -344,11 +349,10 @@ function TodoList({
     setAdding(true)
     run(async () => {
       try {
-        const record = await todos.create({
-          text,
-          completed: false,
-          owner: userId,
-        })
+        const record = await todos.create(
+          { text, completed: false, owner: userId },
+          { signal: signalRef.current },
+        )
         setItems((current) => (current ? upsert(current, record) : [record]))
         setNewTodo('')
       } finally {
@@ -377,16 +381,18 @@ function TodoList({
 
   const handleToggleTodo = (todo: Todo) => {
     runForTodo(todo.id, async () => {
-      const record = await todos.update(todo.id, {
-        completed: !todo.completed,
-      })
+      const record = await todos.update(
+        todo.id,
+        { completed: !todo.completed },
+        { signal: signalRef.current },
+      )
       setItems((current) => (current ? upsert(current, record) : current))
     })
   }
 
   const handleRemoveTodo = (id: string) => {
     runForTodo(id, async () => {
-      await todos.delete(id)
+      await todos.delete(id, { signal: signalRef.current })
       setItems((current) =>
         current ? current.filter((item) => item.id !== id) : current,
       )
