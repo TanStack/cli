@@ -9,9 +9,9 @@ This project uses [PocketBase](https://pocketbase.io), an open source backend in
    ./pocketbase serve
    ```
 
-   On first start, PocketBase applies the migration in `pb_migrations/`, which creates the `todos` collection used by the demo.
+   On Windows, run `pocketbase.exe serve`. On first start, PocketBase applies the migration in `pb_migrations/`, which creates the `todos` collection used by the demo.
 
-3. Open the admin dashboard at http://127.0.0.1:8090/_/ and create your superuser account.
+3. To use the admin dashboard at http://127.0.0.1:8090/_/, create your superuser account with the installer link PocketBase prints on first start, or run `./pocketbase superuser upsert EMAIL PASSWORD`. The demo itself doesn't need one.
 4. Make sure `VITE_POCKETBASE_URL` in `.env.local` points to your PocketBase server (defaults to `http://127.0.0.1:8090`).
 5. Run the app, visit `/demo/pocketbase` and create an account.
 
@@ -37,4 +37,4 @@ Realtime subscriptions follow the list rule, so users only receive events for th
 > [!IMPORTANT]
 > PocketBase's default `users` collection allows public sign-ups. Review its API rules and enable email verification before deploying.
 
-Learn more in the [PocketBase docs](https://pocketbase.io/docs/) and the [JS SDK docs](https://github.com/pocketbase/js-sdk).
+Learn more in the [PocketBase docs](https://pocketbase.io/docs/) and the [JS SDK docs](https://ganigeorgiev.com/pocketbase/js-sdk).
