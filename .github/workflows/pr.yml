@@ -29,6 +29,20 @@ jobs:
         run: pnpm build
       - name: Test Unit
         run: pnpm test:unit
+  test-paths-windows:
+    name: Test (Windows Paths)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup Tools
+        uses: tanstack/config/.github/setup@e4b48f16568324f76f467aa4c2aac2f05db632c3 # main
+      - name: Build core
+        run: pnpm --filter @tanstack/create build
+      - name: Test native and memory path contracts
+        run: pnpm --filter @tanstack/create exec vitest run tests/create-app.test.ts tests/file-helper.test.ts
   provenance:
     name: Provenance
     runs-on: ubuntu-latest
