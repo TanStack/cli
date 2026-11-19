@@ -43,6 +43,11 @@ beforeEach(() => {
         type: 'toolchain',
         modes: ['file-router'],
       },
+      {
+        id: 'cloudflare',
+        type: 'deployment',
+        modes: ['file-router'],
+      },
     ],
     supportedModes: {
       'file-router': {
@@ -69,6 +74,7 @@ const baseCliOptions: CliOptions = {
 }
 
 function setBasicSpies() {
+  vi.spyOn(prompts, 'selectRouterOnly').mockResolvedValue(false)
   vi.spyOn(commandLine, 'listTemplateChoices').mockImplementation(async () => [])
   vi
     .spyOn(commandLine, 'resolveStarterSpecifier')
@@ -325,5 +331,75 @@ describe('promptForCreateOptions', () => {
     ])
     expect(options?.tailwind).toBe(true)
     expect(options?.typescript).toBe(true)
+  })
+})
+
+
+describe('interactive Router-only selection', () => {
+  it.each([
+    {
+      label: 'explicit add-ons',
+      flags: { addOns: ['react-query'] },
+      defaults: {},
+      expected: ['react-query'],
+    },
+    {
+      label: 'explicit deployment',
+      flags: { deployment: 'cloudflare' },
+      defaults: {},
+      expected: ['cloudflare'],
+    },
+    {
+      label: 'blank preset',
+      flags: { blank: true },
+      defaults: {},
+      expected: [],
+    },
+    {
+      label: 'forced add-ons',
+      flags: {},
+      defaults: { forcedAddOns: ['react-query'] },
+      expected: ['react-query'],
+    },
+    {
+      label: 'forced deployment',
+      flags: {},
+      defaults: { forcedDeployment: 'cloudflare' },
+      expected: ['cloudflare'],
+    },
+  ])('keeps Start mode for $label', async ({ flags, defaults, expected }) => {
+    setBasicSpies()
+    vi.spyOn(prompts, 'selectRouterOnly').mockResolvedValue(true)
+    vi.spyOn(prompts, 'selectDeployment').mockImplementation(
+      async (_framework, provided, forced) => provided ?? forced,
+    )
+    const cliOptions: CliOptions = {
+      ...baseCliOptions,
+      projectName: 'start-intent',
+      git: false,
+      install: false,
+      ...flags,
+    }
+    const result = await promptForCreateOptions(cliOptions, defaults)
+    expect(prompts.selectRouterOnly).not.toHaveBeenCalled()
+    expect(cliOptions.routerOnly).not.toBe(true)
+    expect(result?.chosenAddOns.map((addOn) => addOn.id)).toEqual(expected)
+  })
+
+  it('still offers Router-only when only a toolchain is requested', async () => {
+    setBasicSpies()
+    vi.spyOn(prompts, 'selectRouterOnly').mockResolvedValue(true)
+    vi.spyOn(prompts, 'selectToolchain').mockResolvedValue('biome')
+    const cliOptions: CliOptions = {
+      ...baseCliOptions,
+      projectName: 'router-choice',
+      toolchain: 'biome',
+      git: false,
+      install: false,
+    }
+    const result = await promptForCreateOptions(cliOptions, {})
+    expect(prompts.selectRouterOnly).toHaveBeenCalledOnce()
+    expect(cliOptions.routerOnly).toBe(true)
+    expect(result?.chosenAddOns.map((addOn) => addOn.id)).toEqual(['biome'])
   })
 })
