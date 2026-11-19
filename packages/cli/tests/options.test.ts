@@ -42,6 +42,7 @@ beforeEach(() => {
     getAddOns: () => [
       {
         id: 'react-query',
+        supportsRouterOnly: true,
         type: 'add-on',
         modes: ['file-router'],
       },
@@ -304,6 +305,19 @@ describe('promptForCreateOptions', () => {
     await promptForCreateOptions({ ...baseCliOptions, template: 'blog' }, {})
 
     expect(prompts.selectTemplate).not.toHaveBeenCalled()
+  })
+
+  it('offers compatible add-ons during Router-only creation', async () => {
+    setBasicSpies()
+    vi.mocked(prompts.selectAddOns).mockResolvedValue(['react-query'])
+    const options = await promptForCreateOptions(
+      { ...baseCliOptions, addOns: undefined, routerOnly: true }, {},
+    )
+    expect(prompts.selectAddOns).toHaveBeenCalledWith(
+      expect.anything(), 'file-router', 'add-on', expect.any(String), [], true, 'vite', true,
+    )
+    expect(options?.chosenAddOns.map((a) => a.id)).toEqual(['react-query'])
+    expect(options?.routerOnly).toBe(true)
   })
 
   it('skips template prompt in router-only mode', async () => {

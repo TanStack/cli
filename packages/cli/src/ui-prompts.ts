@@ -182,8 +182,9 @@ export async function selectAddOns(
   forcedAddOns: Array<string> = [],
   allowMultiple: boolean = true,
   bundlerId?: string,
+  routerOnly = false,
 ): Promise<Array<string>> {
-  const allAddOns = await getAllAddOns(framework, mode, bundlerId)
+  const allAddOns = await getAllAddOns(framework, mode, bundlerId, routerOnly)
   const addOns = allAddOns.filter((addOn) => addOn.type === type)
   if (addOns.length === 0) {
     return []

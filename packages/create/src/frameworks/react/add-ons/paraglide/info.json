@@ -4,6 +4,7 @@
   "phase": "add-on",
   "modes": ["file-router"],
   "type": "add-on",
+  "supportsRouterOnly": true,
   "category": "i18n",
   "color": "#14B8A6",
   "priority": 30,

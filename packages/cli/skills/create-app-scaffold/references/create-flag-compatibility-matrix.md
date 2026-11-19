@@ -9,7 +9,7 @@ Targets `@tanstack/cli` v0.71.0.
 | `--framework` | yes | yes | Framework is still honored in both modes. |
 | `--build-tool` | yes | yes | `vite` is the default; `rsbuild` supports React and Solid. |
 | `--toolchain` | yes | yes | Toolchain selection remains available. |
-| `--add-ons` | yes | no | Ignored in router-only mode. |
+| `--add-ons` | yes | compatible only | Requires explicit Router-only support; unsupported add-ons are rejected. |
 | `--deployment` | yes | no | Ignored in router-only mode. |
 | `--template` / `--starter` | yes | no | Ignored in router-only mode. |
 | `--template-id` | yes | no | Ignored in router-only mode. |

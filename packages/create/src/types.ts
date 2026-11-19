@@ -38,6 +38,7 @@ export const AddOnBaseSchema = z.object({
   license: z.string().optional(),
   warning: z.string().optional(),
   tailwind: z.boolean().optional(),
+  supportsRouterOnly: z.boolean().optional(),
   type: z.enum(['add-on', 'example', 'starter', 'toolchain', 'deployment']),
   supportedPackageManagers: z
     .array(z.enum(['npm', 'yarn', 'pnpm', 'bun', 'deno']))

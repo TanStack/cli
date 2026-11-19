@@ -5,6 +5,7 @@
   "link": "https://react.dev/learn/react-compiler",
   "modes": ["code-router", "file-router"],
   "type": "add-on",
+  "supportsRouterOnly": true,
   "category": "tooling",
   "color": "#61DAFB",
   "priority": 50,

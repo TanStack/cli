@@ -205,6 +205,11 @@ If you are actively editing templates, run `tanstack add-on dev` to auto-refresh
 - Publish `.add-on` contents to a stable URL.
 - Prefer immutable/versioned URLs for production use.
 
+
+## Router-only compatibility
+
+Set `"supportsRouterOnly": true` in `info.json` only when the add-on works without TanStack Start. This makes it available during Router-only creation. Every dependency must also support Router-only apps. Toolchains remain available without this flag; deployment adapters and templates remain disabled.
+
 ## Maintenance Checklist
 
 When you update a custom add-on:

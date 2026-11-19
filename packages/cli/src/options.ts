@@ -211,8 +211,8 @@ export async function promptForCreateOptions(
     addOns.add(deployment)
   }
 
-  if (!routerOnly && options.bundler !== 'rsbuild') {
-    for (const addOn of starter?.dependsOn || []) {
+  if (options.bundler !== 'rsbuild') {
+    for (const addOn of (!routerOnly && starter?.dependsOn) || []) {
       addOns.add(addOn)
     }
     for (const addOn of forcedAddOns) {
@@ -220,25 +220,28 @@ export async function promptForCreateOptions(
     }
   }
 
-  if (!routerOnly && options.bundler !== 'rsbuild' && Array.isArray(cliOptions.addOns)) {
+  if (options.bundler !== 'rsbuild' && Array.isArray(cliOptions.addOns)) {
     for (const addOn of cliOptions.addOns) {
       if (addOn.toLowerCase() === 'start') {
         continue
       }
       addOns.add(addOn)
     }
-  } else if (!routerOnly && options.bundler !== 'rsbuild' && !blank) {
+  } else if (options.bundler !== 'rsbuild' && !blank) {
     for (const addOn of await selectAddOns(
       options.framework,
       options.mode,
       'add-on',
       'What add-ons would you like for your project?',
       forcedAddOns,
+      true,
+      options.bundler,
+      routerOnly,
     )) {
       addOns.add(addOn)
     }
 
-    if (includeExamples) {
+    if (includeExamples && !routerOnly) {
       for (const addOn of await selectAddOns(
         options.framework,
         options.mode,
@@ -253,7 +256,7 @@ export async function promptForCreateOptions(
   }
 
   const chosenAddOns = Array.from(
-    await finalizeAddOns(options.framework, options.mode, Array.from(addOns), options.bundler),
+    await finalizeAddOns(options.framework, options.mode, Array.from(addOns), options.bundler, routerOnly),
   )
   options.chosenAddOns = includeExamples
     ? chosenAddOns

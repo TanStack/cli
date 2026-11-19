@@ -737,7 +737,7 @@ describe('normalizeOptions', () => {
     ])
   })
 
-  it('should ignore add-ons and deployment in router-only mode but keep toolchain', async () => {
+  it('preserves compatible Router-only add-ons and toolchains while skipping deployment', async () => {
     __testRegisterFramework({
       id: 'react',
       name: 'react',
@@ -745,6 +745,8 @@ describe('normalizeOptions', () => {
         {
           id: 'form',
           name: 'Form',
+          type: 'add-on',
+          supportsRouterOnly: true,
           modes: ['file-router'],
         },
         {
@@ -775,7 +777,7 @@ describe('normalizeOptions', () => {
       { forcedDeployment: 'nitro' },
     )
 
-    expect(options?.chosenAddOns.map((a) => a.id)).toEqual(['biome'])
+    expect(options?.chosenAddOns.map((a) => a.id)).toEqual(['form', 'biome'])
   })
 
   it('should handle the funky Windows edge case with CLI parsing', async () => {
