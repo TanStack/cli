@@ -16,7 +16,9 @@ function LocaleLayout() {
 
   return (
     <IntlayerProvider locale={params().locale ?? defaultLocale}>
-      <Outlet />
+      <div lang={params().locale ?? defaultLocale}>
+        <Outlet />
+      </div>
     </IntlayerProvider>
   )
 }
