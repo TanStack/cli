@@ -17,11 +17,5 @@
       "jsName": "NeonDemo"
     }
   ],
-  "integrations": [
-    {
-      "type": "vite-plugin",
-      "jsName": "neon",
-      "path": "neon-vite-plugin.ts"
-    }
-  ]
+  "integrations": []
 }

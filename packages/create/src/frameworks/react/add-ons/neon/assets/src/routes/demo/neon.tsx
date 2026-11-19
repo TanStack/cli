@@ -6,14 +6,18 @@ import { getClient } from '#/db'
 const getTodos = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  const client = await getClient()
-  if (!client) {
+  try {
+    const client = await getClient()
+    if (!client) {
+      return undefined
+    }
+    return (await client.query(`SELECT * FROM todos`)) as Array<{
+      id: number
+      title: string
+    }>
+  } catch {
     return undefined
   }
-  return (await client.query(`SELECT * FROM todos`)) as Array<{
-    id: number
-    title: string
-  }>
 })
 
 const insertTodo = createServerFn({
@@ -122,24 +126,28 @@ function DBConnectionError() {
           />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold mb-4">Database Connection Issue</h2>
-      <div className="demo-muted text-lg mb-6">
-        The Neon database is not connected.
-      </div>
+      <h2 className="text-2xl font-bold mb-4">Neon database not connected</h2>
       <div className="demo-card max-w-xl mx-auto text-left">
-        <h3 className="text-lg font-semibold mb-4">Required Steps to Fix:</h3>
         <ul className="space-y-4 text-left list-none">
           <li className="flex items-start">
             <span className="demo-pill mr-3 min-w-8 justify-center">1</span>
             <div>
-              Use the <code>db/init.sql</code> file to create the database
+              Create a database with{' '}
+              <code>npx neon@9.6.3 claim create --env-pull --file .env</code>,
+              then seed it once with{' '}
+              <code>
+                npx neon@9.6.3 psql --role-name neondb_owner -- -f db/init.sql
+              </code>
+              .
             </div>
           </li>
           <li className="flex items-start">
             <span className="demo-pill mr-3 min-w-8 justify-center">2</span>
             <div>
-              Set the <code>DATABASE_URL</code> environment variable to the
-              connection string of your Neon database
+              Use <code>DATABASE_URL</code> in <code>.env</code> for the
+              connection string. After claiming the database, replace it with a
+              fresh connection string from the Neon Console. Restart the dev
+              server after changing <code>.env</code>.
             </div>
           </li>
         </ul>
