@@ -821,7 +821,7 @@ export function cli({
             if (
               cliOptions.template &&
               ['typescript', 'tsx', 'javascript', 'js', 'jsx'].includes(
-                cliOptions.template.toLowerCase(),
+                cliOptions.template.trim().toLowerCase(),
               )
             ) {
               console.warn(
