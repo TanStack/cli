@@ -475,6 +475,12 @@ describe('interactive Router-only selection', () => {
       expected: ['cloudflare'],
     },
     {
+      label: 'legacy template id',
+      flags: { templateId: 'blog' },
+      defaults: {},
+      expected: [],
+    },
+    {
       label: 'blank preset',
       flags: { blank: true },
       defaults: {},

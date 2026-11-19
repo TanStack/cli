@@ -124,6 +124,7 @@ export async function promptForCreateOptions(
     )
   const hasStartIntent = Boolean(
     cliOptions.template ||
+      cliOptions.templateId ||
       cliOptions.starter ||
       cliOptions.blank ||
       (Array.isArray(cliOptions.addOns) && cliOptions.addOns.length > 0) ||
