@@ -1,0 +1,28 @@
+{
+  "name": "Intlayer (i18n)",
+  "description": "Type-safe i18n with localized routes and content declared next to your components.",
+  "phase": "add-on",
+  "modes": ["file-router"],
+  "type": "add-on",
+  "category": "i18n",
+  "color": "#6366F1",
+  "priority": 31,
+  "link": "https://intlayer.org/doc/environment/tanstack-start",
+  "routes": [
+    {
+      "icon": "Languages",
+      "url": "/demo/intlayer",
+      "name": "Intlayer i18n",
+      "path": "src/routes/{-$locale}/demo.intlayer.tsx",
+      "jsName": "IntlayerDemo"
+    }
+  ],
+  "integrations": [
+    {
+      "type": "vite-plugin",
+      "jsName": "intlayer",
+      "import": "import { intlayer } from 'vite-intlayer'",
+      "code": "intlayer()"
+    }
+  ]
+}

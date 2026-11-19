@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "intlayer": "^9.8.0",
+    "solid-intlayer": "^9.8.0"
+  },
+  "devDependencies": {
+    "vite-intlayer": "^9.8.0",
+    "@types/node": "^22.10.2"
+  }
+}
