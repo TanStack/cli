@@ -1,12 +1,32 @@
 import { describe, expect, it } from 'vitest'
+import { createMemoryEnvironment } from '../src/environment.js'
 
 import {
   getPackageManagerExecuteCommand,
   getPackageManagerInstallCommand,
   getPackageManagerScriptCommand,
+  packageManagerInstall,
   translateExecuteCommand,
 } from '../src/package-manager.js'
 import { formatCommand } from '../src/utils.js'
+
+describe('installing after package.json changes', () => {
+  it('updates the pnpm lockfile only when requested', async () => {
+    const { environment, output } = createMemoryEnvironment()
+    await packageManagerInstall(environment, '/app', 'pnpm')
+    await packageManagerInstall(environment, '/app', 'pnpm', undefined, {
+      updateLockfile: true,
+    })
+    await packageManagerInstall(environment, '/app', 'npm', undefined, {
+      updateLockfile: true,
+    })
+    expect(output.commands).toEqual([
+      { command: 'pnpm', args: ['install'] },
+      { command: 'pnpm', args: ['install', '--no-frozen-lockfile'] },
+      { command: 'npm', args: ['install'] },
+    ])
+  })
+})
 
 describe('getPackageManagerScriptCommand', () => {
   it('yarn', () => {
@@ -309,5 +329,118 @@ describe('translateExecuteCommand', () => {
         }),
       ),
     ).toBe('deno task dev')
+  })
+})
+
+describe('allowBuilds', () => {
+  it('should add --allow-build flags before dlx for pnpm', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand(
+          'pnpm',
+          'storybook',
+          ['init', '-y', '--no-dev'],
+          { allowBuilds: ['esbuild'], packageManagerVersion: '10.2.0' },
+        ),
+      ),
+    ).toBe('pnpm --allow-build=esbuild dlx storybook init -y --no-dev')
+  })
+  it('should emit one --allow-build flag per package for pnpm', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('pnpm', 'storybook', ['init'], {
+          allowBuilds: ['esbuild', 'sharp'],
+          packageManagerVersion: '10.2.0',
+        }),
+      ),
+    ).toBe('pnpm --allow-build=esbuild --allow-build=sharp dlx storybook init')
+  })
+  it('should ignore allowBuilds for non-pnpm package managers', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('npm', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('npx -y storybook init')
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('yarn', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('yarn dlx storybook init')
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('bun', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('bunx --bun storybook init')
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('deno', 'storybook', ['init'], {
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('deno run npm:storybook init')
+  })
+  it('should not add flags for pnpm when allowBuilds is empty', () => {
+    expect(
+      formatCommand(
+        getPackageManagerExecuteCommand('pnpm', 'storybook', ['init'], {
+          allowBuilds: [],
+        }),
+      ),
+    ).toBe('pnpm dlx storybook init')
+  })
+  it('should forward allowBuilds through translateExecuteCommand for pnpm', () => {
+    expect(
+      formatCommand(
+        translateExecuteCommand('pnpm', {
+          command: 'npx',
+          args: ['storybook', 'init', '-y', '--no-dev'],
+          allowBuilds: ['esbuild'],
+        }, '10.2.0'),
+      ),
+    ).toBe('pnpm --allow-build=esbuild dlx storybook init -y --no-dev')
+  })
+  it('should drop allowBuilds through translateExecuteCommand for npm', () => {
+    expect(
+      formatCommand(
+        translateExecuteCommand('npm', {
+          command: 'npx',
+          args: ['storybook', 'init', '-y', '--no-dev'],
+          allowBuilds: ['esbuild'],
+        }),
+      ),
+    ).toBe('npx -y storybook init -y --no-dev')
+  })
+})
+
+
+describe('pnpm dlx version compatibility', () => {
+  it.each([undefined, '9.15.5', '10.1.0'])(
+    'retains plain dlx for pnpm %s',
+    (packageManagerVersion) => {
+      expect(getPackageManagerExecuteCommand('pnpm', 'storybook', ['init'], {
+        allowBuilds: ['esbuild'], packageManagerVersion,
+      })).toEqual({ command: 'pnpm', args: ['dlx', 'storybook', 'init'] })
+    },
+  )
+
+  it.each(['10.2.0', '10.34.0', '11.22.0'])(
+    'approves only requested build scripts for pnpm %s',
+    (packageManagerVersion) => {
+      expect(getPackageManagerExecuteCommand('pnpm', 'storybook', ['init'], {
+        allowBuilds: ['esbuild'], packageManagerVersion,
+      })).toEqual({ command: 'pnpm', args: ['--allow-build=esbuild', 'dlx', 'storybook', 'init'] })
+    },
+  )
+
+  it('rejects an invalid detected version before executing approvals', () => {
+    expect(() => getPackageManagerExecuteCommand('pnpm', 'storybook', [], {
+      allowBuilds: ['esbuild'], packageManagerVersion: 'not-a-version',
+    })).toThrow('Invalid pnpm version')
   })
 })

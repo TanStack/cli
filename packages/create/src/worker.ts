@@ -35,6 +35,16 @@ import type {
 } from './types.js'
 import type { MemoryEnvironmentOutput } from './edge-environment.js'
 
+export {
+  assertAddOnSupportedByBundler,
+  getBundlers,
+  getDefaultBundler,
+  isAddOnSupportedByBundler,
+  normalizeAndValidateBundlerOptions,
+  resolveBundler,
+  VITE_BUNDLER,
+} from './build-tools.js'
+
 export function createWorkerManifestLoader(
   moduleLoader: WorkerManifestModuleLoader,
 ): WorkerManifestLoader {
@@ -90,6 +100,7 @@ export type WorkerCreateAPI = {
     framework: Framework,
     mode: string,
     chosenAddOnIDs: Array<string>,
+    bundlerId?: string,
   ) => Promise<Array<AddOn>>
   populateAddOnOptionsDefaults: typeof populateAddOnOptionsDefaults
   createApp: (environment: Environment, options: Options) => Promise<void>
@@ -275,8 +286,9 @@ export function createWorkerCreate(
     framework: Framework,
     mode: string,
     chosenAddOnIDs: Array<string>,
+    bundlerId?: string,
   ) {
-    const finalized = await finalizeBaseAddOns(framework, mode, chosenAddOnIDs)
+    const finalized = await finalizeBaseAddOns(framework, mode, chosenAddOnIDs, bundlerId)
     return Promise.all(finalized.map(materializeAddOn))
   }
 
@@ -332,6 +344,7 @@ export type {
   FileBundleHandler,
   Framework,
   FrameworkDefinition,
+  BundlerDefinition,
   Options,
   SerializedOptions,
   Starter,

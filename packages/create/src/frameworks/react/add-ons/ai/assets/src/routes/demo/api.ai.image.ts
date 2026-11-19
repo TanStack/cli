@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { generateImage, createImageOptions } from '@tanstack/ai'
+import { generateImage } from '@tanstack/ai'
 import { openaiImage } from '@tanstack/ai-openai'
 
 export const Route = createFileRoute('/demo/api/ai/image')({
@@ -34,12 +34,9 @@ export const Route = createFileRoute('/demo/api/ai/image')({
         }
 
         try {
-          const options = createImageOptions({
-            adapter: openaiImage('gpt-image-1'),
-          })
-
           const result = await generateImage({
-            ...options,
+            adapter: openaiImage('gpt-image-1'),
+            threadId: crypto.randomUUID(),
             prompt,
             numberOfImages,
             size,

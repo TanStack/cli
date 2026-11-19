@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Send, X, Briefcase, UserCheck } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Store } from "@tanstack/store";
@@ -74,21 +74,22 @@ function Messages({ messages }: { messages: ResumeChatMessages }) {
 // Export store for header control
 export const showResumeAssistant = new Store(false);
 
+function subscribeToAssistant(onChange: () => void) {
+  const subscription = showResumeAssistant.subscribe(onChange)
+  return () => subscription.unsubscribe()
+}
+
 export default function ResumeAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = useSyncExternalStore(
+    subscribeToAssistant,
+    () => showResumeAssistant.state,
+    () => false,
+  );
   const { messages, sendMessage, isLoading } = useResumeChat();
   const [input, setInput] = useState("");
 
-  // Sync with store for header control
-  useEffect(() => {
-    return showResumeAssistant.subscribe(() => {
-      setIsOpen(showResumeAssistant.state);
-    });
-  }, []);
-
   const handleToggle = () => {
     const newState = !isOpen;
-    setIsOpen(newState);
     showResumeAssistant.setState(() => newState);
   };
 

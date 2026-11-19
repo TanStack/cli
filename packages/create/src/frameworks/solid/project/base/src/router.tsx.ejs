@@ -1,14 +1,26 @@
 import { createRouter as createTanStackRouter } from '@tanstack/solid-router'
 import { routeTree } from './routeTree.gen'
 <% if (addOnEnabled['tanstack-query']) { %>
+<% if (routerOnly) { %>
+import { QueryClientProvider } from '@tanstack/solid-query'
+import type { JSX } from 'solid-js'
+<% } %>
 import { getContext } from './integrations/tanstack-query/provider'
 <% } %>
 
 export function getRouter() {
+<% if (addOnEnabled['tanstack-query']) { %>
+  const context = getContext()
+<% } %>
   const router = createTanStackRouter({
     routeTree,
 <% if (addOnEnabled['tanstack-query']) { %>
-    context: getContext(),
+    context,
+<% } %>
+<% if (routerOnly && addOnEnabled['tanstack-query']) { %>
+    Wrap: (props: { children: JSX.Element }) => (
+      <QueryClientProvider client={context.queryClient}>{props.children}</QueryClientProvider>
+    ),
 <% } %>
     scrollRestoration: true,
     defaultPreload: 'intent',

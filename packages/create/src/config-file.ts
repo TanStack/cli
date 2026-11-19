@@ -72,6 +72,8 @@ export async function readConfigFileFromEnvironment(
       originalJSON.framework = 'react'
     }
 
+    originalJSON.bundler ??= 'vite'
+
     delete originalJSON.envVarValues
 
     return originalJSON

@@ -1,0 +1,19 @@
+{
+  "name": "Themer",
+  "description": "Light, dark, and system themes with @lonik/themer.",
+  "phase": "add-on",
+  "type": "add-on",
+  "category": "styling",
+  "priority": 80,
+  "link": "https://lukonik.github.io/themer",
+  "modes": [
+    "file-router"
+  ],
+  "integrations": [
+    {
+      "type": "provider",
+      "jsName": "ThemerProvider",
+      "path": "src/integrations/themer/provider.tsx"
+    }
+  ]
+}

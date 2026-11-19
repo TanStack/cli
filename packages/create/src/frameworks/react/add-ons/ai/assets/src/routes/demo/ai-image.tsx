@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ImageIcon, Loader2, Download } from 'lucide-react'
 
@@ -198,6 +198,6 @@ function ImagePage() {
   )
 }
 
-export const Route = createFileRoute('/demo/ai/image')({
+export const Route = createFileRoute('/demo/ai-image')({
   component: ImagePage,
 })

@@ -24,7 +24,7 @@ export const Route = createFileRoute('/demo/strapi/$articleId')({
   },
 })
 
-function ErrorComponent({ error }: { error: Error }) {
+function ErrorComponent({ error }: { error: unknown }) {
   return (
     <main className="demo-page">
       <div className="mx-auto max-w-4xl">
@@ -33,7 +33,7 @@ function ErrorComponent({ error }: { error: Error }) {
         </Link>
         <div className="demo-alert demo-alert-danger text-center">
           <h1 className="text-2xl font-bold mb-4">Error Loading Article</h1>
-          <p className="demo-muted">{error.message}</p>
+          <p className="demo-muted">{error instanceof Error ? error.message : 'Failed to load article'}</p>
         </div>
       </div>
     </main>

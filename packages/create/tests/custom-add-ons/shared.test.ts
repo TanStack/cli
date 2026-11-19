@@ -217,6 +217,7 @@ describe('readCurrentProjectOptions', () => {
     )
     const options = await readCurrentProjectOptions(environment)
     expect(options).toEqual({
+      bundler: 'vite',
       chosenAddOns: [],
       framework: 'test',
       git: true,

@@ -15,7 +15,7 @@ const getTodos = createServerFn({
 const createTodo = createServerFn({
   method: 'POST',
 })
-  .inputValidator((data: { title: string }) => data)
+  .validator((data: { title: string }) => data)
   .handler(async ({ data }) => {
     await db.insert(todos).values({ title: data.title })
     return { success: true }

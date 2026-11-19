@@ -12,3 +12,58 @@ model Todo {
   title     String
   createdAt DateTime @default(now())
 }
+<% if (addOnEnabled['better-auth']) { %>
+
+model user {
+  id String @id
+  name String <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  sessions session[]
+  accounts account[]
+}
+
+model session {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  userAgent String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  userId String
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model account {
+  id String @id
+  accountId String <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  providerId String <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  userId String
+  accessToken String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  refreshToken String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  idToken String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  password String? <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model verification {
+  id String @id
+  identifier String
+  value String <% if (addOnOption.prisma.database === "mysql") { %>@db.Text<% } %>
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  @@index([identifier])
+}
+<% } %>

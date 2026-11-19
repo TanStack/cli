@@ -65,7 +65,7 @@ app.post(
           role: msg.role,
           content: msg.content,
         })),
-        model: 'claude-3-opus-20240229',
+        model: 'claude-haiku-4-5',
         max_tokens: 4096,
         stream: true,
       })

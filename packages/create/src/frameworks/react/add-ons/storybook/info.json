@@ -10,6 +10,7 @@
   "priority": 1,
   "command": {
     "command": "npx",
-    "args": ["storybook", "init", "-y", "--no-dev"]
+    "args": ["storybook", "init", "-y", "--no-dev"],
+    "allowBuilds": ["esbuild"]
   }
 }

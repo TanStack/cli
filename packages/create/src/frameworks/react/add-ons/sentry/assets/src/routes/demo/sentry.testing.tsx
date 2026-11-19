@@ -23,7 +23,7 @@ export const Route = createFileRoute('/demo/sentry/testing')({
         <section className="demo-panel text-center">
           <SentryLogo />
           <h1 className="mt-4 mb-2 text-2xl font-bold">Something went wrong</h1>
-          <p className="demo-muted">{error.message}</p>
+          <p className="demo-muted">{error instanceof Error ? error.message : 'The Sentry demo could not load.'}</p>
         </section>
       </main>
     )

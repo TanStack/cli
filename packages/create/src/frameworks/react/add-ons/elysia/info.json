@@ -1,0 +1,21 @@
+{
+  "name": "Elysia + Eden",
+  "description": "Typed same-origin API routes with Elysia and Eden Treaty.",
+  "phase": "add-on",
+  "type": "add-on",
+  "category": "api",
+  "modes": [
+    "file-router"
+  ],
+  "link": "https://elysiajs.com/integrations/tanstack-start",
+  "color": "#A78BFA",
+  "routes": [
+    {
+      "icon": "Network",
+      "url": "/demo/elysia",
+      "name": "Elysia",
+      "path": "src/routes/demo/elysia.tsx",
+      "jsName": "ElysiaDemo"
+    }
+  ]
+}

@@ -6,21 +6,14 @@
  * projects don't silently drift over time.
  */
 
-const cache = new Map<string, string>()
-
 export async function resolveNpmVersion(pkg: string): Promise<string | null> {
-  if (cache.has(pkg)) {
-    return cache.get(pkg)!
-  }
-
   try {
     const res = await fetch(`https://registry.npmjs.org/${pkg}/latest`, {
-      headers: { Accept: 'application/vnd.npm.install-v1+json' },
+      headers: { Accept: 'application/json' },
     })
     if (!res.ok) return null
     const data = (await res.json()) as { version?: string }
     const version = data.version ?? null
-    if (version) cache.set(pkg, version)
     return version
   } catch {
     return null

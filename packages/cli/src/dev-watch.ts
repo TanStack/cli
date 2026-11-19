@@ -1,20 +1,20 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 
 import chokidar from 'chokidar'
-import chalk from 'chalk'
-import { temporaryDirectory } from 'tempy'
 import {
   createApp,
+  createDefaultEnvironment,
   finalizeAddOns,
   getFrameworkById,
   registerFramework,
   scanAddOnDirectories,
   scanProjectDirectory,
 } from '@tanstack/create'
+import { styleText } from './terminal-style.js'
 import { FileSyncer } from './file-syncer.js'
-import { createUIEnvironment } from './ui-environment.js'
 import type {
   Environment,
   Framework,
@@ -86,13 +86,23 @@ export class DevWatchManager {
   private syncer: FileSyncer
   private tempDir: string | null = null
   private isBuilding = false
+  private activeBuild: Promise<void> | undefined
+  private stopping = false
+  private stopController = new AbortController()
   private buildCount = 0
   private appDevProcess: ReturnType<typeof spawn> | null = null
   private lastSyncedSourceFiles: Set<string> | null = null
 
   constructor(private options: DevWatchOptions) {
     this.syncer = new FileSyncer()
-    this.debounceQueue = new DebounceQueue((changes) => this.rebuild(changes))
+    this.debounceQueue = new DebounceQueue((changes) => {
+      if (this.stopping) return
+      if (this.isBuilding) {
+        this.log.warning('Build already in progress, skipping...')
+        return
+      }
+      this.activeBuild = this.rebuild(changes)
+    })
   }
 
   async start(): Promise<void> {
@@ -114,17 +124,17 @@ export class DevWatchManager {
 
     // Log startup with tree style
     console.log()
-    console.log(chalk.bold('dev-watch'))
-    this.log.tree('', `watching: ${chalk.cyan(this.options.watchPath)}`)
-    this.log.tree('', `target: ${chalk.cyan(this.options.targetDir)}`)
+    console.log(styleText('bold', 'dev-watch'))
+    this.log.tree('', `watching: ${styleText('cyan', this.options.watchPath)}`)
+    this.log.tree('', `target: ${styleText('cyan', this.options.targetDir)}`)
     if (this.options.runDevCommand) {
-      this.log.tree('', `app dev server: ${chalk.cyan('enabled')}`)
+      this.log.tree('', `app dev server: ${styleText('cyan', 'enabled')}`)
     }
     this.log.tree('', 'ready', true)
 
     // Setup signal handlers
-    process.on('SIGINT', () => this.cleanup())
-    process.on('SIGTERM', () => this.cleanup())
+    process.on('SIGINT', () => void this.stop())
+    process.on('SIGTERM', () => void this.stop())
 
     // Start watching
     this.startWatcher()
@@ -135,6 +145,11 @@ export class DevWatchManager {
   }
 
   async stop(): Promise<void> {
+    if (this.stopping) return
+    this.stopping = true
+    this.stopController.abort()
+    this.debounceQueue.clear()
+
     console.log()
     this.log.info('Stopping dev watch mode...')
 
@@ -143,7 +158,7 @@ export class DevWatchManager {
       this.watcher = null
     }
 
-    this.debounceQueue.clear()
+    await this.activeBuild
     this.cleanup()
   }
 
@@ -197,11 +212,6 @@ export class DevWatchManager {
   }
 
   private async rebuild(changes: Set<string>): Promise<void> {
-    if (this.isBuilding) {
-      this.log.warning('Build already in progress, skipping...')
-      return
-    }
-
     this.isBuilding = true
     this.buildCount++
     const buildId = this.buildCount
@@ -234,14 +244,19 @@ export class DevWatchManager {
       const chosenAddonIds = this.options.cliOptions.chosenAddOns.map(
         (m) => m.id,
       )
-      // Create temp directory for this build using tempy
-      this.tempDir = temporaryDirectory()
+      // Create temp directory for this build
+      this.tempDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'tanstack-dev-watch-'),
+      )
 
       // Register the scanned framework
-      registerFramework({
-        ...refreshedFramework,
-        id: `${refreshedFramework.id}-updated`,
-      })
+      registerFramework(
+        {
+          ...refreshedFramework,
+          id: `${refreshedFramework.id}-updated`,
+        },
+        { replace: true },
+      )
 
       // Get the registered framework
       const registeredFramework = getFrameworkById(
@@ -257,6 +272,7 @@ export class DevWatchManager {
         registeredFramework,
         this.options.cliOptions.mode,
         chosenAddonIds,
+        this.options.cliOptions.bundler,
       )
 
       // Check if package metadata was modified
@@ -277,39 +293,33 @@ export class DevWatchManager {
 
       // Show package installation indicator if needed
       if (packageMetadataChanged) {
-        this.log.tree('  ', `${chalk.yellow('⟳')} installing packages...`)
+        this.log.tree('  ', `${styleText('yellow', '⟳')} installing packages...`)
       }
 
       // Create app in temp directory with silent environment
-      const silentEnvironment = createUIEnvironment(
-        this.options.environment.appName,
-        true,
-      )
+      const silentEnvironment = createDefaultEnvironment(this.stopController.signal)
+      silentEnvironment.appName = this.options.environment.appName
       await createApp(silentEnvironment, updatedOptions)
+      if (this.stopping) return
 
       // Sync files to target directory
-      const syncResult = await this.syncer.sync(this.tempDir, this.options.targetDir, {
-        deleteRemoved: this.lastSyncedSourceFiles !== null,
-        previousSourceFiles: this.lastSyncedSourceFiles ?? undefined,
-      })
+      const syncResult = await this.syncer.sync(
+        this.tempDir,
+        this.options.targetDir,
+        {
+          deleteRemoved: this.lastSyncedSourceFiles !== null,
+          previousSourceFiles: this.lastSyncedSourceFiles ?? undefined,
+        },
+      )
       this.lastSyncedSourceFiles = new Set(syncResult.sourceFiles)
-
-      // Clean up temp directory after sync is complete
-      try {
-        await fs.promises.rm(this.tempDir, { recursive: true, force: true })
-      } catch (cleanupError) {
-        this.log.warning(
-          `Failed to clean up temp directory: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
-        )
-      }
 
       const elapsed = Date.now() - startTime
 
       // Build tree-style summary
-      this.log.tree('  ', `duration: ${chalk.cyan(elapsed + 'ms')}`)
+      this.log.tree('  ', `duration: ${styleText('cyan', elapsed + 'ms')}`)
 
       if (packageMetadataChanged) {
-        this.log.tree('  ', `packages: ${chalk.green('✓ installed')}`)
+        this.log.tree('  ', `packages: ${styleText('green', '✓ installed')}`)
       }
 
       // Always show the last item in tree without checking for files to show
@@ -322,7 +332,7 @@ export class DevWatchManager {
       if (syncResult.updated.length > 0) {
         this.log.tree(
           '  ',
-          `updated: ${chalk.green(syncResult.updated.length + ' file' + (syncResult.updated.length > 1 ? 's' : ''))}`,
+          `updated: ${styleText('green', syncResult.updated.length + ' file' + (syncResult.updated.length > 1 ? 's' : ''))}`,
           syncResult.created.length === 0 &&
             syncResult.deleted.length === 0 &&
             syncResult.errors.length === 0,
@@ -331,21 +341,21 @@ export class DevWatchManager {
       if (syncResult.created.length > 0) {
         this.log.tree(
           '  ',
-          `created: ${chalk.green(syncResult.created.length + ' file' + (syncResult.created.length > 1 ? 's' : ''))}`,
+          `created: ${styleText('green', syncResult.created.length + ' file' + (syncResult.created.length > 1 ? 's' : ''))}`,
           syncResult.deleted.length === 0 && syncResult.errors.length === 0,
         )
       }
       if (syncResult.deleted.length > 0) {
         this.log.tree(
           '  ',
-          `deleted: ${chalk.green(syncResult.deleted.length + ' file' + (syncResult.deleted.length > 1 ? 's' : ''))}`,
+          `deleted: ${styleText('green', syncResult.deleted.length + ' file' + (syncResult.deleted.length > 1 ? 's' : ''))}`,
           syncResult.errors.length === 0,
         )
       }
       if (syncResult.errors.length > 0) {
         this.log.tree(
           '  ',
-          `failed: ${chalk.red(syncResult.errors.length + ' file' + (syncResult.errors.length > 1 ? 's' : ''))}`,
+          `failed: ${styleText('red', syncResult.errors.length + ' file' + (syncResult.errors.length > 1 ? 's' : ''))}`,
           true,
         )
       }
@@ -383,31 +393,32 @@ export class DevWatchManager {
               const prefix = '    │ '
               relevantLines.forEach((line) => {
                 if (line.startsWith('+') && !line.startsWith('+++')) {
-                  console.log(chalk.gray(prefix) + '  ' + chalk.green(line))
+                  console.log(styleText('gray', prefix) + '  ' + styleText('green', line))
                 } else if (line.startsWith('-') && !line.startsWith('---')) {
-                  console.log(chalk.gray(prefix) + '  ' + chalk.red(line))
+                  console.log(styleText('gray', prefix) + '  ' + styleText('red', line))
                 } else if (line.startsWith('@')) {
-                  console.log(chalk.gray(prefix) + '  ' + chalk.cyan(line))
+                  console.log(styleText('gray', prefix) + '  ' + styleText('cyan', line))
                 }
               })
             }
           }
         })
       }
-      
+
       // Show created files
       if (syncResult.created.length > 0) {
         syncResult.created.forEach((file, index) => {
           const isLast =
-            index === syncResult.created.length - 1 && syncResult.deleted.length === 0
-          this.log.treeItem('  ', `${chalk.green('+')} ${file}`, isLast)
+            index === syncResult.created.length - 1 &&
+            syncResult.deleted.length === 0
+          this.log.treeItem('  ', `${styleText('green', '+')} ${file}`, isLast)
         })
       }
 
       if (syncResult.deleted.length > 0) {
         syncResult.deleted.forEach((file, index) => {
           const isLast = index === syncResult.deleted.length - 1
-          this.log.treeItem('  ', `${chalk.red('-')} ${file}`, isLast)
+          this.log.treeItem('  ', `${styleText('red', '-')} ${file}`, isLast)
         })
       }
 
@@ -417,7 +428,7 @@ export class DevWatchManager {
         syncResult.errors.forEach((err, index) => {
           this.log.tree(
             '  ',
-            `${chalk.red('error:')} ${err}`,
+            `${styleText('red', 'error:')} ${err}`,
             index === syncResult.errors.length - 1,
           )
         })
@@ -427,6 +438,15 @@ export class DevWatchManager {
         `Build #${buildId} failed: ${error instanceof Error ? error.message : String(error)}`,
       )
     } finally {
+      if (this.tempDir) {
+        try {
+          await fs.promises.rm(this.tempDir, { recursive: true, force: true })
+        } catch (cleanupError) {
+          this.log.warning(
+            `Failed to clean up temp directory: ${cleanupError instanceof Error ? cleanupError.message : String(cleanupError)}`,
+          )
+        }
+      }
       this.isBuilding = false
     }
   }
@@ -467,6 +487,8 @@ export class DevWatchManager {
       addOns,
       basePackageJSON,
       optionalPackages,
+      bundlers: this.options.framework.bundlers,
+      defaultBundler: this.options.framework.defaultBundler,
       supportedModes: this.options.framework.supportedModes,
     }
   }
@@ -504,7 +526,7 @@ export class DevWatchManager {
     )
 
     this.log.section('app dev server')
-    this.log.tree('  ', `starting: ${chalk.cyan([command, ...args].join(' '))}`)
+    this.log.tree('  ', `starting: ${styleText('cyan', [command, ...args].join(' '))}`)
 
     this.appDevProcess = spawn(command, args, {
       cwd: this.options.targetDir,
@@ -549,17 +571,17 @@ export class DevWatchManager {
   private log = {
     tree: (prefix: string, msg: string, isLast = false) => {
       const connector = isLast ? '└─' : '├─'
-      console.log(chalk.gray(prefix + connector) + ' ' + msg)
+      console.log(styleText('gray', prefix + connector) + ' ' + msg)
     },
     treeItem: (prefix: string, msg: string, isLast = false) => {
       const connector = isLast ? '└─' : '├─'
-      console.log(chalk.gray(prefix + '  ' + connector) + ' ' + msg)
+      console.log(styleText('gray', prefix + '  ' + connector) + ' ' + msg)
     },
     info: (msg: string) => console.log(msg),
-    error: (msg: string) => console.error(chalk.red('✗') + ' ' + msg),
-    success: (msg: string) => console.log(chalk.green('✓') + ' ' + msg),
-    warning: (msg: string) => console.log(chalk.yellow('⚠') + ' ' + msg),
-    section: (title: string) => console.log('\n' + chalk.bold('▸ ' + title)),
+    error: (msg: string) => console.error(styleText('red', '✗') + ' ' + msg),
+    success: (msg: string) => console.log(styleText('green', '✓') + ' ' + msg),
+    warning: (msg: string) => console.log(styleText('yellow', '⚠') + ' ' + msg),
+    section: (title: string) => console.log('\n' + styleText('bold', '▸ ' + title)),
     subsection: (msg: string) => console.log('  ' + msg),
   }
 }

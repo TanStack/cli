@@ -11,5 +11,11 @@
     "lucide-react": "^0.577.0",
     "streamdown": "^2.3.0",
     "zod": "^4.3.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@google/genai",
+      "protobufjs"
+    ]
   }
 }

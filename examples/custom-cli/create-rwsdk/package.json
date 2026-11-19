@@ -25,7 +25,6 @@
   ],
   "author": "Jack Herrington <jherr@pobox.com>",
   "license": "MIT",
-  "packageManager": "pnpm@9.15.5",
   "dependencies": {
     "@tanstack/cli": "workspace:*",
     "@tanstack/create": "workspace:*"

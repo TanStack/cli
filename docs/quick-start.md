@@ -28,6 +28,12 @@ npx @tanstack/cli create my-app --add-ons tanstack-query,clerk,drizzle -y
 
 # Router-only SPA (no SSR)
 npx @tanstack/cli create my-app --router-only -y
+
+# Rsbuild instead of the default Vite build tool
+npx @tanstack/cli create my-app --build-tool rsbuild -y
+
+# Minimal router-only Rsbuild app
+npx @tanstack/cli create my-app --build-tool rsbuild --router-only --blank -y
 ```
 
 Blank projects omit the default starter interface, examples, Tailwind,

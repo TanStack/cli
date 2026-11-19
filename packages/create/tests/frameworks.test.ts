@@ -18,6 +18,44 @@ beforeEach(() => {
 })
 
 describe('registerFramework', () => {
+  const definition = {
+    id: 'watched',
+    name: 'Watched framework',
+    description: 'Framework refresh fixture',
+    version: '1.0.0',
+    addOns: [],
+    base: { 'marker.txt': 'first' },
+    basePackageJSON: {},
+    optionalPackages: {},
+    supportedModes: {},
+  }
+
+  it('replaces a watched framework without growing the registry', async () => {
+    registerFramework({ ...definition, id: 'unrelated' })
+    for (let index = 0; index < 20; index++) {
+      registerFramework(
+        { ...definition, base: { 'marker.txt': String(index) } },
+        { replace: true },
+      )
+      expect(
+        await getFrameworkById('watched')!.getFileContents('marker.txt'),
+      ).toBe(String(index))
+      expect(getFrameworks()).toHaveLength(2)
+    }
+    expect(
+      await getFrameworkById('unrelated')!.getFileContents('marker.txt'),
+    ).toBe('first')
+  })
+
+  it('preserves the first registration unless replacement is requested', async () => {
+    registerFramework(definition)
+    registerFramework({ ...definition, base: { 'marker.txt': 'second' } })
+    expect(
+      await getFrameworkById('watched')!.getFileContents('marker.txt'),
+    ).toBe('first')
+    expect(getFrameworks()).toHaveLength(2)
+  })
+
   it('should register a framework', async () => {
     const addOnPackageJSON = {
       id: 'test',

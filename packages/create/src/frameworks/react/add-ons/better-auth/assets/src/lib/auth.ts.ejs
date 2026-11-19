@@ -1,0 +1,21 @@
+import { betterAuth } from 'better-auth'
+import { tanstackStartCookies } from 'better-auth/tanstack-start'
+
+<% if (addOnEnabled.drizzle) { %>
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { db } from '../db/index'
+<% } else if (addOnEnabled.prisma) { %>
+import { prismaAdapter } from 'better-auth/adapters/prisma'
+import { prisma } from '../db'
+<% } %>
+export const auth = betterAuth({
+<% if (addOnEnabled.drizzle) { %>
+  database: drizzleAdapter(db, { provider: '<%= addOnOption.drizzle.database === 'postgresql' ? 'pg' : addOnOption.drizzle.database %>' }),
+<% } else if (addOnEnabled.prisma) { %>
+  database: prismaAdapter(prisma, { provider: '<%= addOnOption.prisma.database === 'postgres' ? 'postgresql' : addOnOption.prisma.database %>' }),
+<% } %>
+  emailAndPassword: {
+    enabled: true,
+  },
+  plugins: [tanstackStartCookies()],
+})

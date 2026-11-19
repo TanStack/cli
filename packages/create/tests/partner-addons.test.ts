@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { parse } from 'yaml'
 
 import {
   finalizeAddOns,
@@ -357,6 +358,26 @@ describe('partner add-on scaffolds', () => {
     },
   )
 
+  it.each(['ai', 'events', 'resume'])(
+    'approves Gemini install scripts only when the %s integration is selected',
+    async (addOn) => {
+      const output = await generateApp(createReactFrameworkDefinition(), [addOn])
+      const packageJSON = JSON.parse(output.files['package.json'])
+      expect(packageJSON.pnpm.onlyBuiltDependencies).toEqual(
+        expect.arrayContaining(['@google/genai', 'protobufjs']),
+      )
+      expect(parse(output.files['pnpm-workspace.yaml']).allowBuilds).toEqual(
+        expect.objectContaining({ '@google/genai': true, protobufjs: true }),
+      )
+    },
+  )
+
+  it('does not approve Gemini scripts in projects without AI', async () => {
+    const output = await generateApp(createReactFrameworkDefinition(), [])
+    expect(output.files['pnpm-workspace.yaml']).not.toContain('@google/genai')
+    expect(output.files['pnpm-workspace.yaml']).not.toContain('protobufjs')
+  })
+
   it.each(['postgres', 'mysql', 'sqlite'])(
     'approves Prisma build dependencies for pnpm with %s',
     async (database) => {
@@ -433,6 +454,31 @@ describe('partner add-on scaffolds', () => {
     },
   )
 
+  it('uses Workers instrumentation instead of Node preload for Sentry on Cloudflare', async () => {
+    const output = await generateApp(createReactFrameworkDefinition(), [
+      'sentry',
+      'cloudflare',
+    ])
+    const manifest = JSON.parse(output.files['package.json'])
+
+    expect(manifest.dependencies).toHaveProperty('@sentry/cloudflare', '^10.67.0')
+    expect(manifest.scripts.build).toBe('vite build')
+    expect(manifest.scripts.dev).not.toContain('NODE_OPTIONS')
+    expect(manifest.scripts.start).toBe('vite preview')
+    expect(JSON.parse(output.files['wrangler.jsonc']).main).toBe('./src/worker.ts')
+    expect(output.files['src/worker.ts']).toContain('withSentry(')
+    expect(output.files['src/worker.ts']).toContain('wrapFetchWithSentry(')
+    expect(output.files['src/worker.ts']).toContain('env.VITE_SENTRY_DSN ??')
+    expect(output.files['src/worker.ts']).toContain(
+      'httpHeaders: { request: false, response: false }',
+    )
+    expect(output.files['src/worker.ts']).toContain('cookies: false')
+    expect(output.files['src/worker.ts']).toContain("maxRequestBodySize: 'none'")
+    expect(output.files['src/start.ts']).toContain('sentryGlobalRequestMiddleware,')
+    expect(output.files['src/start.ts']).toContain('functionMiddleware: [sentryGlobalFunctionMiddleware]')
+    expect(output.files['instrument.server.mjs']).toBeUndefined()
+  })
+
   it('generates Sentry with privacy-conscious sampling defaults', async () => {
     const output = await generateApp(createReactFrameworkDefinition(), [
       'sentry',
@@ -443,6 +489,12 @@ describe('partner add-on scaffolds', () => {
     expect(packageJSON.dependencies).toHaveProperty(
       '@sentry/tanstackstart-react',
       '^10.67.0',
+    )
+    expect(packageJSON.scripts.build).toBe(
+      'vite build && cp instrument.server.mjs .output/server',
+    )
+    expect(packageJSON.scripts.dev).toBe(
+      `dotenv -e .env.local -- sh -c "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000"`,
     )
     expect(packageJSON.pnpm.onlyBuiltDependencies).toContain('@sentry/cli')
     expect(output.files['pnpm-workspace.yaml']).toContain("'@sentry/cli': true")

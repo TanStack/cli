@@ -10,6 +10,7 @@ import {
   writeFiles,
 } from '../src/add-to-app.js'
 import {
+  getFrameworkById,
   __testClearFrameworks,
   __testRegisterFramework,
 } from '../src/frameworks.js'
@@ -52,6 +53,11 @@ beforeEach(() => {
     addOnsDirectories: [],
     basePackageJSON: {},
     optionalPackages: {},
+    bundlers: [
+      { id: 'vite', name: 'Vite', description: 'Build with Vite' },
+      { id: 'rsbuild', name: 'Rsbuild', description: 'Build with Rsbuild' },
+    ],
+    defaultBundler: 'vite',
     getAddOns: () => [
       {
         id: 'test',
@@ -74,6 +80,36 @@ beforeEach(() => {
         dependsOn: [],
         getFiles: () => Promise.resolve(['jack.txt']),
         getFileContents: () => Promise.resolve('foo'),
+        getDeletedFiles: () => Promise.resolve([]),
+      },
+      {
+        id: 'eslint',
+        name: 'ESLint',
+        description: 'ESLint',
+        version: '1.0.0',
+        type: 'toolchain',
+        phase: 'setup',
+        modes: ['file-router'],
+        exclusive: ['linter'],
+        packageAdditions: {},
+        dependsOn: [],
+        getFiles: () => Promise.resolve([]),
+        getFileContents: () => Promise.resolve(''),
+        getDeletedFiles: () => Promise.resolve([]),
+      },
+      {
+        id: 'biome',
+        name: 'Biome',
+        description: 'Biome',
+        version: '1.0.0',
+        type: 'toolchain',
+        phase: 'setup',
+        modes: ['file-router'],
+        exclusive: ['linter'],
+        packageAdditions: {},
+        dependsOn: [],
+        getFiles: () => Promise.resolve([]),
+        getFileContents: () => Promise.resolve(''),
         getDeletedFiles: () => Promise.resolve([]),
       },
     ],
@@ -109,7 +145,7 @@ describe('getCurrentConfiguration', () => {
     environment.writeFile('/foo/.cta.json', JSON.stringify(configFile, null, 2))
 
     const out = await getCurrentConfiguration(environment, '/foo')
-    expect(out).toEqual(configFile)
+    expect(out).toEqual({ ...configFile, bundler: 'vite' })
   })
 })
 
@@ -387,6 +423,27 @@ describe('writeFiles', () => {
 })
 
 describe('runNewCommands', () => {
+  it.each(['10.1.0', '10.2.0'])(
+    'does not rerun an existing approved command when planning for pnpm %s',
+    async (packageManagerVersion) => {
+      const framework = getFrameworkById('test')
+      if (!framework) throw new Error('Missing test framework')
+      const addOns = framework.getAddOns()
+      framework.getAddOns = () => addOns.map((addOn) => addOn.id === 'test'
+        ? { ...addOn, command: { command: 'npx', args: ['storybook', 'init'], allowBuilds: ['esbuild'] } }
+        : addOn)
+      const { environment, output } = createMemoryEnvironment('/foo')
+      const args = [
+        ...(packageManagerVersion === '10.2.0' ? ['--allow-build=esbuild'] : []),
+        'dlx', 'storybook', 'init',
+      ]
+      await runNewCommands(environment, {
+        ...fakeCTAJSON, packageManager: 'pnpm', chosenAddOns: ['test'],
+      }, '/foo', { commands: [{ command: 'pnpm', args }] }, packageManagerVersion)
+      expect(output.commands).toEqual([])
+    },
+  )
+
   it('should run new commands', async () => {
     const { environment, output } = createMemoryEnvironment('/foo')
     environment.startRun()
@@ -470,5 +527,32 @@ describe('addToApp', () => {
 
     const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
     expect(persisted.tailwind).toBe(true)
+  })
+
+  it('rejects a second exclusive Rsbuild toolchain', async () => {
+    const { environment } = createMemoryEnvironment('/foo')
+    environment.startRun()
+    environment.writeFile(
+      '/foo/.cta.json',
+      JSON.stringify(
+        {
+          ...fakeCTAJSON,
+          mode: 'file-router',
+          bundler: 'rsbuild',
+          chosenAddOns: ['eslint'],
+        },
+        null,
+        2,
+      ),
+    )
+
+    await expect(
+      addToApp(environment, ['biome'], '/foo', { forced: true }),
+    ).rejects.toThrow(
+      'Cannot combine ESLint and Biome. Add-ons in the "linter" group are mutually exclusive.',
+    )
+
+    const persisted = JSON.parse(await environment.readFile('/foo/.cta.json'))
+    expect(persisted.chosenAddOns).toEqual(['eslint'])
   })
 })

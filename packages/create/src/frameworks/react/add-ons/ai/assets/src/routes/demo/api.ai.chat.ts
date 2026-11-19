@@ -40,10 +40,16 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
 
         try {
           const body = await request.json()
-          const { messages } = body
+          const { messages, threadId } = body
+          if (typeof threadId !== 'string' || !threadId.trim()) {
+            return Response.json(
+              { error: 'A threadId is required' },
+              { status: 400 },
+            )
+          }
 
           // Determine the best available provider
-          let provider: string = 'ollama'
+          let provider: 'anthropic' | 'openai' | 'gemini' | 'ollama' = 'ollama'
           let model: string = 'mistral:7b'
           if (process.env.ANTHROPIC_API_KEY) {
             provider = 'anthropic'
@@ -53,7 +59,7 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
             model = 'gpt-4o'
           } else if (process.env.GEMINI_API_KEY) {
             provider = 'gemini'
-            model = 'gemini-2.0-flash-exp'
+            model = 'gemini-3.8-flash'
           }
 
           // Adapter factory pattern for multi-vendor support
@@ -61,7 +67,7 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
             anthropic: () =>
               anthropicText((model || 'claude-haiku-4-5') as any),
             openai: () => openaiText((model || 'gpt-4o') as any),
-            gemini: () => geminiText((model || 'gemini-2.0-flash-exp') as any),
+            gemini: () => geminiText((model || 'gemini-3.8-flash') as any),
             ollama: () => ollamaText((model || 'mistral:7b') as any),
           }
 
@@ -76,6 +82,7 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
             systemPrompts: [SYSTEM_PROMPT],
             agentLoopStrategy: maxIterations(5),
             messages,
+            threadId,
             abortController,
           })
 

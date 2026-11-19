@@ -52,6 +52,7 @@ export const Route = createFileRoute('/demo/api/ai/transcription')({
 
           const result = await generateTranscription({
             adapter,
+            threadId: crypto.randomUUID(),
             audio: audioData,
             language: language || undefined,
             responseFormat: (responseFormat as any) || 'verbose_json',

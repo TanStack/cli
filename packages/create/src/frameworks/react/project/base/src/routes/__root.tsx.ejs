@@ -1,4 +1,4 @@
-<% const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
+<% const themeInitScript = "(function(){try{var stored=null;try{stored=window.localStorage.getItem('theme')}catch(e){}var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();"; const showDevtools = !blank || integrations.some((integration) => integration.type === 'devtools') -%>
 <% if (routerOnly) { %>
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 <% if (showDevtools) { %>
@@ -33,7 +33,7 @@ function RootComponent() {
 <% } else if (!includeExamples || blank) { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
-  HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
+  HeadContent, Scripts, <% if (addOnEnabled.themer) { %>ScriptOnce, <% } %><% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
 <% if (showDevtools) { %>import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools'
 <% } %>
@@ -43,6 +43,9 @@ import <%= integration.jsName %> from '<%= relativePath(integration.path, true) 
 import { getLocale } from '#/paraglide/runtime'
 <% } %>
 import appCss from '../styles.css?url'
+<% if (addOnEnabled.themer) { %>
+const THEME_INIT_SCRIPT = <%- JSON.stringify(themeInitScript) %>
+<% } %>
 <% if (addOnEnabled["apollo-client"]) { %>
 import type { ApolloClientIntegration } from "@apollo/client-integration-tanstack-start";
 <% } %>
@@ -98,8 +101,9 @@ export const Route = <% if (hasContext) { %>createRootRouteWithContext<MyRouterC
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-      <% if (addOnEnabled.paraglide) { %><html lang={getLocale()}><% } else { %><html lang="en"><% } %>
+      <% if (addOnEnabled.paraglide) { %><html lang={getLocale()}<% if (addOnEnabled.themer) { %> suppressHydrationWarning<% } %>><% } else { %><html lang="en"<% if (addOnEnabled.themer) { %> suppressHydrationWarning<% } %>><% } %>
       <head>
+        <% if (addOnEnabled.themer) { %><ScriptOnce>{THEME_INIT_SCRIPT}</ScriptOnce><% } %>
         <HeadContent />
       </head>
       <body>
@@ -127,7 +131,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 <% } else { %>
 <% let hasContext = addOnEnabled["apollo-client"] || addOnEnabled["tanstack-query"]; %>
 import {
-  HeadContent, Scripts, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
+  HeadContent, Scripts, ScriptOnce, <% if (hasContext) { %>createRootRouteWithContext<% } else { %>createRootRoute<% } %> } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
@@ -158,7 +162,7 @@ interface MyRouterContext <% if (addOnEnabled["apollo-client"]) {%> extends Apol
 <% } %>
 }<% } %>
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+const THEME_INIT_SCRIPT = <%- JSON.stringify(themeInitScript) %>
 
 export const Route = <% if (hasContext) { %>createRootRouteWithContext<MyRouterContext>()<% } else { %>createRootRoute<% } %>({
 <% if (addOnEnabled.paraglide) { %>
@@ -197,7 +201,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
       <% if (addOnEnabled.paraglide) { %><html lang={getLocale()} suppressHydrationWarning><% } else { %><html lang="en" suppressHydrationWarning><% } %>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <ScriptOnce>{THEME_INIT_SCRIPT}</ScriptOnce>
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">

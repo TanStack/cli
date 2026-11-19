@@ -1,0 +1,13 @@
+## Elysia + Eden
+
+<% if (includeExamples && !blank) { %>Visit `/demo/elysia` after starting the app to send a typed greeting request to your Start server.<% } else { %>Send JSON such as `{"name":"TanStack"}` with a POST request to `/api/demo/elysia/greet` after starting the app. Blank projects omit the demo page.<% } %>
+
+- Edit `src/lib/elysia.server.ts` to add Elysia endpoints and request schemas.
+- `src/routes/api.demo.elysia.$.ts` forwards requests to the Elysia app.
+- Use a type-only import of `App` when building an Eden Treaty client. Browser requests should use the current origin to support development and preview ports.
+
+Elysia runs inside Start server routes. Start owns the server listener. Keep backend imports in server handlers and use type-only imports in client code.
+
+The demo validates a name of 1–80 characters. Add authentication and authorization before exposing private data or privileged operations.
+
+See the [Elysia Start integration guide](https://elysiajs.com/integrations/tanstack-start) for more examples.

@@ -1,6 +1,10 @@
-<% if (routerOnly || (!addOnEnabled.clerk && !addOnEnabled.workos)) { ignoreFile(); return; } %>
+<% const sentryWorker = addOnEnabled.sentry && addOnEnabled.cloudflare; if (routerOnly || (!addOnEnabled.clerk && !addOnEnabled.workos && !sentryWorker)) { ignoreFile(); return; } %>
 import { createCsrfMiddleware, createStart } from '@tanstack/react-start'
-<% if (addOnEnabled.clerk) { %>
+<% if (sentryWorker) { %>import {
+  sentryGlobalFunctionMiddleware,
+  sentryGlobalRequestMiddleware,
+} from '@sentry/tanstackstart-react'
+<% } %><% if (addOnEnabled.clerk) { %>
 import { clerkMiddleware } from '@clerk/tanstack-react-start/server'
 <% } %>
 <% if (addOnEnabled.workos) { %>
@@ -13,8 +17,11 @@ const csrfMiddleware = createCsrfMiddleware({
 
 export const startInstance = createStart(() => ({
   requestMiddleware: [
+    <% if (sentryWorker) { %>sentryGlobalRequestMiddleware,<% } %>
     csrfMiddleware,
     <% if (addOnEnabled.clerk) { %>clerkMiddleware(),<% } %>
     <% if (addOnEnabled.workos) { %>authkitMiddleware(),<% } %>
   ],
+  <% if (sentryWorker) { %>functionMiddleware: [sentryGlobalFunctionMiddleware],
+  <% } %>
 }))
