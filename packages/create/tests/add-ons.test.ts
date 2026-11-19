@@ -156,6 +156,28 @@ describe('Router-only add-on compatibility', () => {
     expect(getAllAddOns(framework, 'file-router', 'vite', true).map((a) => a.id)).toEqual(['query', 'eslint'])
   })
 
+  it.each([
+    ['code-router', false],
+    ['file-router', true],
+  ] as const)('checks dependency mode %s before offering a parent', async (dependencyMode, available) => {
+    const withDependency = {
+      ...framework,
+      getAddOns: () => [
+        ...framework.getAddOns(),
+        { id: 'parent', type: 'add-on', modes: ['file-router'], supportsRouterOnly: true, dependsOn: ['dependency'] },
+        { id: 'dependency', type: 'add-on', modes: [dependencyMode], supportsRouterOnly: true },
+      ],
+    } as Framework
+    const offered = getAllAddOns(withDependency, 'file-router', 'vite', true)
+    expect(offered.some((addOn) => addOn.id === 'parent')).toBe(available)
+    if (available) {
+      const selected = await finalizeAddOns(withDependency, 'file-router', ['parent'], 'vite', true)
+      expect(selected.map((addOn) => addOn.id)).toEqual(['parent', 'dependency'])
+    } else {
+      await expect(finalizeAddOns(withDependency, 'file-router', ['parent'], 'vite', true)).rejects.toThrow('does not support Router-only')
+    }
+  })
+
   it('preserves compatible explicit add-ons', async () => {
     expect((await finalizeAddOns(framework, 'file-router', ['query', 'eslint'], 'vite', true)).map((a) => a.id)).toEqual(['query', 'eslint'])
   })

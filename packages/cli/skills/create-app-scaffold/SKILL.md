@@ -160,7 +160,7 @@ Source: packages/cli/src/command-line.ts:343
 
 ### HIGH Tension: Compatibility mode vs explicit intent
 
-This domain's patterns conflict with choose-ecosystem-integrations. Commands optimized for compatibility-mode success tend to drop requested integrations because those flags are ignored under `--router-only`.
+This domain's patterns conflict with choose-ecosystem-integrations. Template and deployment flags are ignored under `--router-only`, so those requests need a full scaffold. Compatible add-on selections are retained; unsupported Start-dependent add-ons are rejected.
 
 See also: choose-ecosystem-integrations/SKILL.md § Common Mistakes
 

@@ -14,11 +14,10 @@ export function getAllAddOns(
   routerOnly = false,
 ): Array<AddOn> {
   const bundler = resolveBundler(framework, bundlerId).id
-  const addOns = framework.getAddOns()
+  const addOns = framework.getAddOns().filter((addOn) => addOn.modes.includes(mode))
   return addOns
     .filter(
       (addOn) =>
-        addOn.modes.includes(mode) &&
         isAddOnSupportedByBundler(addOn, bundler) &&
         (!routerOnly || supportsRouterOnly(addOn, addOns)),
     )
