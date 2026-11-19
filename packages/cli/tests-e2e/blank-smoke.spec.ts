@@ -251,3 +251,51 @@ test('@blocking creates a production-valid blank React app', async ({
     }
   }
 })
+
+
+for (const template of [' tsx ', ' TypeScript ']) {
+  test(`@blocking preserves explicit Start integrations with legacy alias ${JSON.stringify(template)}`, async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'tanstack-explicit-start-'))
+    try {
+      await execFileAsync(
+        process.execPath,
+        [
+          getRepoPath('packages/cli/dist/index.js'),
+          'create',
+          'start-app',
+          '--router-and-start',
+          '--template',
+          template,
+          '--add-ons',
+          'tanstack-query',
+          '--deployment',
+          'cloudflare',
+          '--toolchain',
+          'biome',
+          '--package-manager',
+          'npm',
+          '--yes',
+          '--no-install',
+          '--no-git',
+          '--no-intent',
+        ],
+        { cwd: rootDir, encoding: 'utf8' },
+      )
+      const appDir = join(rootDir, 'start-app')
+      const config = JSON.parse(
+        await readFile(join(appDir, '.cta.json'), 'utf8'),
+      )
+      const pkg = JSON.parse(
+        await readFile(join(appDir, 'package.json'), 'utf8'),
+      )
+      expect(config.routerOnly).toBe(false)
+      expect(config.chosenAddOns).toEqual(
+        expect.arrayContaining(['tanstack-query', 'cloudflare']),
+      )
+      expect(pkg.dependencies['@tanstack/react-start']).toBeDefined()
+      expect(pkg.dependencies['@tanstack/react-query']).toBeDefined()
+    } finally {
+      await rm(rootDir, { recursive: true, force: true })
+    }
+  })
+}

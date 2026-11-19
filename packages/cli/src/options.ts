@@ -24,6 +24,7 @@ import {
   selectGit,
   selectInstall,
   selectPackageManager,
+  selectRouterOnly,
   selectTemplate,
   selectToolchain,
 } from './ui-prompts.js'
@@ -121,9 +122,26 @@ export async function promptForCreateOptions(
     ['file-router', 'typescript', 'tsx', 'javascript', 'js', 'jsx'].includes(
       template,
     )
+  const hasStartIntent = Boolean(
+    cliOptions.template ||
+      cliOptions.templateId ||
+      cliOptions.starter ||
+      cliOptions.blank ||
+      (Array.isArray(cliOptions.addOns) && cliOptions.addOns.length > 0) ||
+      cliOptions.deployment ||
+      forcedAddOns.length > 0 ||
+      forcedDeployment,
+  )
   const routerOnly =
     !!cliOptions.routerOnly ||
-    (isLegacyTemplate ? template !== 'file-router' : false)
+    (isLegacyTemplate ? template !== 'file-router' : false) ||
+    (cliOptions.routerOnly === undefined &&
+      !isLegacyTemplate &&
+      !hasStartIntent &&
+      (await selectRouterOnly()))
+  if (routerOnly) {
+    cliOptions.routerOnly = true
+  }
 
   if (!cliOptions.starter) {
     if (cliOptions.template && !isLegacyTemplate) {
