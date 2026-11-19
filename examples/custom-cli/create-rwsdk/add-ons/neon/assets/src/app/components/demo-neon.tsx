@@ -109,9 +109,11 @@ function DBConnectionError() {
             <div>
               Create a database with{' '}
               <code>npx neon@9.6.3 claim create --env-pull --file .env</code>,
-              then run{' '}
-              <code className="bg-black/30 px-2 py-1 rounded">db/init.sql</code>{' '}
-              once in the Neon SQL Editor to create and seed the demo table
+              then seed it once with{' '}
+              <code>
+                npx neon@9.6.3 psql --role-name neondb_owner -- -f db/init.sql
+              </code>
+              .
             </div>
           </li>
           <li className="flex items-start">
@@ -119,12 +121,13 @@ function DBConnectionError() {
               2
             </span>
             <div>
-              Set the{' '}
+              Copy the CLI's <code>DATABASE_URL</code> value to{' '}
               <code className="bg-black/30 px-2 py-1 rounded">
                 VITE_DATABASE_URL
               </code>{' '}
-              environment variable to the connection string of your Neon
-              database in <code>.env</code>, then restart the dev server
+              in <code>.env</code>. After claiming, replace it with a fresh
+              connection string from the Neon Console. Restart the dev server
+              after changing <code>.env</code>.
             </div>
           </li>
         </ul>

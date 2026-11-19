@@ -130,16 +130,20 @@ function DBConnectionError() {
             <div>
               Create a database with{' '}
               <code>npx neon@9.6.3 claim create --env-pull --file .env</code>,
-              then run <code>db/init.sql</code> once in the Neon SQL Editor to
-              create and seed the demo table.
+              then seed it once with{' '}
+              <code>
+                npx neon@9.6.3 psql --role-name neondb_owner -- -f db/init.sql
+              </code>
+              .
             </div>
           </li>
           <li className="flex items-start">
             <span className="demo-pill mr-3 min-w-8 justify-center">2</span>
             <div>
-              Set the <code>DATABASE_URL</code> environment variable to the
-              connection string of your Neon database in <code>.env</code>, then
-              restart the dev server
+              Use <code>DATABASE_URL</code> in <code>.env</code> for the
+              connection string. After claiming the database, replace it with a
+              fresh connection string from the Neon Console. Restart the dev
+              server after changing <code>.env</code>.
             </div>
           </li>
         </ul>

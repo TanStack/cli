@@ -41,6 +41,12 @@ describe('Neon scaffold', () => {
     expect(output.files['/neon-app/README.md']).toContain(
       'claim create --env-pull --file .env',
     )
+    expect(output.files['/neon-app/README.md']).toContain(
+      'psql --role-name neondb_owner -- -f db/init.sql',
+    )
+    expect(output.files['/neon-app/README.md']).toContain(
+      'replace `DATABASE_URL` in `.env`, and restart the dev server',
+    )
     expect(output.commands).toEqual([])
   })
 })
