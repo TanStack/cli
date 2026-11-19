@@ -1,8 +1,16 @@
-## Setting up Neon
+## Neon setup
 
-When running the `dev` command, `vite-plugin-neon-new` will identify there is not a database setup. It will then create and seed a claimable database.
+Create a database and write its connection string to `.env`:
 
-It is the same process as [Neon Launchpad](https://neon.new).
+```sh
+npx neon@9.6.3 claim create --env-pull --file .env
+```
 
-> [!IMPORTANT]  
-> Claimable databases expire in 72 hours.
+You can also use an existing Neon database. Set `VITE_DATABASE_URL` in `.env` to its connection string.
+Claimable Neon writes `DATABASE_URL`. Copy that value to `VITE_DATABASE_URL` for this example.
+
+Run `db/init.sql` once in the Neon SQL Editor to create the demo table and seed its three todos. Repeating the script inserts the sample todos again.
+
+Start the app with your package manager's `dev` command. To keep a claimable database, run `npx neon@9.6.3 claim accept` before it expires.
+
+See https://neon.com/docs/reference/claimable-neon for database setup and claiming.

@@ -99,19 +99,19 @@ function DBConnectionError() {
           />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold mb-4">Database Connection Issue</h2>
-      <div className="text-lg mb-6">The Neon database is not connected.</div>
+      <h2 className="text-2xl font-bold mb-4">Neon database not connected</h2>
       <div className="bg-black/30 p-6 rounded-lg max-w-xl mx-auto">
-        <h3 className="text-lg font-semibold mb-4">Required Steps to Fix:</h3>
         <ul className="space-y-4 text-left list-none">
           <li className="flex items-start">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-black font-bold mr-3 min-w-8 min-h-8">
               1
             </span>
             <div>
-              Use the{' '}
+              Create a database with{' '}
+              <code>npx neon@9.6.3 claim create --env-pull --file .env</code>,
+              then run{' '}
               <code className="bg-black/30 px-2 py-1 rounded">db/init.sql</code>{' '}
-              file to create the database
+              once in the Neon SQL Editor to create and seed the demo table
             </div>
           </li>
           <li className="flex items-start">
@@ -121,10 +121,10 @@ function DBConnectionError() {
             <div>
               Set the{' '}
               <code className="bg-black/30 px-2 py-1 rounded">
-                DATABASE_URL
+                VITE_DATABASE_URL
               </code>{' '}
               environment variable to the connection string of your Neon
-              database
+              database in <code>.env</code>, then restart the dev server
             </div>
           </li>
         </ul>
