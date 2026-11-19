@@ -6,14 +6,18 @@ import { getClient } from '#/db'
 const getTodos = createServerFn({
   method: 'GET',
 }).handler(async () => {
-  const client = await getClient()
-  if (!client) {
+  try {
+    const client = await getClient()
+    if (!client) {
+      return undefined
+    }
+    return (await client.query(`SELECT * FROM todos`)) as Array<{
+      id: number
+      title: string
+    }>
+  } catch {
     return undefined
   }
-  return (await client.query(`SELECT * FROM todos`)) as Array<{
-    id: number
-    title: string
-  }>
 })
 
 const insertTodo = createServerFn({
