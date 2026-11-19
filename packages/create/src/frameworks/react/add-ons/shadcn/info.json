@@ -5,6 +5,7 @@
   "modes": ["file-router", "code-router"],
   "link": "https://ui.shadcn.com/",
   "type": "add-on",
+  "supportsRouterOnly": true,
   "category": "styling",
   "tailwind": true,
   "color": "#000000",

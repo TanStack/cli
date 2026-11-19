@@ -27,7 +27,7 @@ afterEach(() => {
 })
 
 describe('Paraglide add-on', () => {
-  it('configures localized routing and request-scoped SSR', async () => {
+  it.each([false, true])('configures localized routing with routerOnly=%s', async (routerOnly) => {
     vi.stubGlobal(
       'fetch',
       vi.fn(
@@ -41,6 +41,7 @@ describe('Paraglide add-on', () => {
       'paraglide',
     ])
     const options = {
+      routerOnly,
       projectName: 'paraglide-app',
       targetDir: '/paraglide-app',
       framework,
@@ -67,6 +68,10 @@ describe('Paraglide add-on', () => {
     expect(router).toContain('output: ({ url }) => localizeUrl(url)')
 
     const server = output.files['/paraglide-app/src/server.ts']
+    if (routerOnly) {
+      expect(server).toBeUndefined()
+      return
+    }
     expect(server).toContain(
       "import { paraglideMiddleware } from './paraglide/server.js'",
     )

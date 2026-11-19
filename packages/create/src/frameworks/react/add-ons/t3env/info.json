@@ -3,6 +3,7 @@
   "description": "Validate process.env at build time (catch missing/wrong env vars before runtime).",
   "phase": "add-on",
   "type": "add-on",
+  "supportsRouterOnly": true,
   "category": "tooling",
   "color": "#6366F1",
   "priority": 29,

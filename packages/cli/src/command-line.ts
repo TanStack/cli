@@ -391,13 +391,7 @@ export function validateLegacyCreateFlags(cliOptions: CliOptions): {
 
   if (cliOptions.routerOnly) {
     warnings.push(
-      'The --router-only flag enables router-only compatibility mode. Start-dependent add-ons, deployment adapters, and templates are disabled; only the base template and optional toolchain are supported.',
-    )
-  }
-
-  if (cliOptions.routerOnly && cliOptions.addOns) {
-    warnings.push(
-      'Ignoring --add-ons in router-only compatibility mode.',
+      'The --router-only flag enables router-only compatibility mode. Only compatible add-ons and toolchains are supported; deployment adapters and templates are disabled.',
     )
   }
 
@@ -572,9 +566,9 @@ export async function normalizeOptions(
     ) {
       const selectedAddOns = new Set<string>([
         ...(routerOnly ? [] : (starter?.dependsOn || [])),
-        ...(routerOnly ? [] : (forcedAddOns || [])),
+        ...(forcedAddOns || []),
       ])
-      if (!routerOnly && cliOptions.addOns && Array.isArray(cliOptions.addOns)) {
+      if (cliOptions.addOns && Array.isArray(cliOptions.addOns)) {
         for (const a of cliOptions.addOns) {
           if (a.toLowerCase() === 'start') {
             continue
@@ -593,7 +587,7 @@ export async function normalizeOptions(
         selectedAddOns.add(opts.forcedDeployment)
       }
 
-      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns), bundler)
+      return await finalizeAddOns(framework, mode, Array.from(selectedAddOns), bundler, routerOnly)
     }
 
     return []

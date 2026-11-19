@@ -7,13 +7,19 @@ import {
 
 import type { AddOn, Framework } from './types.js'
 
-export function getAllAddOns(framework: Framework, mode: string, bundlerId?: string): Array<AddOn> {
+export function getAllAddOns(
+  framework: Framework,
+  mode: string,
+  bundlerId?: string,
+  routerOnly = false,
+): Array<AddOn> {
   const bundler = resolveBundler(framework, bundlerId).id
-  return framework
-    .getAddOns()
+  const addOns = framework.getAddOns().filter((addOn) => addOn.modes.includes(mode))
+  return addOns
     .filter(
       (addOn) =>
-        addOn.modes.includes(mode) && isAddOnSupportedByBundler(addOn, bundler),
+        isAddOnSupportedByBundler(addOn, bundler) &&
+        (!routerOnly || supportsRouterOnly(addOn, addOns)),
     )
     .sort((a, b) => {
       const aPriority = a.priority ?? 0
@@ -22,12 +28,32 @@ export function getAllAddOns(framework: Framework, mode: string, bundlerId?: str
     })
 }
 
+function supportsRouterOnly(
+  addOn: AddOn,
+  allAddOns: Array<AddOn>,
+  seen = new Set<string>(),
+): boolean {
+  if (
+    addOn.type !== 'toolchain' &&
+    !(addOn.type === 'add-on' && addOn.supportsRouterOnly === true)
+  ) {
+    return false
+  }
+  if (seen.has(addOn.id)) return true
+  seen.add(addOn.id)
+  return (addOn.dependsOn || []).every((id) => {
+    const dependency = allAddOns.find((candidate) => candidate.id === id)
+    return dependency !== undefined && supportsRouterOnly(dependency, allAddOns, seen)
+  })
+}
+
 // Turn the list of chosen add-on IDs into a final list of add-ons by resolving dependencies
 export async function finalizeAddOns(
   framework: Framework,
   mode: string,
   chosenAddOnIDs: Array<string>,
   bundlerId?: string,
+  routerOnly = false,
 ): Promise<Array<AddOn>> {
   const bundler = resolveBundler(framework, bundlerId).id
   const finalAddOnIDs = new Set(chosenAddOnIDs)
@@ -58,6 +84,9 @@ export async function finalizeAddOns(
       )
     }
 
+    if (routerOnly && !supportsRouterOnly(addOn, addOns)) {
+      throw new Error(`Add-on "${addOn.id}" does not support Router-only apps.`)
+    }
     assertAddOnSupportedByBundler(addOn, bundler)
 
     for (const dependsOn of addOn.dependsOn || []) {

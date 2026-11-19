@@ -138,7 +138,7 @@ Templates, examples, and `--tailwind` replace the output constraints that
 toolchain, and add-on selections remain supported; a selected styling add-on
 can opt the generated app back into Tailwind when it requires it.
 
-### CRITICAL Combine router-only with template/deployment/add-ons
+### CRITICAL Combine router-only with a template or deployment
 
 Wrong:
 ```bash
@@ -146,7 +146,6 @@ npx @tanstack/cli create my-app \
   --router-only \
   --template some-template \
   --deployment cloudflare \
-  --add-ons clerk \
   -y
 ```
 
@@ -155,13 +154,13 @@ Correct:
 npx @tanstack/cli create my-app --router-only --framework react -y
 ```
 
-Router-only compatibility mode ignores template, deployment, and add-on intent, so the command succeeds but produces a materially different scaffold.
+Router-only compatibility mode ignores template and deployment intent. Compatible add-ons can be selected interactively or passed with `--add-ons`; unsupported Start-dependent add-ons are rejected.
 
 Source: packages/cli/src/command-line.ts:343
 
 ### HIGH Tension: Compatibility mode vs explicit intent
 
-This domain's patterns conflict with choose-ecosystem-integrations. Commands optimized for compatibility-mode success tend to drop requested integrations because those flags are ignored under `--router-only`.
+This domain's patterns conflict with choose-ecosystem-integrations. Template and deployment flags are ignored under `--router-only`, so those requests need a full scaffold. Compatible add-on selections are retained; unsupported Start-dependent add-ons are rejected.
 
 See also: choose-ecosystem-integrations/SKILL.md § Common Mistakes
 

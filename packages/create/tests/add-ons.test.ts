@@ -138,3 +138,51 @@ describe('finalizeAddOns', () => {
     expect(addOnIds.includes('add-on-3')).toEqual(false)
   })
 })
+
+
+describe('Router-only add-on compatibility', () => {
+  const framework = {
+    id: 'react',
+    getAddOns: () => [
+      { id: 'query', type: 'add-on', modes: ['file-router'], supportsRouterOnly: true },
+      { id: 'auth', type: 'add-on', modes: ['file-router'] },
+      { id: 'eslint', type: 'toolchain', modes: ['file-router'] },
+      { id: 'host', type: 'deployment', modes: ['file-router'], supportsRouterOnly: true },
+      { id: 'unsafe-chain', type: 'add-on', modes: ['file-router'], supportsRouterOnly: true, dependsOn: ['auth'] },
+    ],
+  } as unknown as Framework
+
+  it('offers opted-in add-ons and toolchains without exposing Start integrations', () => {
+    expect(getAllAddOns(framework, 'file-router', 'vite', true).map((a) => a.id)).toEqual(['query', 'eslint'])
+  })
+
+  it.each([
+    ['code-router', false],
+    ['file-router', true],
+  ] as const)('checks dependency mode %s before offering a parent', async (dependencyMode, available) => {
+    const withDependency = {
+      ...framework,
+      getAddOns: () => [
+        ...framework.getAddOns(),
+        { id: 'parent', type: 'add-on', modes: ['file-router'], supportsRouterOnly: true, dependsOn: ['dependency'] },
+        { id: 'dependency', type: 'add-on', modes: [dependencyMode], supportsRouterOnly: true },
+      ],
+    } as Framework
+    const offered = getAllAddOns(withDependency, 'file-router', 'vite', true)
+    expect(offered.some((addOn) => addOn.id === 'parent')).toBe(available)
+    if (available) {
+      const selected = await finalizeAddOns(withDependency, 'file-router', ['parent'], 'vite', true)
+      expect(selected.map((addOn) => addOn.id)).toEqual(['parent', 'dependency'])
+    } else {
+      await expect(finalizeAddOns(withDependency, 'file-router', ['parent'], 'vite', true)).rejects.toThrow('does not support Router-only')
+    }
+  })
+
+  it('preserves compatible explicit add-ons', async () => {
+    expect((await finalizeAddOns(framework, 'file-router', ['query', 'eslint'], 'vite', true)).map((a) => a.id)).toEqual(['query', 'eslint'])
+  })
+
+  it.each(['auth', 'unsafe-chain', 'host'])('rejects Start dependencies for %s', async (id) => {
+    await expect(finalizeAddOns(framework, 'file-router', [id], 'vite', true)).rejects.toThrow('does not support Router-only')
+  })
+})
