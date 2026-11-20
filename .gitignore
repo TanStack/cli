@@ -21,3 +21,4 @@ playwright-report
 test-results
 
 packages/create/src/generated/
+.claude/settings.local.json
