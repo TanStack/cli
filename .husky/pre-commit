@@ -3,3 +3,5 @@
 
 pnpm build
 pnpm test
+# gglint: no secrets in agent config files
+pnpm exec gglint secrets --staged
