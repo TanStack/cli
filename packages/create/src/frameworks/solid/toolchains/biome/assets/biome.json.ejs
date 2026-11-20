@@ -1,5 +1,7 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+  "$schema": "https://biomejs.dev/schemas/<%= addOnOption?.biome?.preset === 'ultracite' ? '2.6.7' : '2.4.5' %>/schema.json",
+  <% if (addOnOption?.biome?.preset === 'ultracite') { %>"extends": ["ultracite/biome/core", "ultracite/biome/solid"],
+  "overrides": [{"includes": ["**/src/components/**"], "linter": {"rules": {"style": {"useFilenamingConvention": {"level": "error", "options": {"filenameCases": ["PascalCase", "kebab-case"]}}}}}}],<% } %>
   "vcs": {
     "enabled": false,
     "clientKind": "git",

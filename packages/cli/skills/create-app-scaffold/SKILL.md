@@ -178,3 +178,7 @@ See also: query-docs-library-metadata/SKILL.md § Common Mistakes
 - [Build tool options](references/bundlers.md)
 - [Deployment provider options](references/deployment-providers.md)
 - [Toolchain options](references/toolchains.md)
+
+### Biome presets
+
+Biome keeps its recommended configuration by default. To select Ultracite while creating an app, use `--yes --toolchain biome --add-on-config '{"biome":{"preset":"ultracite"}}'`. Ultracite requires Node `^22.22.2 || >=24.15.0` in the generated app and uses its core and framework presets. Component filenames accept PascalCase and kebab-case. The selected preset is saved in the project configuration.

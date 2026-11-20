@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render } from 'ejs'
 
 import { finalizeAddOns, getAllAddOns } from '../src/add-ons.js'
 import { getBundlers, resolveBundler } from '../src/build-tools.js'
@@ -90,12 +91,12 @@ describe('bundler project generation', () => {
   it('aligns the Solid Biome schema with the pinned package version', async () => {
     const definition = createSolidFrameworkDefinition()
     const biome = definition.addOns.find((addOn) => addOn.id === 'biome')!
-    const version = biome.packageAdditions!.devDependencies?.['@biomejs/biome']
-
+    const values = { addOnOption: { biome: { preset: 'recommended' } }, bundler: 'vite' }
+    const pkg = JSON.parse(render(biome.packageTemplate!, values))
+    const config = JSON.parse(render(await biome.getFileContents('biome.json.ejs'), values))
+    const version = pkg.devDependencies['@biomejs/biome']
     expect(version).toBe('2.4.5')
-    await expect(biome.getFileContents('biome.json.ejs')).resolves.toContain(
-      `/schemas/${version}/schema.json`,
-    )
+    expect(config.$schema).toContain(`/schemas/${version}/schema.json`)
   })
 
   it.each([
