@@ -29,16 +29,17 @@ function Home() {
   )
 }
 <% } else { %>
+import { For } from 'solid-js'
 import { createFileRoute } from '@tanstack/solid-router'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
   return (
-    <main class="page-wrap px-4 pb-8 pt-14">
+    <main class="page-wrap px-4 pt-14 pb-8">
       <section class="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div class="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div class="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
+        <div class="pointer-events-none absolute -top-24 -left-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
+        <div class="pointer-events-none absolute -right-20 -bottom-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
         <p class="island-kicker mb-3">TanStack Start Base Template</p>
         <h1 class="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
           Start simple, ship quickly.
@@ -66,20 +67,22 @@ function App() {
       </section>
 
       <section class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
+        <For each={[
           ['Type-Safe Routing', 'Routes and links stay in sync across every page.'],
           ['Server Functions', 'Call server code from your UI without creating API boilerplate.'],
           ['Streaming by Default', 'Ship progressively rendered responses for faster experiences.'],
           ['Tailwind Native', 'Design quickly with utility-first styling and reusable tokens.'],
-        ].map(([title, desc], index) => (
+        ]}>
+          {([title, desc], index) => (
           <article
             class="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ 'animation-delay': `${index * 90 + 80}ms` }}
+            style={{ 'animation-delay': `${index() * 90 + 80}ms` }}
           >
             <h2 class="mb-2 text-base font-semibold text-[var(--sea-ink)]">{title}</h2>
             <p class="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
           </article>
-        ))}
+          )}
+        </For>
       </section>
 
       <section class="island-shell mt-8 rounded-2xl p-6">

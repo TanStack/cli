@@ -29,6 +29,7 @@ type CreateAppFixtureOptions = {
   deployment?: string
   routerOnly?: boolean
   template?: string
+  addOnConfig?: Record<string, Record<string, unknown>>
   addOns?: Array<string>
   postCreateAddOns?: Array<string>
   afterCreate?: (appDir: string) => Promise<void>
@@ -373,6 +374,7 @@ export async function createAppFixture(
     template,
     addOns,
     afterCreate,
+    addOnConfig,
     postCreateAddOns,
     skipDevServer,
     runQualityGatesChecks = false,
@@ -417,6 +419,10 @@ export async function createAppFixture(
 
   if (template) {
     createArgs.push('--template', template)
+  }
+
+  if (addOnConfig) {
+    createArgs.push('--add-on-config', JSON.stringify(addOnConfig))
   }
 
   if (addOns?.length) {

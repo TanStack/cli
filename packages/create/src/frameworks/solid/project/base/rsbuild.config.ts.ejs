@@ -28,7 +28,7 @@ export default defineConfig({
   <% } -%>
   plugins: [
     pluginBabel({
-      include: /\.(?:jsx|tsx)$/,
+      include: /\.(?:jsx|tsx)$/u,
     }),
     pluginSolid(),
     <% if (tailwind) { %>pluginTailwindcss(),<% } %>

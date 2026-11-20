@@ -8,5 +8,23 @@
   "color": "#60A5FA",
   "priority": 2,
   "modes": ["code-router", "file-router"],
-  "link": "https://biomejs.dev"
+  "link": "https://biomejs.dev",
+  "options": {
+    "preset": {
+      "type": "select",
+      "label": "Biome preset",
+      "description": "Ultracite requires Node ^22.22.2 or >=24.15.0 for development tools.",
+      "default": "recommended",
+      "options": [
+        {
+          "value": "recommended",
+          "label": "Recommended"
+        },
+        {
+          "value": "ultracite",
+          "label": "Ultracite (Node ^22.22.2 or >=24.15.0)"
+        }
+      ]
+    }
+  }
 }

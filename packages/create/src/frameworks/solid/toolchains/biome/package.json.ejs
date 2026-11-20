@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "format": "biome format",
+    "lint": "biome lint",
+    "check": "biome check"
+  },
+  "devDependencies": {
+    <% if (addOnOption?.biome?.preset === 'ultracite') { %>"ultracite": "8.3.1",<% } %>
+    "@biomejs/biome": "<%= addOnOption?.biome?.preset === 'ultracite' ? '2.6.7' : '2.4.5' %>"
+  }
+}
